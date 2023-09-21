@@ -1,8 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import { Client, Member, Value, View, Text, Func } from "webcface";
 import { MemberValues, MemberTexts, MemberFuncs } from "../libs/stateTypes";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
+import {
+  BroadcastRadio,
+  Right,
+  Down,
+  Analysis,
+  PageTemplate,
+  Text as TextIcon,
+  Abnormal,
+  PlayOne,
+} from "@icon-park/react";
 
 interface Props {
   client: { current: Client | null };
@@ -47,12 +57,15 @@ interface MemberProps {
 }
 function SideMenuMember(props: MemberProps) {
   const [open, setOpen] = useState<boolean>(false);
+  const iconFillColor = ["#333", "#6c6"];
   return (
     <>
       <div>
         <SideMenuButton
           name={props.member.name}
           onClick={() => setOpen(!open)}
+          active={open}
+          icon={<BroadcastRadio />}
         />
       </div>
       <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
@@ -64,6 +77,8 @@ function SideMenuMember(props: MemberProps) {
               onClick={() =>
                 props.toggleOpened(cardKey.value(props.member.name, v.name))
               }
+              icon={<Analysis />}
+              iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
             />
           </li>
         ))}
@@ -75,6 +90,10 @@ function SideMenuMember(props: MemberProps) {
               onClick={() =>
                 props.toggleOpened(cardKey.view(props.member.name, v.name))
               }
+              icon={<PageTemplate />}
+              iconActive={
+                <PageTemplate theme="two-tone" fill={iconFillColor} />
+              }
             />
           </li>
         ))}
@@ -83,6 +102,8 @@ function SideMenuMember(props: MemberProps) {
             name={"Text Variables"}
             active={props.isOpened(cardKey.text(props.member.name))}
             onClick={() => props.toggleOpened(cardKey.text(props.member.name))}
+            icon={<TextIcon />}
+            iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
           />
         </li>
         <li>
@@ -90,6 +111,8 @@ function SideMenuMember(props: MemberProps) {
             name={"Logs"}
             active={props.isOpened(cardKey.log(props.member.name))}
             onClick={() => props.toggleOpened(cardKey.log(props.member.name))}
+            icon={<Abnormal />}
+            iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
           />
         </li>
         <li>
@@ -97,6 +120,8 @@ function SideMenuMember(props: MemberProps) {
             name={"Functions"}
             active={props.isOpened(cardKey.func(props.member.name))}
             onClick={() => props.toggleOpened(cardKey.func(props.member.name))}
+            icon={<PlayOne />}
+            iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
           />
         </li>
       </ul>
@@ -107,11 +132,18 @@ interface ButtonProps {
   name: string;
   active?: boolean;
   onClick: () => void;
+  icon?: ReactElement;
+  iconActive?: ReactElement;
 }
 function SideMenuButton(props: ButtonProps) {
   return (
-    <button className="hover:text-green-700 " onClick={props.onClick}>
-      {props.name}
+    <button
+      className="hover:text-green-700 flex items-center space-x-1 mt-1 "
+      onClick={props.onClick}
+    >
+      <span>{props.icon}</span>
+      <span>{props.name}</span>
+      {props.active ? <Down className="pt-0.5" /> : <Right />}
     </button>
   );
 }
@@ -119,14 +151,17 @@ function SideMenuButton2(props: ButtonProps) {
   return (
     <button
       className={
-        "w-full text-left pl-1 " +
+        "w-full text-left pl-1 flex items-center space-x-1 mt-0.5 " +
         (props.active
           ? "bg-green-100 hover:bg-green-200 active:bg-green-300 "
           : "hover:bg-neutral-100 active:bg-neutral-200 ")
       }
       onClick={props.onClick}
     >
-      {props.name}
+      <span>
+        {props.active && props.iconActive ? props.iconActive : props.icon}
+      </span>
+      <span>{props.name}</span>
     </button>
   );
 }
