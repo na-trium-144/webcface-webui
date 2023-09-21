@@ -36,10 +36,12 @@ export default function App() {
 
   console.log("app update");
   return (
-    <div className="absolute w-full min-h-screen h-max bg-neutral-100 -z-50">
+    <div className="absolute w-full min-w-min min-h-screen h-max bg-neutral-100 -z-50">
       <FuncResultProvider>
-        <nav className="bg-green-300 w-full h-12 px-2 drop-shadow-lg">
-          <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
+          <div className="min-w-[288px] h-full">
+            <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+          </div>
         </nav>
         <nav
           className={
@@ -65,7 +67,7 @@ export default function App() {
             moveOrder={moveOrder}
           />
         </main>
-          <FuncResultList />
+        <FuncResultList />
       </FuncResultProvider>
     </div>
   );
