@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Client, Member, Value, View, Text, Func } from "webcface";
+import { Client, Member, Value, View } from "webcface";
 import "../index.css";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Responsive, WidthProvider, Layout, Layouts } from "react-grid-layout";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 import { getFromLS, saveToLS } from "../libs/ls";
-import { Card, CardItem } from "./card";
 import { ValueCard } from "./valueCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";

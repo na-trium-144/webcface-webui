@@ -1,13 +1,7 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import {
-  Member,
-  View,
-  ViewComponent,
-  viewColor,
-  viewComponentTypes,
-} from "webcface";
-import { useState, useEffect } from "react";
+import { View, ViewComponent, viewColor, viewComponentTypes } from "webcface";
+import { useEffect } from "react";
 import { useFuncResult } from "./funcResult";
 
 interface Props {

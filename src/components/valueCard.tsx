@@ -13,7 +13,7 @@ const numPoints = 5000;
 
 export function ValueCard(props: Props) {
   const canvasMain = useRef<HTMLCanvasElement>(null);
-  const canvasDiv = useRef<HTMLCanvasElement>(null);
+  const canvasDiv = useRef<HTMLDivElement>(null);
   const data = useRef<number[]>([]);
   const currentPos = useRef<number>(0);
   const isLatest = useRef<boolean>(true);
@@ -59,6 +59,9 @@ export function ValueCard(props: Props) {
     if (canvasMain.current) {
       let id = 0;
       let renderPlot = () => {
+        if (canvasMain.current == null || canvasDiv.current == null) {
+          return;
+        }
         if (
           webglp == null ||
           canvasMain.current.width != canvasDiv.current.clientWidth ||
@@ -128,7 +131,7 @@ export function ValueCard(props: Props) {
   const [cursorY, setCursorY] = useState<number | null>(null);
   const [cursorValue, setCursorValue] = useState<number | null>(null);
   useEffect(() => {
-    if (cursorX != null) {
+    if (cursorX != null && canvasMain.current != null) {
       let pos = currentPos.current;
       if (numPoints > data.current.length) {
         pos = data.current.length - numPoints;
@@ -164,9 +167,11 @@ export function ValueCard(props: Props) {
             <div className="w-full h-full relative" ref={canvasDiv}>
               <canvas
                 className="border border-black"
-                onPointerMove={(e: PointerEvent) => {
-                  const targetRect = e.currentTarget.getBoundingClientRect();
-                  setCursorX(e.clientX - targetRect.left);
+                onPointerMove={(e) => {
+                  if (e.currentTarget) {
+                    const targetRect = e.currentTarget.getBoundingClientRect();
+                    setCursorX(e.clientX - targetRect.left);
+                  }
                 }}
                 onPointerLeave={() => setCursorX(null)}
                 ref={canvasMain}

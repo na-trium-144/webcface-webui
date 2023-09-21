@@ -4,7 +4,6 @@ import "./index.css";
 import { LayoutMain } from "./components/layout";
 import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
-import { FuncResultProvider } from "./components/funcResult";
 import { FuncResultList } from "./components/funcResultList";
 
 export default function App() {
@@ -37,38 +36,36 @@ export default function App() {
   console.log("app update");
   return (
     <div className="absolute w-full min-w-min min-h-screen h-max bg-neutral-100 -z-50">
-      <FuncResultProvider>
-        <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
-          <div className="min-w-[288px] h-full">
-            <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-          </div>
-        </nav>
-        <nav
-          className={
-            "absolute top-10 right-2 w-72 h-max max-h-[75%] p-2 " +
-            "rounded-lg shadow-lg overflow-x-hidden overflow-y-auto bg-white " +
-            "transition duration-100 origin-top-right " +
-            (menuOpen
-              ? "ease-out opacity-100 scale-100 z-[1000] "
-              : "ease-in opacity-0 scale-90 -z-10 ")
-          }
-        >
-          <SideMenu
-            client={client}
-            isOpened={isOpened}
-            toggleOpened={toggleOpened}
-          />
-        </nav>
-        <main className="p-2">
-          <LayoutMain
-            client={client}
-            isOpened={isOpened}
-            openedOrder={openedOrder}
-            moveOrder={moveOrder}
-          />
-        </main>
-        <FuncResultList />
-      </FuncResultProvider>
+      <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
+        <div className="min-w-[288px] h-full">
+          <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        </div>
+      </nav>
+      <nav
+        className={
+          "absolute top-10 right-2 w-72 h-max max-h-[75%] p-2 " +
+          "rounded-lg shadow-lg overflow-x-hidden overflow-y-auto bg-white " +
+          "transition duration-100 origin-top-right " +
+          (menuOpen
+            ? "ease-out opacity-100 scale-100 z-[1000] "
+            : "ease-in opacity-0 scale-90 -z-10 ")
+        }
+      >
+        <SideMenu
+          client={client}
+          isOpened={isOpened}
+          toggleOpened={toggleOpened}
+        />
+      </nav>
+      <main className="p-2">
+        <LayoutMain
+          client={client}
+          isOpened={isOpened}
+          openedOrder={openedOrder}
+          moveOrder={moveOrder}
+        />
+      </main>
+      <FuncResultList />
     </div>
   );
 }

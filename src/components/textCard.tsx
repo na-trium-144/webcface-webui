@@ -1,7 +1,7 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Member, Text } from "webcface";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 interface Props {
   member: Member;

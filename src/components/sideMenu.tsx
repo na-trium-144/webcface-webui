@@ -1,6 +1,5 @@
 import { useState, useEffect, ReactElement } from "react";
-import { Client, Member, Value, View, Text, Func } from "webcface";
-import { MemberValues, MemberTexts, MemberFuncs } from "../libs/stateTypes";
+import { Client, Member, Value, View } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import {

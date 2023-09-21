@@ -38,7 +38,7 @@ interface ArgProps {
 }
 function ArgInput(props: ArgProps) {
   const inputClass = "border-0 outline-0 px-1 peer ";
-  const checkError = useRef<(() => void) | null>(null);
+  const checkError = useRef<((arg: string) => boolean) | null>(null);
   useEffect(() => {
     if (
       checkError.current != null &&
@@ -47,13 +47,13 @@ function ArgInput(props: ArgProps) {
     ) {
       props.setIsError(true);
     }
-  }, [props.arg]);
+  }, [props.arg, props.isError, props.setIsError]);
 
-  if (props.argConfig.option.length > 0) {
+  if (props.argConfig.option && props.argConfig.option.length > 0) {
     return (
       <select
         className={inputClass + "px-0 "}
-        value={props.arg}
+        value={String(props.arg)}
         onChange={(e) => props.setArg(e.target.value)}
       >
         {props.argConfig.option.map((o, oi) => (
@@ -71,8 +71,8 @@ function ArgInput(props: ArgProps) {
             type="number"
             className={inputClass + "w-20"}
             value={(props.arg as number) || 0}
-            min={props.argConfig.min}
-            max={props.argConfig.max}
+            min={props.argConfig.min != null ? props.argConfig.min : undefined}
+            max={props.argConfig.max != null ? props.argConfig.max : undefined}
             onChange={(e) => {
               props.setIsError(!e.target.checkValidity());
               props.setArg(e.target.value);
@@ -83,7 +83,6 @@ function ArgInput(props: ArgProps) {
         return (
           <button
             type="button"
-            checked={!!props.arg}
             onClick={() => props.setArg(!props.arg)}
             className={
               inputClass +
@@ -106,7 +105,9 @@ function ArgInput(props: ArgProps) {
             size={6}
             value={String(props.arg)}
             onChange={(e) => {
-              props.setIsError(checkError.current(e.target.value));
+              props.setIsError(
+                !!checkError.current && checkError.current(e.target.value)
+              );
               props.setArg(e.target.value);
             }}
           />
@@ -123,7 +124,9 @@ function ArgInput(props: ArgProps) {
             size={6}
             value={String(props.arg)}
             onChange={(e) => {
-              props.setIsError(checkError.current(e.target.value));
+              props.setIsError(
+                !!checkError.current && checkError.current(e.target.value)
+              );
               props.setArg(e.target.value);
             }}
           />
@@ -159,7 +162,7 @@ function FuncLine(props: { func: Func }) {
         })
       );
       setErrors(
-        props.func.args.map((ac, i) => {
+        props.func.args.map((_, i) => {
           if (i < args.length) {
             return errors[i];
           } else {
@@ -266,16 +269,18 @@ function ArgDescription(props: { argConfig: Arg }) {
       />
       <div>
         {valTypeText()}
-        {props.argConfig.option.length > 0 && " (選択式)"}
+        {props.argConfig.option &&
+          props.argConfig.option.length > 0 &&
+          " (選択式)"}
       </div>
       <div>
         {props.argConfig.min != null &&
-          (props.argConfig.type === valTypeText.string_
+          (props.argConfig.type === valType.string_
             ? `最小長さ ${props.argConfig.min}`
             : `最小値 ${props.argConfig.min}`)}
         {props.argConfig.min != null && props.argConfig.max != null && ", "}
         {props.argConfig.max != null &&
-          (props.argConfig.type === valTypeText.string_
+          (props.argConfig.type === valType.string_
             ? `最大長さ ${props.argConfig.max}`
             : `最大値 ${props.argConfig.max}`)}
       </div>

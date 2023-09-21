@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 // import version from "../libs/version";
 import { HamburgerButton, CloseSmall } from "@icon-park/react";
 

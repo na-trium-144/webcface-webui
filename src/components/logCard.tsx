@@ -1,5 +1,5 @@
 import { Card } from "./card";
-import { Member, Log, LogLine } from "webcface";
+import { Member, LogLine } from "webcface";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 
@@ -19,7 +19,13 @@ export function LogCard(props: Props) {
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [minLevel, setMinLevel] = useState<number>(2);
   useEffect(() => {
-    const update = () => setLogsCurrent(props.member.log().get().filter((l) => l.level >= minLevel));
+    const update = () =>
+      setLogsCurrent(
+        props.member
+          .log()
+          .get()
+          .filter((l) => l.level >= minLevel)
+      );
     update();
     props.member.log().on(update);
     return () => {
@@ -40,10 +46,11 @@ export function LogCard(props: Props) {
             type="number"
             value={minLevel}
             onChange={(e) => {
-              setMinLevel(e.target.value);
+              setMinLevel(parseInt(e.target.value));
             }}
           />
-          以上のログを表示: 全<span className="px-1">{props.member.log().get().length}</span>
+          以上のログを表示: 全
+          <span className="px-1">{props.member.log().get().length}</span>
           行中
           <span className="px-1">{logsCurrent.length}</span>行
         </div>
