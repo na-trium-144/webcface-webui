@@ -9,7 +9,7 @@ import { FuncResultList } from "./components/funcResultList";
 export default function App() {
   const client = useRef<Client | null>(null);
   useEffect(() => {
-    client.current = new Client("a");
+    client.current = new Client("a", window.location.hostname, 7530);
   }, []);
   useEffect(() => {
     const i = setInterval(() => {
