@@ -9,8 +9,6 @@ interface Props {
   value: Value;
 }
 
-const numPoints = 5000;
-
 export function ValueCard(props: Props) {
   // const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
@@ -42,7 +40,7 @@ export function ValueCard(props: Props) {
         }
       }
     };
-    onValueChange(props.value);
+    onValueChange();
     props.value.member.onSync.on(onValueChange);
     return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
@@ -147,7 +145,9 @@ export function ValueCard(props: Props) {
             checked={followRealTime}
             onChange={(e) => followChart(e.target.checked)}
           />
-          <label for={`follow-${props.value.member.name}:${props.value.name}`}>
+          <label
+            htmlFor={`follow-${props.value.member.name}:${props.value.name}`}
+          >
             Follow Latest Data
           </label>
         </div>

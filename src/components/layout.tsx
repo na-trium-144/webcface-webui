@@ -5,7 +5,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Responsive, WidthProvider, Layout, Layouts } from "react-grid-layout";
 const ResponsiveGridLayout = WidthProvider(Responsive);
-import { getFromLS, saveToLS } from "../libs/ls";
+import { getLS, saveToLS } from "../libs/ls";
 import { ValueCard } from "./valueCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
@@ -55,7 +55,7 @@ export function LayoutMain(props: Props) {
     return Object.keys(breakpoints).reduce((obj, k) => {
       obj[k] = layout.map((l) => ({ ...l }));
       return obj;
-    }, {});
+    }, {} as Layouts);
   };
   const isLayoutSame = (l1: Layout, l2: Layout) => {
     if (l1.x !== l2.x) return false;
@@ -66,7 +66,7 @@ export function LayoutMain(props: Props) {
   };
 
   useEffect(() => {
-    const ls = getFromLS("layout") || [];
+    const ls = getLS().layout;
     setLsLayout(ls);
     setLayouts(layoutsAll(ls));
     setLayoutsLoadDone(true);
@@ -75,7 +75,7 @@ export function LayoutMain(props: Props) {
   // https://github.com/react-grid-layout/react-grid-layout/issues/1775
   // onLayoutChangeが正しく呼ばれないバグあり、
   // 代わりにlayoutを参照で保持し変更されているかこっちでチェックする
-  const onLayoutChange = (layout: Layout[], layouts: Layouts) => {
+  const onLayoutChange = (layout: Layout[], _layouts: Layouts) => {
     currentLayout.current = layout;
     // console.log("layoutchange", layout)
   };
@@ -100,7 +100,7 @@ export function LayoutMain(props: Props) {
         }
       }
       if (changed && layoutsLoadDone) {
-        saveToLS("layout", currentLayout.current);
+        saveToLS({ layout: currentLayout.current });
         setLsLayout(currentLayout.current.map((nl) => ({ ...nl })));
         setLayouts(layoutsAll(currentLayout.current));
       }

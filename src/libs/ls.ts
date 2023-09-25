@@ -1,27 +1,27 @@
-const lsKey = "webcface-webui";
+import { Layout } from "react-grid-layout";
 
-function getLS() {
-  let ls = {};
+const lsKey = "webcface-webui";
+interface LS {
+  layout: Layout[],
+}
+export function getLS() {
+  const emptyLs: LS = {
+    layout: [],
+  };
   if (global != undefined && global.localStorage) {
-    try {
-      ls = JSON.parse(global.localStorage.getItem(lsKey) || "{}") as object;
-    } catch (e) {
-      /*Ignore*/
+    const lsItem = global.localStorage.getItem(lsKey) ;
+    if(lsItem){
+      const ls1 = JSON.parse(lsItem) as LS;
+      if(typeof ls1 === "object" && ls1 && ls1.layout && Array.isArray(ls1.layout)){
+        return ls1;
+      }
     }
   }
-  return ls;
-}
-export function getFromLS(key: string) {
-  const ls = getLS();
-  // console.log("load", ls[key]);
-  return (ls[key] as object) || null;
+  return emptyLs;
 }
 
-export function saveToLS(key: string, value: object) {
+export function saveToLS(ls: LS) {
   if (global != undefined && global.localStorage) {
-    const ls = getLS();
-    ls[key] = value;
     global.localStorage.setItem(lsKey, JSON.stringify(ls));
-    // console.log("save", ls)
   }
 }
