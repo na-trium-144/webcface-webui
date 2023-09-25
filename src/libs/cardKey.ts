@@ -6,3 +6,4 @@ export const view = (member: string, field: string) =>
 export const text = (member: string) => `${member}:text`;
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string) => `${member}:log`;
+export const connectionInfo = () => ":connectionInfo";

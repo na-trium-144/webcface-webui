@@ -11,7 +11,10 @@ import {
   Text as TextIcon,
   Abnormal,
   PlayOne,
+  Info,
 } from "@icon-park/react";
+
+const iconFillColor = ["#333", "#6c6"];
 
 interface Props {
   client: { current: Client | null };
@@ -33,6 +36,13 @@ export function SideMenu(props: Props) {
   }, [props.client, update]);
   return (
     <>
+      <SideMenuButton2
+        name="Connection Info"
+        active={props.isOpened(cardKey.connectionInfo())}
+        onClick={() => props.toggleOpened(cardKey.connectionInfo())}
+        icon={<Info />}
+        iconActive={<Info theme="two-tone" fill={iconFillColor} />}
+      />
       {props.client.current?.members().map((m, mi) => (
         <SideMenuMember
           key={mi}
@@ -56,7 +66,6 @@ interface MemberProps {
 }
 function SideMenuMember(props: MemberProps) {
   const [open, setOpen] = useState<boolean>(false);
-  const iconFillColor = ["#333", "#6c6"];
   return (
     <>
       <div>
@@ -137,7 +146,7 @@ interface ButtonProps {
 function SideMenuButton(props: ButtonProps) {
   return (
     <button
-      className="hover:text-green-700 flex items-center space-x-1 mt-1 "
+      className="hover:text-green-700 w-full pl-1 flex items-center space-x-1 mt-0.5 "
       onClick={props.onClick}
     >
       <span>{props.icon}</span>
@@ -150,7 +159,7 @@ function SideMenuButton2(props: ButtonProps) {
   return (
     <button
       className={
-        "w-full text-left pl-1 flex items-center space-x-1 mt-0.5 " +
+        "w-full pl-1 flex items-center space-x-1 mt-0.5 " +
         (props.active
           ? "bg-green-100 hover:bg-green-200 active:bg-green-300 "
           : "hover:bg-neutral-100 active:bg-neutral-200 ")

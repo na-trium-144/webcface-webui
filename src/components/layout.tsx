@@ -11,6 +11,7 @@ import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
 import { LogCard } from "./logCard";
 import { ViewCard } from "./viewCard";
+import { ConnectionInfoCard } from "./connectionInfoCard";
 import { useForceUpdate } from "../libs/forceUpdate";
 import * as cardKey from "../libs/cardKey";
 
@@ -119,6 +120,23 @@ export function LayoutMain(props: Props) {
       compactType={null}
       draggableHandle=".MyCardHandle"
     >
+      {(() => {
+        const key = cardKey.connectionInfo();
+        if (props.isOpened(key)) {
+          return (
+            <div
+              key={key}
+              data-grid={{ x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 }}
+              style={{
+                zIndex: 10 + props.openedOrder(key),
+              }}
+              onPointerDown={() => props.moveOrder(key)}
+            >
+              <ConnectionInfoCard client={props.client} />
+            </div>
+          );
+        }
+      })()}
       {props.client.current
         ?.members()
         .reduce((prev, m) => prev.concat(m.values()), [] as Value[])
