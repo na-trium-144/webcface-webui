@@ -1,9 +1,9 @@
 import { Card } from "./card";
 import { Value } from "webcface";
 import { useState, useEffect, useRef } from "react";
-import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
-import ReactSlider from "react-slider";
-import { format, addMilliseconds } from "date-fns";
+import TimeChart from "timechart";
+// import ReactSlider from "react-slider";
+// import { format, addMilliseconds } from "date-fns";
 
 interface Props {
   value: Value;
@@ -12,254 +12,151 @@ interface Props {
 const numPoints = 5000;
 
 export function ValueCard(props: Props) {
-  const canvasMain = useRef<HTMLCanvasElement>(null);
+  // const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
-  const data = useRef<number[]>([]);
-  const currentPos = useRef<number>(0);
-  const isLatest = useRef<boolean>(true);
-  const [displayMinY, setDisplayMinY] = useState<number>(0);
-  const [displayMaxY, setDisplayMaxY] = useState<number>(0);
-  const [displayPos, setDisplayPos] = useState<number>(0);
-  const [maxPos, setMaxPos] = useState<number>(0);
+  const chart = useRef<TimeChart | null>(null);
+  const data = useRef<{ x: number; y: number }[]>([]);
+  const divPreviousWidth = useRef<number>(0);
+  const divPreviousHeight = useRef<number>(0);
   const lastUpdate = useRef<Date>(new Date());
-  const [startTime, setStartTime] = useState<Date>(new Date());
+  const startTime = useRef<Date>(new Date());
+  const [followRealTime, setFollowRealTime] = useState<boolean>(true);
 
   useEffect(() => {
-    const onValueChange = (v: Value) => {
-      const val = v.tryGet();
+    const onValueChange = () => {
+      const val = props.value.tryGet();
       if (val != null) {
-        const now = v.time();
-        const timeDiff = now.getTime() - lastUpdate.current.getTime();
-        if (timeDiff < 0) {
-          console.error(`invalid timeDiff ${timeDiff}`);
+        const now = props.value.time();
+        if (now.getTime() < lastUpdate.current.getTime()) {
+          console.error(`invalid time ${now.toLocaleString()}`);
         } else {
           lastUpdate.current = now;
-          if (data.current.length === 0) {
-            setStartTime(now);
-          }
-          for (let t = 0; t < timeDiff; t++) {
-            data.current.push(val);
-          }
+          data.current.push({
+            x: now.getTime() - startTime.current.getTime(),
+            y: val,
+          });
+        }
+        if (chart.current) {
+          chart.current.update();
+          console.log("update");
         }
       }
     };
     onValueChange(props.value);
-    props.value.on(onValueChange);
-    return () => props.value.off(onValueChange);
+    props.value.member.onSync.on(onValueChange);
+    return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
 
-  useEffect(() => {
-    let webglp: WebglPlot | null = null;
-    const line: WebglLine = new WebglLine(
-      new ColorRGBA(0, 0.6, 0, 1),
-      numPoints
-    );
-    line.arrangeX();
-
-    if (canvasMain.current) {
-      let id = 0;
-      let renderPlot = () => {
-        if (canvasMain.current == null || canvasDiv.current == null) {
-          return;
-        }
-        if (
-          webglp == null ||
-          canvasMain.current.width != canvasDiv.current.clientWidth ||
-          canvasMain.current.height !== canvasDiv.current.clientHeight
-        ) {
-          canvasMain.current.width = canvasDiv.current.clientWidth;
-          canvasMain.current.height = canvasDiv.current.clientHeight;
-
-          webglp = new WebglPlot(canvasMain.current);
-          webglp.addLine(line);
-        }
-
-        let maxY: number | null = null;
-        let minY: number | null = null;
-        let midY = 0;
-        let pos = currentPos.current;
-        if (line.numPoints > data.current.length) {
-          pos = data.current.length - line.numPoints;
-        } else {
-          const max = data.current.length - line.numPoints;
-          setMaxPos(max);
-          if (isLatest.current) {
-            pos = max;
-            currentPos.current = max;
-            setDisplayPos(max);
-          }
-        }
-        for (let i = 0; i < line.numPoints; i++) {
-          if (pos + i >= 0) {
-            const val = data.current[pos + i];
-            if (maxY == null || maxY < val) {
-              maxY = val;
-            }
-            if (minY == null || minY > val) {
-              minY = val;
-            }
-            if (maxY != null && minY != null) {
-              midY = (maxY + minY) / 2;
-              if (maxY === minY) {
-                maxY += 1;
-                minY -= 1;
-              }
-            }
-            line.setY(i, val);
-          }
-        }
-        if (maxY != null && minY != null) {
-          line.offsetY = -midY / (maxY - midY);
-          line.scaleY = 1 / (maxY - midY);
-          setDisplayMinY(minY);
-          setDisplayMaxY(maxY);
-        }
-
-        id = requestAnimationFrame(renderPlot);
-        webglp.update();
-      };
-      id = requestAnimationFrame(renderPlot);
-
-      return () => {
-        renderPlot = () => undefined;
-        cancelAnimationFrame(id);
-      };
+  const followChart = (f: boolean) => {
+    if (chart.current) {
+      chart.current.options.realTime = f;
+      if (f) {
+        chart.current.options.yRange = "auto";
+      }
+      setFollowRealTime(f);
     }
+  };
+  useEffect(() => {
+    const createChart = () => {
+      if (canvasDiv.current) {
+        chart.current = new TimeChart(canvasDiv.current, {
+          series: [
+            {
+              name: "a",
+              data: data.current,
+            },
+          ],
+          baseTime: startTime.current.getTime(),
+          xRange: { min: 0, max: 5 * 1000 },
+          yRange: "auto",
+          realTime: true,
+          zoom: {
+            x: {
+              autoRange: true,
+            },
+            y: {
+              autoRange: true,
+            },
+          },
+          tooltip: {
+            enabled: true,
+            xLabel: "Time",
+            xFormatter: (x) =>
+              new Date(x + startTime.current.getTime()).toLocaleString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                fractionalSecondDigits: 3,
+              }),
+          },
+          legend: false,
+        });
+      }
+    };
+    const disposeChart = () => {
+      if (chart.current) {
+        chart.current.dispose();
+        chart.current = null;
+      }
+    };
+    const resizeChart = () => {
+      if (chart.current) {
+        chart.current.onResize();
+      }
+    };
+    createChart();
+
+    const updateInt = setInterval(() => {
+      if (canvasDiv.current == null) {
+        return;
+      }
+      if (
+        divPreviousWidth.current != canvasDiv.current.clientWidth ||
+        divPreviousHeight.current !== canvasDiv.current.clientHeight
+      ) {
+        divPreviousWidth.current = canvasDiv.current.clientWidth;
+        divPreviousHeight.current = canvasDiv.current.clientHeight;
+        // disposeChart();
+        // createChart();
+        resizeChart();
+      }
+    }, 100);
+    return () => {
+      clearInterval(updateInt);
+      disposeChart();
+    };
   }, []);
-
-  const [cursorX, setCursorX] = useState<number | null>(null);
-  const [cursorY, setCursorY] = useState<number | null>(null);
-  const [cursorValue, setCursorValue] = useState<number | null>(null);
   useEffect(() => {
-    if (cursorX != null && canvasMain.current != null) {
-      let pos = currentPos.current;
-      if (numPoints > data.current.length) {
-        pos = data.current.length - numPoints;
+    const i = setInterval(() => {
+      if (chart.current && chart.current.options.realTime != followRealTime) {
+        setFollowRealTime(chart.current.options.realTime);
       }
-      const cursorPos = pos + (cursorX / canvasMain.current.width) * numPoints;
-      if (cursorPos >= 0) {
-        const val = data.current[Math.round(cursorPos)];
-        setCursorValue(val);
-        const y =
-          ((val - displayMinY) / (displayMaxY - displayMinY)) *
-          canvasMain.current.height;
-        setCursorY(y);
-      }
-    }
-  }, [cursorX, displayPos, displayMinY, displayMaxY]);
-
+    }, 100);
+    return () => clearInterval(i);
+  }, [followRealTime]);
   return (
     <Card title={`${props.value.member.name}:${props.value.name}`}>
       <div className="flex flex-col h-full">
         <div className="flex-1 w-full min-h-0 flex flex-row text-xs">
-          <div className="flex-none h-full pb-4 pr-1 relative">
-            <div className="text-transparent select-none">
-              {/* 0を桁数分並べたものを入れることで幅を固定する */}
-              {"0".repeat(displayMaxY.toString().length)}
-            </div>
-            <div className="text-transparent select-none">
-              {"0".repeat(displayMinY.toString().length)}
-            </div>
-            <span className="absolute top-0 right-1">{displayMaxY}</span>
-            <span className="absolute bottom-4 right-1">{displayMinY}</span>
-          </div>
-          <div className="flex-1 h-full min-w-0 pt-2 pb-6 relative">
-            <div className="w-full h-full relative" ref={canvasDiv}>
-              <canvas
-                className="border border-black"
-                onPointerMove={(e) => {
-                  if (e.currentTarget) {
-                    const targetRect = e.currentTarget.getBoundingClientRect();
-                    setCursorX(e.clientX - targetRect.left);
-                  }
-                }}
-                onPointerLeave={() => setCursorX(null)}
-                ref={canvasMain}
-              />
-              <GraphValue
-                x={cursorX}
-                y={cursorY}
-                value={cursorValue}
-                time={
-                  cursorX != null
-                    ? addMilliseconds(
-                        startTime,
-                        (maxPos === 0
-                          ? data.current.length
-                          : displayPos + numPoints) -
-                          numPoints +
-                          cursorX
-                      )
-                    : null
-                }
-              />
-            </div>
-            <span className="absolute left-0 bottom-1">
-              {format(addMilliseconds(startTime, displayPos), "H:mm:ss")}
-            </span>
-            <span className="absolute right-0 bottom-1">
-              {format(
-                addMilliseconds(
-                  startTime,
-                  maxPos === 0 ? data.current.length : displayPos + numPoints
-                ),
-                "H:mm:ss"
-              )}
-            </span>
-          </div>
+          <div className="w-full h-full relative" ref={canvasDiv}></div>
         </div>
-        <div className="flex-none">
-          <ReactSlider
-            className="w-full h-4"
-            renderTrack={SliderTrack}
-            renderThumb={SliderThumb}
-            min={maxPos === 0 ? -1 : 0}
-            max={maxPos}
-            value={displayPos}
-            disabled={maxPos === 0}
-            onChange={(value) => {
-              // maxPos=0のときスクロール不可、minを-1にすることで右端にする
-              if (maxPos > 0) {
-                setDisplayPos(value);
-                currentPos.current = value;
-                isLatest.current = maxPos === value;
-              }
-            }}
+        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
+          <input
+            type="checkbox"
+            id={`follow-${props.value.member.name}:${props.value.name}`}
+            checked={followRealTime}
+            onChange={(e) => followChart(e.target.checked)}
           />
-          <div className="h-5 relative text-xs">
-            <span className="">最古</span>
-            <span className="absolute right-0">最新</span>
-          </div>
+          <label for={`follow-${props.value.member.name}:${props.value.name}`}>
+            Follow Latest Data
+          </label>
         </div>
       </div>
     </Card>
   );
 }
 
-function SliderTrack(props, state) {
-  return (
-    <div
-      {...props}
-      className={
-        props.className + " absolute inset-0 my-1.5 bg-neutral-300 rounded-full"
-      }
-    />
-  );
-}
-function SliderThumb(props, state) {
-  return (
-    <div
-      {...props}
-      className={
-        props.className +
-        " absolute h-full aspect-square rounded-full " +
-        "bg-green-600 hover:bg-green-500 active:bg-green-500 " +
-        "cursor-grab active:cursor-grabbing"
-      }
-    />
-  );
-}
-
+/*
 interface GraphValueProps {
   x?: number | null;
   y?: number | null;
@@ -296,3 +193,4 @@ function GraphValue(props: GraphValueProps) {
     return <></>;
   }
 }
+*/
