@@ -3,17 +3,22 @@ import { Value } from "webcface";
 import { useState, useEffect, useRef } from "react";
 import TimeChart from "timechart";
 // import ReactSlider from "react-slider";
-// import { format, addMilliseconds } from "date-fns";
+import { format } from "date-fns";
 
 interface Props {
   value: Value;
+}
+
+interface DataPoint {
+  x: number;
+  y: number;
 }
 
 export function ValueCard(props: Props) {
   // const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
   const chart = useRef<TimeChart | null>(null);
-  const data = useRef<{ x: number; y: number }[]>([]);
+  const data = useRef<DataPoint[]>([]);
   const divPreviousWidth = useRef<number>(0);
   const divPreviousHeight = useRef<number>(0);
   const lastUpdate = useRef<Date>(new Date());
@@ -40,7 +45,7 @@ export function ValueCard(props: Props) {
         }
       }
     };
-    onValueChange();
+    props.value.tryGet();
     props.value.member.onSync.on(onValueChange);
     return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
@@ -61,7 +66,7 @@ export function ValueCard(props: Props) {
           series: [
             {
               name: "a",
-              data: data.current,
+              data: data.current as any,
             },
           ],
           baseTime: startTime.current.getTime(),
@@ -80,12 +85,7 @@ export function ValueCard(props: Props) {
             enabled: true,
             xLabel: "Time",
             xFormatter: (x) =>
-              new Date(x + startTime.current.getTime()).toLocaleString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                fractionalSecondDigits: 3,
-              }),
+              format(x + startTime.current.getTime(), "H:mm:ss.SSS"),
           },
           legend: false,
         });
