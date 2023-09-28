@@ -43,13 +43,13 @@ jobs:
         mkdir -p .debpkg/usr/share/webcface/
         cp -r dist .debpkg/usr/share/webcface/
     - uses: jiro4989/build-deb-action@v3
-        with:
-          package: webcface-webui
-          package_root: .debpkg
-          maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
-          version: ${{ github.ref }} # refs/tags/v*.*.*
-          arch: 'all'
-          desc: 'UI Application for WebCFace'
+      with:
+        package: webcface-webui
+        package_root: .debpkg
+        maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
+        version: ${{ github.ref }} # refs/tags/v*.*.*
+        arch: 'all'
+        desc: 'UI Application for WebCFace'
     - name: Release
       uses: docker://antonyurchenko/git-release:v5
       env:
