@@ -1,0 +1,59 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Node.js Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build
+    # - run: npm test
+    - uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: ${{github.workspace}}/dist/*
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: dist
+        path: dist/
+    - name: Create tar.gz archive
+      run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
+    - name: Prepare deb package files
+      run: |
+        mkdir -p .debpkg/usr/share/webcface/
+        cp -r dist .debpkg/usr/share/webcface/
+    - uses: jiro4989/build-deb-action@v3
+      with:
+        package: webcface-webui
+        package_root: .debpkg
+        maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
+        version: ${{ github.ref }} # refs/tags/v*.*.*
+        arch: 'all'
+        desc: 'UI Application for WebCFace'
+    - name: Release
+      uses: docker://antonyurchenko/git-release:v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ALLOW_EMPTY_CHANGELOG: true
+      with:
+        args: *.tar.gz *.deb
