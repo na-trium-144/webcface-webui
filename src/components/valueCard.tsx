@@ -66,7 +66,7 @@ export function ValueCard(props: Props) {
           series: [
             {
               name: "a",
-              data: data.current as any,
+              data: data.current as unknown,
             },
           ],
           baseTime: startTime.current.getTime(),
