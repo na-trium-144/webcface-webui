@@ -56,4 +56,4 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ALLOW_EMPTY_CHANGELOG: true
       with:
-        args: *.tar.gz *.deb
+        args: "*.tar.gz,*.deb"
