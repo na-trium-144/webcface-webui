@@ -8,9 +8,38 @@ import { FuncResultList } from "./components/funcResultList";
 
 export default function App() {
   const client = useRef<Client | null>(null);
+  const clientDefault = useRef<Client | null>(null); // 7530ポートに接続するクライアント
+  const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
-    client.current = new Client("a", window.location.hostname, 7530);
+    clientDefault.current = new Client("", window.location.hostname, 7530);
+    if (parseInt(window.location.port) !== 7530) {
+      clientLocation.current = new Client(
+        "",
+        window.location.hostname,
+        parseInt(window.location.port)
+      );
+    }
+
+    // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
+    const checkConnection = () => {
+      if (clientLocation.current?.connected) {
+        client.current = clientLocation.current;
+        clientDefault.current?.close();
+      } else if (clientDefault.current?.connected) {
+        client.current = clientDefault.current;
+        clientLocation.current?.close();
+      } else {
+        setTimeout(checkConnection, 100);
+      }
+    };
+    setTimeout(checkConnection, 100);
+
+    return () => {
+      clientDefault.current?.close();
+      clientLocation.current?.close();
+    };
   }, []);
+
   useEffect(() => {
     const i = setInterval(() => {
       client.current?.sync();
