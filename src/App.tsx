@@ -12,11 +12,11 @@ export default function App() {
   const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
     clientDefault.current = new Client("", window.location.hostname, 7530);
-    if (window.location.port !== 7530) {
+    if (parseInt(window.location.port) !== 7530) {
       clientLocation.current = new Client(
         "",
         window.location.hostname,
-        window.location.port
+        parseInt(window.location.port)
       );
     }
 
@@ -24,10 +24,10 @@ export default function App() {
     const checkConnection = () => {
       if (clientLocation.current?.connected) {
         client.current = clientLocation.current;
-        clientDefault.current.close();
+        clientDefault.current?.close();
       } else if (clientDefault.current?.connected) {
         client.current = clientDefault.current;
-        clientLocation.current.close();
+        clientLocation.current?.close();
       } else {
         setTimeout(checkConnection, 100);
       }
