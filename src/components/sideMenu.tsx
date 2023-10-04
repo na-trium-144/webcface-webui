@@ -12,6 +12,8 @@ import {
   Abnormal,
   PlayOne,
   Info,
+  FolderOpen,
+  FolderClose,
 } from "@icon-park/react";
 
 const iconFillColor = ["#333", "#6c6"];
@@ -57,6 +59,63 @@ export function SideMenu(props: Props) {
   );
 }
 
+interface FieldGroup {
+  name: string;
+  fullName: string;
+  children: FieldGroup[];
+}
+interface GroupProps {
+  name: string;
+  children: ReactElement[];
+}
+function SideMenuGroup(props: GroupProps) {
+  const [open, setOpen] = useState<boolean>(false);
+  return (
+    <>
+      <div>
+        <SideMenuButton
+          name={props.name}
+          onClick={() => setOpen(!open)}
+          active={open}
+          icon={<FolderClose />}
+          iconActive={<FolderOpen />}
+        />
+      </div>
+      <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
+        {props.children}
+      </ul>
+    </>
+  );
+}
+
+interface ValuesProps {
+  groups: FieldGroup[];
+  member: Member;
+  isOpened: (key: string) => boolean;
+  toggleOpened: (key: string) => void;
+}
+function SideMenuValues(props: ValuesProps) {
+  return props.groups.map((v, vi) => (
+    <li key={vi}>
+      {v.children.length > 0 ? (
+        <SideMenuGroup name={v.name}>
+          <SideMenuValues {...props} groups={v.children} />
+        </SideMenuGroup>
+      ) : (
+        <SideMenuButton2
+          name={v.name}
+          active={props.isOpened(cardKey.value(props.member.name, v.fullName))}
+          onClick={() =>
+            props.toggleOpened(cardKey.value(props.member.name, v.fullName))
+          }
+          icon={<Analysis />}
+          iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
+        />
+      )}
+    </li>
+  ));
+}
+
 interface MemberProps {
   member: Member;
   values: Value[];
@@ -66,6 +125,33 @@ interface MemberProps {
 }
 function SideMenuMember(props: MemberProps) {
   const [open, setOpen] = useState<boolean>(false);
+  const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
+  useEffect(() => {
+    const valueNames: FieldGroup[] = [];
+    for (const v of props.values) {
+      console.log("value", v.name);
+      const vNameSplit = v.name.split(".");
+      let valueNamesCurrent = valueNames;
+      for (let d = 0; d < vNameSplit.length; d++) {
+        console.log(JSON.parse(JSON.stringify(valueNamesCurrent)));
+        const valueNamesFind = valueNamesCurrent.find(
+          (n) => n.name === vNameSplit[d]
+        );
+        if (valueNamesFind == undefined) {
+          const newChildren: FieldGroup[] = [];
+          valueNamesCurrent.push({
+            name: vNameSplit[d],
+            fullName: v.name,
+            children: newChildren,
+          });
+          valueNamesCurrent = newChildren;
+        } else {
+          valueNamesCurrent = valueNamesFind.children;
+        }
+      }
+    }
+    setValueNames(valueNames);
+  }, [props.values]);
   return (
     <>
       <div>
@@ -77,19 +163,7 @@ function SideMenuMember(props: MemberProps) {
         />
       </div>
       <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
-        {props.values.map((v, vi) => (
-          <li key={vi}>
-            <SideMenuButton2
-              name={v.name}
-              active={props.isOpened(cardKey.value(props.member.name, v.name))}
-              onClick={() =>
-                props.toggleOpened(cardKey.value(props.member.name, v.name))
-              }
-              icon={<Analysis />}
-              iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
-            />
-          </li>
-        ))}
+        <SideMenuValues {...props} groups={valueNames} />
         {props.views.map((v, vi) => (
           <li key={vi}>
             <SideMenuButton2
@@ -149,7 +223,9 @@ function SideMenuButton(props: ButtonProps) {
       className="hover:text-green-700 w-full pl-1 flex items-center space-x-1 mt-0.5 "
       onClick={props.onClick}
     >
-      <span>{props.icon}</span>
+      <span>
+        {props.active && props.iconActive ? props.iconActive : props.icon}
+      </span>
       <span>{props.name}</span>
       {props.active ? <Down className="pt-0.5" /> : <Right />}
     </button>
