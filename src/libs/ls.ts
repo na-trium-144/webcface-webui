@@ -1,8 +1,8 @@
-import { Layout } from "react-grid-layout";
+import { LayoutItem } from "react-grid-layout-next";
 
 const lsKey = "webcface-webui";
 interface LS {
-  layout: Layout[],
+  layout: LayoutItem[],
 }
 export function getLS() {
   const emptyLs: LS = {
