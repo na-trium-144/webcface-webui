@@ -141,7 +141,7 @@ export function LayoutMain(props: Props) {
             return (
               <div
                 key={key}
-                data-grid={{ x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2 }}
+                data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}
                 style={{
                   zIndex: 10 + props.openedOrder(key),
                 }}
@@ -162,7 +162,7 @@ export function LayoutMain(props: Props) {
             return (
               <div
                 key={key}
-                data-grid={{ x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 1 }}
+                data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}
                 style={{
                   zIndex: 10 + props.openedOrder(key),
                 }}
@@ -180,7 +180,7 @@ export function LayoutMain(props: Props) {
           return (
             <div
               key={key}
-              data-grid={{ x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 1 }}
+              data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}
               style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
@@ -196,7 +196,7 @@ export function LayoutMain(props: Props) {
           return (
             <div
               key={key}
-              data-grid={{ x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 }}
+              data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
               style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
@@ -212,7 +212,7 @@ export function LayoutMain(props: Props) {
           return (
             <div
               key={key}
-              data-grid={{ x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 }}
+              data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
               style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
