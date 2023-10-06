@@ -10,8 +10,8 @@ interface Props {
 }
 export function ConnectionInfoCard(props: Props) {
   const update = useForceUpdate();
-  console.log(props.client.current?.data.pingStatus);
-  console.log(props.client.current?.data.memberIds);
+  // console.log(props.client.current?.data.pingStatus);
+  // console.log(props.client.current?.data.memberIds);
   useEffect(() => {
     const setListener = (m: Member) => {
       m.onPing.on(update);

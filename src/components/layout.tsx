@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Client, Member, Value, View } from "webcface";
 import "../index.css";
-import "react-grid-layout/css/styles.css";
+import "react-grid-layout-next/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Responsive, WidthProvider, Layout, Layouts } from "react-grid-layout";
-const ResponsiveGridLayout = WidthProvider(Responsive);
+import {
+  ResponsiveGridLayout as ResponsiveGridLayoutOrig,
+  WidthProvider,
+  LayoutItem,
+  ResponsiveLayout,
+  Breakpoint,
+} from "react-grid-layout-next";
+const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOrig);
 import { getLS, saveToLS } from "../libs/ls";
 import { ValueCard } from "./valueCard";
 import { TextCard } from "./textCard";
@@ -36,11 +42,9 @@ export function LayoutMain(props: Props) {
     };
   }, [props.client, update]);
 
-  const [layouts, setLayouts] = useState<Layouts>({});
-  const [lsLayout, setLsLayout] = useState<Layout[]>([]);
-  const currentLayout = useRef<Layout[]>([]);
+  const [layouts, setLayouts] = useState<ResponsiveLayout<Breakpoint>>({});
+  const [lsLayout, setLsLayout] = useState<LayoutItem[]>([]);
   const [layoutsLoadDone, setLayoutsLoadDone] = useState<boolean>(false);
-  const prevLayout = useRef<Layout[]>([]);
 
   const breakpoints = {
     xxl: 1536,
@@ -51,62 +55,53 @@ export function LayoutMain(props: Props) {
     xs: 0,
   };
   const cols = { xxl: 15, xl: 13, lg: 10, md: 7, sm: 6, xs: 2 };
-  const layoutsAll = (layout: Layout[]) => {
+  const layoutsAll = (layout: LayoutItem[]) => {
     return Object.keys(breakpoints).reduce((obj, k) => {
       obj[k] = layout.map((l) => ({ ...l }));
       return obj;
-    }, {} as Layouts);
+    }, {} as ResponsiveLayout<Breakpoint>);
   };
-  const isLayoutSame = (l1: Layout, l2: Layout) => {
-    if (l1.x !== l2.x) return false;
-    if (l1.y !== l2.y) return false;
-    if (l1.w !== l2.w) return false;
-    if (l1.h !== l2.h) return false;
-    return true;
+  const findLsLayout = (
+    i: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    minW: number,
+    minH: number
+  ) => {
+    const l = lsLayout.find((l) => l.i === i);
+    if (l !== undefined) {
+      return { x: l.x, y: l.y, w: l.w, h: l.h, minW, minH };
+    } else {
+      return { x, y, w, h, minW, minH };
+    }
   };
 
   useEffect(() => {
     const ls = getLS().layout;
     setLsLayout(ls);
-    setLayouts(layoutsAll(ls));
+    // setLayouts(layoutsAll(ls));
     setLayoutsLoadDone(true);
   }, []);
 
-  // https://github.com/react-grid-layout/react-grid-layout/issues/1775
-  // onLayoutChangeが正しく呼ばれないバグあり、
-  // 代わりにlayoutを参照で保持し変更されているかこっちでチェックする
-  const onLayoutChange = (layout: Layout[], _layouts: Layouts) => {
-    currentLayout.current = layout;
-    // console.log("layoutchange", layout)
-  };
-  useEffect(() => {
-    const i = setInterval(() => {
-      let changed = false;
-      for (let nli = 0; nli < currentLayout.current.length; ++nli) {
-        const nl = currentLayout.current[nli];
-        const pli = prevLayout.current.findIndex((pl) => pl.i === nl.i);
-        const lli = lsLayout.findIndex((ll) => ll.i === nl.i);
-        if (pli >= 0) {
-          if (!isLayoutSame(prevLayout.current[pli], nl)) {
-            prevLayout.current[pli] = { ...nl };
-            changed = true;
+  const onLayoutChange = ({ layout }: { layout: LayoutItem[] }) => {
+    if (layoutsLoadDone) {
+      setLsLayout((lsLayout) => {
+        for (let nli = 0; nli < layout.length; nli++) {
+          const lli = lsLayout.findIndex((ll) => ll.i === layout[nli].i);
+          if (lli < 0) {
+            lsLayout.push(layout[nli]);
+          } else {
+            lsLayout[lli] = layout[nli];
           }
-        } else {
-          changed = true;
-          if (lli >= 0) {
-            currentLayout.current[nli] = lsLayout[lli];
-          }
-          prevLayout.current.push({ ...currentLayout.current[nli] });
         }
-      }
-      if (changed && layoutsLoadDone) {
-        saveToLS({ layout: currentLayout.current });
-        setLsLayout(currentLayout.current.map((nl) => ({ ...nl })));
-        setLayouts(layoutsAll(currentLayout.current));
-      }
-    }, 100);
-    return () => clearInterval(i);
-  }, [layoutsLoadDone, lsLayout, setLsLayout, setLayouts]);
+        saveToLS({ layout: lsLayout });
+        return lsLayout.slice();
+      });
+      setLayouts(layoutsAll(layout));
+    }
+  };
 
   return (
     <ResponsiveGridLayout
@@ -126,7 +121,7 @@ export function LayoutMain(props: Props) {
           return (
             <div
               key={key}
-              data-grid={{ x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 }}
+              data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}
               style={{
                 zIndex: 10 + props.openedOrder(key),
               }}

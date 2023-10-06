@@ -78,8 +78,8 @@ export function FuncResultList() {
     }
   }, [results, resultsDisplay]);
 
-  console.log(results);
-  console.log(resultsDisplay);
+  // console.log(results);
+  // console.log(resultsDisplay);
   const listShow = resultsDisplay.filter((d) => d.show).length > 0;
 
   return (
