@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Client, Member, Value, View } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
@@ -112,7 +112,6 @@ export function LayoutMain(props: Props) {
       rowHeight={100}
       onLayoutChange={onLayoutChange}
       allowOverlap
-      compactType={null}
       draggableHandle=".MyCardHandle"
     >
       {(() => {
