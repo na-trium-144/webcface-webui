@@ -122,9 +122,6 @@ export function LayoutMain(props: Props) {
             <div
               key={key}
               data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}
-              style={{
-                zIndex: 10 + props.openedOrder(key),
-              }}
               onPointerDown={() => props.moveOrder(key)}
             >
               <ConnectionInfoCard client={props.client} />
@@ -142,9 +139,6 @@ export function LayoutMain(props: Props) {
               <div
                 key={key}
                 data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}
-                style={{
-                  zIndex: 10 + props.openedOrder(key),
-                }}
                 onPointerDown={() => props.moveOrder(key)}
               >
                 <ValueCard value={v} />
@@ -163,9 +157,6 @@ export function LayoutMain(props: Props) {
               <div
                 key={key}
                 data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}
-                style={{
-                  zIndex: 10 + props.openedOrder(key),
-                }}
                 onPointerDown={() => props.moveOrder(key)}
               >
                 <ViewCard view={v} />
@@ -181,7 +172,6 @@ export function LayoutMain(props: Props) {
             <div
               key={key}
               data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
               <TextCard member={m} />
@@ -197,7 +187,6 @@ export function LayoutMain(props: Props) {
             <div
               key={key}
               data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
               <FuncCard member={m} />
@@ -213,7 +202,6 @@ export function LayoutMain(props: Props) {
             <div
               key={key}
               data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
               onPointerDown={() => props.moveOrder(key)}
             >
               <LogCard member={m} />
