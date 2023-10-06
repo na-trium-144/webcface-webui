@@ -1,3 +1,10 @@
+## [1.0.3] - 2023-10-06
+### Fixed
+* レイアウトが保存されなかったりするバグを修正 (#26)
+### Changed
+* react-grid-layoutからreact-grid-layout-nextを使うように変更
+* updated dependencies
+
 ## [1.0.2] - 2023-10-03
 ### Fixed
 * viewのbuttonの色が反映されないのを修正 (#21)
