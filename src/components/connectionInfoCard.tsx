@@ -27,7 +27,7 @@ export function ConnectionInfoCard(props: Props) {
   }, [props.client, update]);
   return (
     <Card title={`Connection Info`}>
-      <div>
+      <div className="w-full h-full overflow-auto">
         <p style={{ marginBottom: -4 }}>
           <span className="text-sm">Server:</span>
           <span className="font-mono pl-2">
@@ -51,11 +51,13 @@ export function ConnectionInfoCard(props: Props) {
         <ul>
           {props.client.current?.members().map((m, i) => (
             <li key={i} className="pl-4 flex items-center">
-              <span className="text-sm">{m.name}</span>
-              <span className="text-xs pl-1">({m.remoteAddr})</span>
-              <span className="text-xs font-mono pl-2">{m.libName}</span>
-              <span className="text-xs font-mono pl-1.5">{m.libVersion}</span>
-              <div className="pl-2">
+              <span className="text-sm">
+                {m.name}
+                {m.remoteAddr === "127.0.0.1" || (
+                  <span className="text-xs pl-0.5">({m.remoteAddr})</span>
+                )}
+              </span>
+              <div className="pl-1">
                 {m.pingStatus !== null ? (
                   <Wifi
                     fill={
@@ -74,6 +76,9 @@ export function ConnectionInfoCard(props: Props) {
                 {m.pingStatus !== null ? m.pingStatus : "?"}
               </span>
               <span className="text-sm pl-1">ms</span>
+              <span className="text-sm pl-1">:</span>
+              <span className="text-xs font-mono pl-1">{m.libName}</span>
+              <span className="text-xs font-mono pl-1.5">{m.libVersion}</span>
             </li>
           ))}
         </ul>
