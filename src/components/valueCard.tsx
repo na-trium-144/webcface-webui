@@ -67,7 +67,8 @@ export function ValueCard(props: Props) {
             {
               name: "a",
               // timechartがDataPointsBufferクラスをexportしてなさそうなのでanyで渡す
-              data: data.current as any, // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+              data: data.current as any, 
             },
           ],
           baseTime: startTime.current.getTime(),
