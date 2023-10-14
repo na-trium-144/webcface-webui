@@ -14,8 +14,9 @@ export interface LocalStorageData {
 }
 export type LocalStorage = LocalStorageData & {
   init: boolean;
-  setLayout: (layout: LayoutItem[]) => void;
-  setOpenedCards: (openedCards: string[]) => void;
+  setLayout: (
+    layout: LayoutItem[] | ((layout: LayoutItem[]) => LayoutItem[])
+  ) => void;
   isOpened: (key: string) => boolean;
   toggleOpened: (key: string) => void;
 };
@@ -25,7 +26,6 @@ const LocalStorageContext = createContext<LocalStorage>({
   openedCards: [],
   init: false,
   setLayout: () => undefined,
-  setOpenedCards: () => undefined,
   isOpened: () => false,
   toggleOpened: () => undefined,
 });

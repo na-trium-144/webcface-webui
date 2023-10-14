@@ -59,8 +59,6 @@ interface MemberProps {
   member: Member;
   values: Value[];
   views: View[];
-  isOpened: (key: string) => boolean;
-  toggleOpened: (key: string) => void;
 }
 function SideMenuMember(props: MemberProps) {
   const ls = useLocalStorage();
