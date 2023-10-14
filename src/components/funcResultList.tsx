@@ -1,4 +1,4 @@
-import { useFuncResult } from "./funcResult";
+import { useFuncResult } from "./funcResultProvider";
 import { useState, useEffect } from "react";
 
 interface ResultDisplay {

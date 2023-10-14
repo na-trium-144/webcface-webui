@@ -11,7 +11,6 @@ import {
   Breakpoint,
 } from "react-grid-layout-next";
 const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOrig);
-import { getLS, saveToLS } from "../libs/ls";
 import { ValueCard } from "./valueCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
@@ -19,13 +18,11 @@ import { LogCard } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { useForceUpdate } from "../libs/forceUpdate";
+import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
 
 interface Props {
-  client: { current: Client | null };
-  isOpened: (key: string) => boolean;
-  openedOrder: (key: string) => number;
-  moveOrder: (key: string) => void;
+  client: Client | null ;
 }
 
 export function LayoutMain(props: Props) {
@@ -36,15 +33,14 @@ export function LayoutMain(props: Props) {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
     };
-    props.client.current?.onMemberEntry.on(onMembersChange);
+    props.client?.onMemberEntry.on(onMembersChange);
     return () => {
-      props.client.current?.onMemberEntry.off(onMembersChange);
+      props.client?.onMemberEntry.off(onMembersChange);
     };
   }, [props.client, update]);
 
   const [layouts, setLayouts] = useState<ResponsiveLayout<Breakpoint>>({});
-  const [lsLayout, setLsLayout] = useState<LayoutItem[]>([]);
-  const [layoutsLoadDone, setLayoutsLoadDone] = useState<boolean>(false);
+  const ls: LocalStorage = useLocalStorage();
 
   const breakpoints = {
     xxl: 1536,
@@ -70,7 +66,7 @@ export function LayoutMain(props: Props) {
     minW: number,
     minH: number
   ) => {
-    const l = lsLayout.find((l) => l.i === i);
+    const l = ls.layout.find((l) => l.i === i);
     if (l !== undefined) {
       return { x: l.x, y: l.y, w: l.w, h: l.h, minW, minH };
     } else {
@@ -78,16 +74,9 @@ export function LayoutMain(props: Props) {
     }
   };
 
-  useEffect(() => {
-    const ls = getLS().layout;
-    setLsLayout(ls);
-    // setLayouts(layoutsAll(ls));
-    setLayoutsLoadDone(true);
-  }, []);
-
   const onLayoutChange = ({ layout }: { layout: LayoutItem[] }) => {
-    if (layoutsLoadDone) {
-      setLsLayout((lsLayout) => {
+    if (ls.init) {
+      ls.setLayout((lsLayout: LayoutItem[]) => {
         for (let nli = 0; nli < layout.length; nli++) {
           const lli = lsLayout.findIndex((ll) => ll.i === layout[nli].i);
           if (lli < 0) {
@@ -96,7 +85,6 @@ export function LayoutMain(props: Props) {
             lsLayout[lli] = layout[nli];
           }
         }
-        saveToLS({ layout: lsLayout });
         return lsLayout.slice();
       });
       setLayouts(layoutsAll(layout));
@@ -116,93 +104,69 @@ export function LayoutMain(props: Props) {
     >
       {(() => {
         const key = cardKey.connectionInfo();
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
               <ConnectionInfoCard client={props.client} />
             </div>
           );
         }
       })()}
-      {props.client.current
+      {props.client
         ?.members()
         .reduce((prev, m) => prev.concat(m.values()), [] as Value[])
         .map((v) => {
           const key = cardKey.value(v.member.name, v.name);
-          if (props.isOpened(key)) {
+          if (ls.isOpened(key)) {
             return (
-              <div
-                key={key}
-                data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}
-                onPointerDown={() => props.moveOrder(key)}
-              >
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}>
                 <ValueCard value={v} />
               </div>
             );
           }
           return null;
         })}
-      {props.client.current
+      {props.client
         ?.members()
         .reduce((prev, m) => prev.concat(m.views()), [] as View[])
         .map((v) => {
           const key = cardKey.view(v.member.name, v.name);
-          if (props.isOpened(key)) {
+          if (ls.isOpened(key)) {
             return (
-              <div
-                key={key}
-                data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}
-                onPointerDown={() => props.moveOrder(key)}
-              >
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
                 <ViewCard view={v} />
               </div>
             );
           }
           return null;
         })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.text(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}>
               <TextCard member={m} />
             </div>
           );
         }
         return null;
       })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.func(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
               <FuncCard member={m} />
             </div>
           );
         }
         return null;
       })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.log(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
               <LogCard member={m} />
             </div>
           );

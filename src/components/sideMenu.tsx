@@ -2,6 +2,7 @@ import { useState, useEffect, ReactElement } from "react";
 import { Client, Member, Value, View } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
+import { useLocalStorage } from "./lsProvider";
 import {
   BroadcastRadio,
   Right,
@@ -17,11 +18,10 @@ import {
 const iconFillColor = ["#333", "#6c6"];
 
 interface Props {
-  client: { current: Client | null };
-  isOpened: (key: string) => boolean;
-  toggleOpened: (key: string) => void;
+  client: Client | null;
 }
 export function SideMenu(props: Props) {
+  const ls = useLocalStorage();
   const update = useForceUpdate();
   useEffect(() => {
     const onMembersChange = (m: Member) => {
@@ -29,28 +29,26 @@ export function SideMenu(props: Props) {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
     };
-    props.client.current?.onMemberEntry.on(onMembersChange);
+    props.client?.onMemberEntry.on(onMembersChange);
     return () => {
-      props.client.current?.onMemberEntry.off(onMembersChange);
+      props.client?.onMemberEntry.off(onMembersChange);
     };
   }, [props.client, update]);
   return (
     <>
       <SideMenuButton2
         name="Connection Info"
-        active={props.isOpened(cardKey.connectionInfo())}
-        onClick={() => props.toggleOpened(cardKey.connectionInfo())}
+        active={ls.isOpened(cardKey.connectionInfo())}
+        onClick={() => ls.toggleOpened(cardKey.connectionInfo())}
         icon={<Info />}
         iconActive={<Info theme="two-tone" fill={iconFillColor} />}
       />
-      {props.client.current?.members().map((m, mi) => (
+      {props.client?.members().map((m, mi) => (
         <SideMenuMember
           key={mi}
           member={m}
           values={m.values()}
           views={m.views()}
-          isOpened={props.isOpened}
-          toggleOpened={props.toggleOpened}
         />
       ))}
     </>
@@ -65,6 +63,7 @@ interface MemberProps {
   toggleOpened: (key: string) => void;
 }
 function SideMenuMember(props: MemberProps) {
+  const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
   return (
     <>
@@ -81,9 +80,9 @@ function SideMenuMember(props: MemberProps) {
           <li key={vi}>
             <SideMenuButton2
               name={v.name}
-              active={props.isOpened(cardKey.value(props.member.name, v.name))}
+              active={ls.isOpened(cardKey.value(props.member.name, v.name))}
               onClick={() =>
-                props.toggleOpened(cardKey.value(props.member.name, v.name))
+                ls.toggleOpened(cardKey.value(props.member.name, v.name))
               }
               icon={<Analysis />}
               iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
@@ -94,9 +93,9 @@ function SideMenuMember(props: MemberProps) {
           <li key={vi}>
             <SideMenuButton2
               name={v.name}
-              active={props.isOpened(cardKey.view(props.member.name, v.name))}
+              active={ls.isOpened(cardKey.view(props.member.name, v.name))}
               onClick={() =>
-                props.toggleOpened(cardKey.view(props.member.name, v.name))
+                ls.toggleOpened(cardKey.view(props.member.name, v.name))
               }
               icon={<PageTemplate />}
               iconActive={
@@ -108,8 +107,8 @@ function SideMenuMember(props: MemberProps) {
         <li>
           <SideMenuButton2
             name={"Text Variables"}
-            active={props.isOpened(cardKey.text(props.member.name))}
-            onClick={() => props.toggleOpened(cardKey.text(props.member.name))}
+            active={ls.isOpened(cardKey.text(props.member.name))}
+            onClick={() => ls.toggleOpened(cardKey.text(props.member.name))}
             icon={<TextIcon />}
             iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
           />
@@ -117,8 +116,8 @@ function SideMenuMember(props: MemberProps) {
         <li>
           <SideMenuButton2
             name={"Logs"}
-            active={props.isOpened(cardKey.log(props.member.name))}
-            onClick={() => props.toggleOpened(cardKey.log(props.member.name))}
+            active={ls.isOpened(cardKey.log(props.member.name))}
+            onClick={() => ls.toggleOpened(cardKey.log(props.member.name))}
             icon={<Abnormal />}
             iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
           />
@@ -126,8 +125,8 @@ function SideMenuMember(props: MemberProps) {
         <li>
           <SideMenuButton2
             name={"Functions"}
-            active={props.isOpened(cardKey.func(props.member.name))}
-            onClick={() => props.toggleOpened(cardKey.func(props.member.name))}
+            active={ls.isOpened(cardKey.func(props.member.name))}
+            onClick={() => ls.toggleOpened(cardKey.func(props.member.name))}
             icon={<PlayOne />}
             iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
           />
