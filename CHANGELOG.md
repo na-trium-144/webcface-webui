@@ -1,3 +1,11 @@
+## [1.0.4] - 2023-10-14
+### Fixed
+* connectionInfo画面を開いていないときもping statusを受信するようにした (#36)
+### Changed
+* openedCardsがlocalStorageに保存されるようにした (#36)
+* update webcface-js to 1.0.2
+* updated dependencies
+
 ## [1.0.3] - 2023-10-06
 ### Fixed
 * レイアウトが保存されなかったりするバグを修正 (#26)

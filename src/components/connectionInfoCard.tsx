@@ -6,22 +6,22 @@ import webuiVersion from "../libs/version";
 import { Wifi, CloseWifi } from "@icon-park/react";
 
 interface Props {
-  client: { current: Client | null };
+  client: Client | null;
 }
 export function ConnectionInfoCard(props: Props) {
   const update = useForceUpdate();
-  // console.log(props.client.current?.data.pingStatus);
-  // console.log(props.client.current?.data.memberIds);
+  // console.log(props.client?.data.pingStatus);
+  // console.log(props.client?.data.memberIds);
   useEffect(() => {
     const setListener = (m: Member) => {
       m.onPing.on(update);
     };
-    if (props.client.current && props.client.current.members().length > 0) {
-      setListener(props.client.current.members()[0]);
+    if (props.client && props.client.members().length > 0) {
+      setListener(props.client.members()[0]);
     } else {
-      props.client.current?.onMemberEntry.once(setListener);
+      props.client?.onMemberEntry.once(setListener);
       return () => {
-        props.client.current?.onMemberEntry.off(setListener);
+        props.client?.onMemberEntry.off(setListener);
       };
     }
   }, [props.client, update]);
@@ -31,10 +31,10 @@ export function ConnectionInfoCard(props: Props) {
         <p style={{ marginBottom: -4 }}>
           <span className="text-sm">Server:</span>
           <span className="font-mono pl-2">
-            {props.client.current?.serverName}
+            {props.client?.serverName}
           </span>
           <span className="font-mono pl-2">
-            {props.client.current?.serverVersion}
+            {props.client?.serverVersion}
           </span>
         </p>
         <p style={{ marginBottom: -4 }}>
@@ -49,7 +49,7 @@ export function ConnectionInfoCard(props: Props) {
           <span className="text-sm">Members:</span>
         </p>
         <ul>
-          {props.client.current?.members().map((m, i) => (
+          {props.client?.members().map((m, i) => (
             <li key={i} className="pl-4 flex items-center">
               <span className="text-sm">
                 {m.name}

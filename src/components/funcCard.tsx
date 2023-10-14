@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Member, Func, Arg, valType } from "webcface";
-import { useFuncResult } from "./funcResult";
+import { useFuncResult } from "./funcResultProvider";
 
 interface Props {
   member: Member;
