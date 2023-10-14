@@ -1,11 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Client, Member, Value, View } from "webcface";
 import "../index.css";
-import "react-grid-layout/css/styles.css";
+import "react-grid-layout-next/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Responsive, WidthProvider, Layout, Layouts } from "react-grid-layout";
-const ResponsiveGridLayout = WidthProvider(Responsive);
-import { getLS, saveToLS } from "../libs/ls";
+import {
+  ResponsiveGridLayout as ResponsiveGridLayoutOrig,
+  WidthProvider,
+  LayoutItem,
+  ResponsiveLayout,
+  Breakpoint,
+} from "react-grid-layout-next";
+const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOrig);
 import { ValueCard } from "./valueCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
@@ -13,13 +18,11 @@ import { LogCard } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { useForceUpdate } from "../libs/forceUpdate";
+import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
 
 interface Props {
-  client: { current: Client | null };
-  isOpened: (key: string) => boolean;
-  openedOrder: (key: string) => number;
-  moveOrder: (key: string) => void;
+  client: Client | null ;
 }
 
 export function LayoutMain(props: Props) {
@@ -30,17 +33,14 @@ export function LayoutMain(props: Props) {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
     };
-    props.client.current?.onMemberEntry.on(onMembersChange);
+    props.client?.onMemberEntry.on(onMembersChange);
     return () => {
-      props.client.current?.onMemberEntry.off(onMembersChange);
+      props.client?.onMemberEntry.off(onMembersChange);
     };
   }, [props.client, update]);
 
-  const [layouts, setLayouts] = useState<Layouts>({});
-  const [lsLayout, setLsLayout] = useState<Layout[]>([]);
-  const currentLayout = useRef<Layout[]>([]);
-  const [layoutsLoadDone, setLayoutsLoadDone] = useState<boolean>(false);
-  const prevLayout = useRef<Layout[]>([]);
+  const [layouts, setLayouts] = useState<ResponsiveLayout<Breakpoint>>({});
+  const ls: LocalStorage = useLocalStorage();
 
   const breakpoints = {
     xxl: 1536,
@@ -51,62 +51,45 @@ export function LayoutMain(props: Props) {
     xs: 0,
   };
   const cols = { xxl: 15, xl: 13, lg: 10, md: 7, sm: 6, xs: 2 };
-  const layoutsAll = (layout: Layout[]) => {
+  const layoutsAll = (layout: LayoutItem[]) => {
     return Object.keys(breakpoints).reduce((obj, k) => {
       obj[k] = layout.map((l) => ({ ...l }));
       return obj;
-    }, {} as Layouts);
+    }, {} as ResponsiveLayout<Breakpoint>);
   };
-  const isLayoutSame = (l1: Layout, l2: Layout) => {
-    if (l1.x !== l2.x) return false;
-    if (l1.y !== l2.y) return false;
-    if (l1.w !== l2.w) return false;
-    if (l1.h !== l2.h) return false;
-    return true;
+  const findLsLayout = (
+    i: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    minW: number,
+    minH: number
+  ) => {
+    const l = ls.layout.find((l) => l.i === i);
+    if (l !== undefined) {
+      return { x: l.x, y: l.y, w: l.w, h: l.h, minW, minH };
+    } else {
+      return { x, y, w, h, minW, minH };
+    }
   };
 
-  useEffect(() => {
-    const ls = getLS().layout;
-    setLsLayout(ls);
-    setLayouts(layoutsAll(ls));
-    setLayoutsLoadDone(true);
-  }, []);
-
-  // https://github.com/react-grid-layout/react-grid-layout/issues/1775
-  // onLayoutChangeが正しく呼ばれないバグあり、
-  // 代わりにlayoutを参照で保持し変更されているかこっちでチェックする
-  const onLayoutChange = (layout: Layout[], _layouts: Layouts) => {
-    currentLayout.current = layout;
-    // console.log("layoutchange", layout)
-  };
-  useEffect(() => {
-    const i = setInterval(() => {
-      let changed = false;
-      for (let nli = 0; nli < currentLayout.current.length; ++nli) {
-        const nl = currentLayout.current[nli];
-        const pli = prevLayout.current.findIndex((pl) => pl.i === nl.i);
-        const lli = lsLayout.findIndex((ll) => ll.i === nl.i);
-        if (pli >= 0) {
-          if (!isLayoutSame(prevLayout.current[pli], nl)) {
-            prevLayout.current[pli] = { ...nl };
-            changed = true;
+  const onLayoutChange = ({ layout }: { layout: LayoutItem[] }) => {
+    if (ls.init) {
+      ls.setLayout((lsLayout: LayoutItem[]) => {
+        for (let nli = 0; nli < layout.length; nli++) {
+          const lli = lsLayout.findIndex((ll) => ll.i === layout[nli].i);
+          if (lli < 0) {
+            lsLayout.push(layout[nli]);
+          } else {
+            lsLayout[lli] = layout[nli];
           }
-        } else {
-          changed = true;
-          if (lli >= 0) {
-            currentLayout.current[nli] = lsLayout[lli];
-          }
-          prevLayout.current.push({ ...currentLayout.current[nli] });
         }
-      }
-      if (changed && layoutsLoadDone) {
-        saveToLS({ layout: currentLayout.current });
-        setLsLayout(currentLayout.current.map((nl) => ({ ...nl })));
-        setLayouts(layoutsAll(currentLayout.current));
-      }
-    }, 100);
-    return () => clearInterval(i);
-  }, [layoutsLoadDone, lsLayout, setLsLayout, setLayouts]);
+        return lsLayout.slice();
+      });
+      setLayouts(layoutsAll(layout));
+    }
+  };
 
   return (
     <ResponsiveGridLayout
@@ -117,110 +100,73 @@ export function LayoutMain(props: Props) {
       rowHeight={100}
       onLayoutChange={onLayoutChange}
       allowOverlap
-      compactType={null}
       draggableHandle=".MyCardHandle"
     >
       {(() => {
         const key = cardKey.connectionInfo();
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={{ x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 }}
-              style={{
-                zIndex: 10 + props.openedOrder(key),
-              }}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
               <ConnectionInfoCard client={props.client} />
             </div>
           );
         }
       })()}
-      {props.client.current
+      {props.client
         ?.members()
         .reduce((prev, m) => prev.concat(m.values()), [] as Value[])
         .map((v) => {
           const key = cardKey.value(v.member.name, v.name);
-          if (props.isOpened(key)) {
+          if (ls.isOpened(key)) {
             return (
-              <div
-                key={key}
-                data-grid={{ x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2 }}
-                style={{
-                  zIndex: 10 + props.openedOrder(key),
-                }}
-                onPointerDown={() => props.moveOrder(key)}
-              >
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}>
                 <ValueCard value={v} />
               </div>
             );
           }
           return null;
         })}
-      {props.client.current
+      {props.client
         ?.members()
         .reduce((prev, m) => prev.concat(m.views()), [] as View[])
         .map((v) => {
           const key = cardKey.view(v.member.name, v.name);
-          if (props.isOpened(key)) {
+          if (ls.isOpened(key)) {
             return (
-              <div
-                key={key}
-                data-grid={{ x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 1 }}
-                style={{
-                  zIndex: 10 + props.openedOrder(key),
-                }}
-                onPointerDown={() => props.moveOrder(key)}
-              >
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
                 <ViewCard view={v} />
               </div>
             );
           }
           return null;
         })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.text(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={{ x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 1 }}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}>
               <TextCard member={m} />
             </div>
           );
         }
         return null;
       })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.func(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={{ x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 }}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
               <FuncCard member={m} />
             </div>
           );
         }
         return null;
       })}
-      {props.client.current?.members().map((m) => {
+      {props.client?.members().map((m) => {
         const key = cardKey.log(m.name);
-        if (props.isOpened(key)) {
+        if (ls.isOpened(key)) {
           return (
-            <div
-              key={key}
-              data-grid={{ x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 }}
-              style={{ zIndex: 10 + props.openedOrder(key) }}
-              onPointerDown={() => props.moveOrder(key)}
-            >
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
               <LogCard member={m} />
             </div>
           );

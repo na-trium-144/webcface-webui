@@ -7,7 +7,7 @@ import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
 
 export default function App() {
-  const client = useRef<Client | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const clientDefault = useRef<Client | null>(null); // 7530ポートに接続するクライアント
   const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
@@ -23,10 +23,10 @@ export default function App() {
     // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
     const checkConnection = () => {
       if (clientLocation.current?.connected) {
-        client.current = clientLocation.current;
+        setClient(clientLocation.current);
         clientDefault.current?.close();
       } else if (clientDefault.current?.connected) {
-        client.current = clientDefault.current;
+        setClient(clientDefault.current);
         clientLocation.current?.close();
       } else {
         setTimeout(checkConnection, 100);
@@ -42,27 +42,14 @@ export default function App() {
 
   useEffect(() => {
     const i = setInterval(() => {
-      client.current?.sync();
+      client?.pingStatus;
+      client?.sync();
     }, 100);
     return () => clearInterval(i);
   }, [client]);
 
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const [openedCards, setOpenedCards] = useState<string[]>([]);
-  const isOpened = (key: string) => openedCards.includes(key);
-  const openedOrder = (key: string) => openedCards.indexOf(key) || 0;
-  const toggleOpened = (key: string) => {
-    if (openedCards.includes(key)) {
-      setOpenedCards(openedCards.filter((n) => n !== key));
-    } else {
-      setOpenedCards(openedCards.concat([key]));
-    }
-  };
-  const moveOrder = (key: string) => {
-    setOpenedCards(openedCards.filter((n) => n !== key).concat([key]));
-  };
 
-  console.log("app update");
   return (
     <div className="absolute w-full min-w-min min-h-screen h-max bg-neutral-100 -z-50">
       <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
@@ -80,19 +67,10 @@ export default function App() {
             : "ease-in opacity-0 scale-90 -z-10 ")
         }
       >
-        <SideMenu
-          client={client}
-          isOpened={isOpened}
-          toggleOpened={toggleOpened}
-        />
+        <SideMenu client={client} />
       </nav>
       <main className="p-2">
-        <LayoutMain
-          client={client}
-          isOpened={isOpened}
-          openedOrder={openedOrder}
-          moveOrder={moveOrder}
-        />
+        <LayoutMain client={client} />
       </main>
       <FuncResultList />
     </div>
