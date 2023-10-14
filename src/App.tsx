@@ -42,6 +42,7 @@ export default function App() {
 
   useEffect(() => {
     const i = setInterval(() => {
+      client.current?.pingStatus;
       client.current?.sync();
     }, 100);
     return () => clearInterval(i);
