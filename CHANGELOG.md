@@ -1,3 +1,7 @@
+## [1.0.5] - 2023-10-20
+### Changed
+* update webcface-js to 1.0.3
+
 ## [1.0.4] - 2023-10-14
 ### Fixed
 * connectionInfo画面を開いていないときもping statusを受信するようにした (#36)
