@@ -160,7 +160,12 @@ function SideMenuMember(props: MemberProps) {
         />
       </div>
       <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
-        <SideMenuValues {...props} groups={valueNames} />
+        <SideMenuValues
+          {...props}
+          groups={valueNames}
+          isOpened={ls.isOpened}
+          toggleOpened={ls.toggleOpened}
+        />
         {props.views.map((v, vi) => (
           <li key={vi}>
             <SideMenuButton2
