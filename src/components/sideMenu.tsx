@@ -65,7 +65,7 @@ interface FieldGroup {
 }
 interface GroupProps {
   name: string;
-  children: ReactElement[];
+  children: ReactElement | ReactElement[];
 }
 function SideMenuGroup(props: GroupProps) {
   const [open, setOpen] = useState<boolean>(false);
