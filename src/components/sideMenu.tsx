@@ -145,7 +145,7 @@ function SideMenuMember(props: MemberProps) {
     const update = () => {
       setTextNum(props.member.texts().length);
       setFuncNum(props.member.funcs().length);
-      setHasLog(props.member.log().get().length);
+      setHasLog(props.member.log().get().length > 0);
     };
     props.member.onTextEntry.on(update);
     props.member.onFuncEntry.on(update);
