@@ -60,6 +60,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
+  kind: 0 | 3 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -95,19 +96,33 @@ interface ValuesProps {
 function SideMenuValues(props: ValuesProps) {
   return props.groups.map((v, vi) => (
     <li key={vi}>
-      {v.children.length > 0 ? (
+      {v.kind === null ? (
         <SideMenuGroup name={v.name}>
           <SideMenuValues {...props} groups={v.children} />
         </SideMenuGroup>
       ) : (
         <SideMenuButton2
           name={v.name}
-          active={props.isOpened(cardKey.value(props.member.name, v.fullName))}
+          active={props.isOpened(
+            v.kind === 0
+              ? cardKey.value(props.member.name, v.fullName)
+              : cardKey.view(props.member.name, v.fullName)
+          )}
           onClick={() =>
-            props.toggleOpened(cardKey.value(props.member.name, v.fullName))
+            props.toggleOpened(
+              v.kind === 0
+                ? cardKey.value(props.member.name, v.fullName)
+                : cardKey.view(props.member.name, v.fullName)
+            )
           }
-          icon={<Analysis />}
-          iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
+          icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
+          iconActive={
+            v.kind === 0 ? (
+              <Analysis theme="two-tone" fill={iconFillColor} />
+            ) : (
+              <PageTemplate theme="two-tone" fill={iconFillColor} />
+            )
+          }
         />
       )}
     </li>
@@ -125,30 +140,36 @@ function SideMenuMember(props: MemberProps) {
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
-    for (const v of props.values) {
-      console.log("value", v.name);
-      const vNameSplit = v.name.split(".");
-      let valueNamesCurrent = valueNames;
-      for (let d = 0; d < vNameSplit.length; d++) {
-        console.log(JSON.parse(JSON.stringify(valueNamesCurrent)));
-        const valueNamesFind = valueNamesCurrent.find(
-          (n) => n.name === vNameSplit[d]
-        );
-        if (valueNamesFind == undefined) {
-          const newChildren: FieldGroup[] = [];
-          valueNamesCurrent.push({
-            name: vNameSplit[d],
-            fullName: v.name,
-            children: newChildren,
-          });
-          valueNamesCurrent = newChildren;
-        } else {
-          valueNamesCurrent = valueNamesFind.children;
+    const sortValueNames = (values: Value[] | View[], kind: 0 | 3) => {
+      for (const v of values) {
+        const vNameSplit = v.name.split(".");
+        let valueNamesCurrent = valueNames;
+        for (let d = 0; d < vNameSplit.length; d++) {
+          const valueNamesFind = valueNamesCurrent.find(
+            (n) => n.name === vNameSplit[d]
+          );
+          if (valueNamesFind == undefined) {
+            const newChildren: FieldGroup[] = [];
+            valueNamesCurrent.push({
+              name: vNameSplit[d],
+              fullName: v.name,
+              children: newChildren,
+              kind: d === vNameSplit.length - 1 ? kind : null,
+            });
+            valueNamesCurrent.sort((a, b) =>
+              a.name > b.name ? 1 : a.name < b.name ? -1 : 0
+            );
+            valueNamesCurrent = newChildren;
+          } else {
+            valueNamesCurrent = valueNamesFind.children;
+          }
         }
       }
-    }
+    };
+    sortValueNames(props.values, 0);
+    sortValueNames(props.views, 3);
     setValueNames(valueNames);
-  }, [props.values]);
+  }, [props.values, props.views]);
   return (
     <>
       <div>
@@ -166,21 +187,6 @@ function SideMenuMember(props: MemberProps) {
           isOpened={ls.isOpened}
           toggleOpened={ls.toggleOpened}
         />
-        {props.views.map((v, vi) => (
-          <li key={vi}>
-            <SideMenuButton2
-              name={v.name}
-              active={ls.isOpened(cardKey.view(props.member.name, v.name))}
-              onClick={() =>
-                ls.toggleOpened(cardKey.view(props.member.name, v.name))
-              }
-              icon={<PageTemplate />}
-              iconActive={
-                <PageTemplate theme="two-tone" fill={iconFillColor} />
-              }
-            />
-          </li>
-        ))}
         <li>
           <SideMenuButton2
             name={"Text Variables"}
