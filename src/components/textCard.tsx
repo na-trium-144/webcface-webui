@@ -9,6 +9,7 @@ interface Props {
 export function TextCard(props: Props) {
   const update = useForceUpdate();
   useEffect(() => {
+    props.member.texts().map((t: Text) => t.on(update));
     const onTextEntry = (t: Text) => {
       t.on(update);
       update();
@@ -16,6 +17,7 @@ export function TextCard(props: Props) {
     props.member.onTextEntry.on(onTextEntry);
     return () => {
       props.member.onTextEntry.off(onTextEntry);
+      props.member.texts().map((t: Text) => t.off(update));
     };
   }, [props.member, update]);
   return (
