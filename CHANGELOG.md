@@ -1,3 +1,14 @@
+## [1.0.6] - 2023-11-20
+### Added
+* webui自体のサーバーへの接続状態の表示を追加
+### Fixed
+* 関数やtextが多い時カードをはみ出して表示されるのを修正
+### Changed
+* value,viewをメニューでフォルダ分けして表示するようにした (#24)
+* text, func, viewはデータがなければメニューに表示しないようにした (#63)
+* textとconnectionInfoの表示更新タイミングの修正
+* updated dependencies
+
 ## [1.0.5] - 2023-10-20
 ### Changed
 * update webcface-js to 1.0.3
