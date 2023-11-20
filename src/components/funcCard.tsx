@@ -17,13 +17,19 @@ export function FuncCard(props: Props) {
   }, [props.member, update]);
   return (
     <Card title={`${props.member.name} Functions`}>
-      <ul className="list-none">
-        {props.member.funcs().map((v) => (
-          <li key={v.name}>
-            <FuncLine func={v} />
-          </li>
-        ))}
-      </ul>
+      <div className="h-full overflow-y-auto">
+        <ul className="list-none">
+          {props.member
+            .funcs()
+            .slice()
+            .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+            .map((v) => (
+              <li key={v.name}>
+                <FuncLine func={v} />
+              </li>
+            ))}
+        </ul>
+      </div>
     </Card>
   );
 }

@@ -138,6 +138,25 @@ function SideMenuMember(props: MemberProps) {
   const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
+  const [textNum, setTextNum] = useState<number>(0);
+  const [funcNum, setFuncNum] = useState<number>(0);
+  const [hasLog, setHasLog] = useState<boolean>(false);
+  useEffect(() => {
+    const update = () => {
+      setTextNum(props.member.texts().length);
+      setFuncNum(props.member.funcs().length);
+      setHasLog(props.member.log().get().length > 0);
+    };
+    props.member.onTextEntry.on(update);
+    props.member.onFuncEntry.on(update);
+    props.member.log().on(update);
+    update();
+    return () => {
+      props.member.onTextEntry.off(update);
+      props.member.onFuncEntry.off(update);
+      props.member.log().off(update);
+    };
+  }, [props.member]);
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (values: Value[] | View[], kind: 0 | 3) => {
@@ -187,33 +206,39 @@ function SideMenuMember(props: MemberProps) {
           isOpened={ls.isOpened}
           toggleOpened={ls.toggleOpened}
         />
-        <li>
-          <SideMenuButton2
-            name={"Text Variables"}
-            active={ls.isOpened(cardKey.text(props.member.name))}
-            onClick={() => ls.toggleOpened(cardKey.text(props.member.name))}
-            icon={<TextIcon />}
-            iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
-          />
-        </li>
-        <li>
-          <SideMenuButton2
-            name={"Logs"}
-            active={ls.isOpened(cardKey.log(props.member.name))}
-            onClick={() => ls.toggleOpened(cardKey.log(props.member.name))}
-            icon={<Abnormal />}
-            iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
-          />
-        </li>
-        <li>
-          <SideMenuButton2
-            name={"Functions"}
-            active={ls.isOpened(cardKey.func(props.member.name))}
-            onClick={() => ls.toggleOpened(cardKey.func(props.member.name))}
-            icon={<PlayOne />}
-            iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
-          />
-        </li>
+        {textNum > 0 && (
+          <li>
+            <SideMenuButton2
+              name={"Text Variables"}
+              active={ls.isOpened(cardKey.text(props.member.name))}
+              onClick={() => ls.toggleOpened(cardKey.text(props.member.name))}
+              icon={<TextIcon />}
+              iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
+            />
+          </li>
+        )}
+        {funcNum > 0 && (
+          <li>
+            <SideMenuButton2
+              name={"Logs"}
+              active={ls.isOpened(cardKey.log(props.member.name))}
+              onClick={() => ls.toggleOpened(cardKey.log(props.member.name))}
+              icon={<Abnormal />}
+              iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
+            />
+          </li>
+        )}
+        {hasLog && (
+          <li>
+            <SideMenuButton2
+              name={"Functions"}
+              active={ls.isOpened(cardKey.func(props.member.name))}
+              onClick={() => ls.toggleOpened(cardKey.func(props.member.name))}
+              icon={<PlayOne />}
+              iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
+            />
+          </li>
+        )}
       </ul>
     </>
   );
