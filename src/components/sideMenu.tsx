@@ -13,6 +13,8 @@ import {
   Abnormal,
   PlayOne,
   Info,
+  FolderOpen,
+  FolderClose,
 } from "@icon-park/react";
 
 const iconFillColor = ["#333", "#6c6"];
@@ -55,6 +57,78 @@ export function SideMenu(props: Props) {
   );
 }
 
+interface FieldGroup {
+  name: string;
+  fullName: string;
+  kind: 0 | 3 | null;
+  children: FieldGroup[];
+}
+interface GroupProps {
+  name: string;
+  children: ReactElement | ReactElement[];
+}
+function SideMenuGroup(props: GroupProps) {
+  const [open, setOpen] = useState<boolean>(false);
+  return (
+    <>
+      <div>
+        <SideMenuButton
+          name={props.name}
+          onClick={() => setOpen(!open)}
+          active={open}
+          icon={<FolderClose />}
+          iconActive={<FolderOpen />}
+        />
+      </div>
+      <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
+        {props.children}
+      </ul>
+    </>
+  );
+}
+
+interface ValuesProps {
+  groups: FieldGroup[];
+  member: Member;
+  isOpened: (key: string) => boolean;
+  toggleOpened: (key: string) => void;
+}
+function SideMenuValues(props: ValuesProps) {
+  return props.groups.map((v, vi) => (
+    <li key={vi}>
+      {v.kind === null ? (
+        <SideMenuGroup name={v.name}>
+          <SideMenuValues {...props} groups={v.children} />
+        </SideMenuGroup>
+      ) : (
+        <SideMenuButton2
+          name={v.name}
+          active={props.isOpened(
+            v.kind === 0
+              ? cardKey.value(props.member.name, v.fullName)
+              : cardKey.view(props.member.name, v.fullName)
+          )}
+          onClick={() =>
+            props.toggleOpened(
+              v.kind === 0
+                ? cardKey.value(props.member.name, v.fullName)
+                : cardKey.view(props.member.name, v.fullName)
+            )
+          }
+          icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
+          iconActive={
+            v.kind === 0 ? (
+              <Analysis theme="two-tone" fill={iconFillColor} />
+            ) : (
+              <PageTemplate theme="two-tone" fill={iconFillColor} />
+            )
+          }
+        />
+      )}
+    </li>
+  ));
+}
+
 interface MemberProps {
   member: Member;
   values: Value[];
@@ -63,6 +137,39 @@ interface MemberProps {
 function SideMenuMember(props: MemberProps) {
   const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
+  const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
+  useEffect(() => {
+    const valueNames: FieldGroup[] = [];
+    const sortValueNames = (values: Value[] | View[], kind: 0 | 3) => {
+      for (const v of values) {
+        const vNameSplit = v.name.split(".");
+        let valueNamesCurrent = valueNames;
+        for (let d = 0; d < vNameSplit.length; d++) {
+          const valueNamesFind = valueNamesCurrent.find(
+            (n) => n.name === vNameSplit[d]
+          );
+          if (valueNamesFind == undefined) {
+            const newChildren: FieldGroup[] = [];
+            valueNamesCurrent.push({
+              name: vNameSplit[d],
+              fullName: v.name,
+              children: newChildren,
+              kind: d === vNameSplit.length - 1 ? kind : null,
+            });
+            valueNamesCurrent.sort((a, b) =>
+              a.name > b.name ? 1 : a.name < b.name ? -1 : 0
+            );
+            valueNamesCurrent = newChildren;
+          } else {
+            valueNamesCurrent = valueNamesFind.children;
+          }
+        }
+      }
+    };
+    sortValueNames(props.values, 0);
+    sortValueNames(props.views, 3);
+    setValueNames(valueNames);
+  }, [props.values, props.views]);
   return (
     <>
       <div>
@@ -74,34 +181,12 @@ function SideMenuMember(props: MemberProps) {
         />
       </div>
       <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
-        {props.values.map((v, vi) => (
-          <li key={vi}>
-            <SideMenuButton2
-              name={v.name}
-              active={ls.isOpened(cardKey.value(props.member.name, v.name))}
-              onClick={() =>
-                ls.toggleOpened(cardKey.value(props.member.name, v.name))
-              }
-              icon={<Analysis />}
-              iconActive={<Analysis theme="two-tone" fill={iconFillColor} />}
-            />
-          </li>
-        ))}
-        {props.views.map((v, vi) => (
-          <li key={vi}>
-            <SideMenuButton2
-              name={v.name}
-              active={ls.isOpened(cardKey.view(props.member.name, v.name))}
-              onClick={() =>
-                ls.toggleOpened(cardKey.view(props.member.name, v.name))
-              }
-              icon={<PageTemplate />}
-              iconActive={
-                <PageTemplate theme="two-tone" fill={iconFillColor} />
-              }
-            />
-          </li>
-        ))}
+        <SideMenuValues
+          {...props}
+          groups={valueNames}
+          isOpened={ls.isOpened}
+          toggleOpened={ls.toggleOpened}
+        />
         <li>
           <SideMenuButton2
             name={"Text Variables"}
@@ -146,7 +231,9 @@ function SideMenuButton(props: ButtonProps) {
       className="hover:text-green-700 w-full pl-1 flex items-center space-x-1 mt-0.5 "
       onClick={props.onClick}
     >
-      <span>{props.icon}</span>
+      <span>
+        {props.active && props.iconActive ? props.iconActive : props.icon}
+      </span>
       <span>{props.name}</span>
       {props.active ? <Down className="pt-0.5" /> : <Right />}
     </button>
