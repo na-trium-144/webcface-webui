@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { Client, Member, version as webcfaceVersion } from "webcface";
+import { Client, version as webcfaceVersion } from "webcface";
 import { useEffect } from "react";
 import webuiVersion from "../libs/version";
 import { Wifi, CloseWifi } from "@icon-park/react";
