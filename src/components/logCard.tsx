@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { Member, LogLine } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 
 interface Props {
@@ -20,13 +20,40 @@ export function LogCard(props: Props) {
   const logsRaw = useRef<LogLine[]>([]);
   const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
+  const [visibleLogBegin, setVisibleLogBegin] = useState<number>(0);
+  const [visibleLogEnd, setVisibleLogEnd] = useState<number>(0);
+  const logsDiv = useRef<HTMLDivElement>(null);
   const [minLevel, setMinLevel] = useState<number>(2);
+
+  const lineHeight = 24;
+  const onScroll = useCallback(() => {
+    if (logsDiv.current !== null) {
+      const newBegin = Math.floor(logsDiv.current.scrollTop / lineHeight);
+      const newEnd =
+        Math.ceil(
+          (logsDiv.current.scrollTop + logsDiv.current.clientHeight) /
+            lineHeight
+        ) + 1;
+      setVisibleLogBegin(newBegin);
+      setVisibleLogEnd(newEnd);
+    }
+  }, []);
+  useEffect(() => {
+    const observer = new ResizeObserver(onScroll);
+    observer.observe(logsDiv.current);
+    onScroll();
+    return () => observer.disconnect();
+  }, []);
 
   const maxLine = 1000;
   useEffect(() => {
     const updateLogsCurrent = () => {
       setLogLine(logsRaw.current.length);
-      setLogsCurrent(logsRaw.current.filter((l) => l.level >= minLevel));
+      const logsCurrent = logsRaw.current.filter((l) => l.level >= minLevel);
+      setLogsCurrent(logsCurrent);
+      // if (logsDiv.current !== null) {
+      //   logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+      // }
       hasUpdate.current = false;
     };
     const i = setInterval(() => {
@@ -71,40 +98,56 @@ export function LogCard(props: Props) {
           行中
           <span className="px-1">{logsCurrent.length}</span>行
         </div>
-        <table className="flex-1 block table-auto overflow-auto text-sm">
-          <thead>
-            <tr className="border-b">
-              <th className="font-medium">Time</th>
-              <th className="font-medium">Level</th>
-              <th className="font-medium">Message</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logsCurrent.map((l, li) => (
-              <tr key={li} className="border-b">
-                <td className="text-center">{format(l.time, "H:mm:ss.SSS")}</td>
-                <td className="text-center">
-                  <span
-                    className={
-                      "px-0.5 rounded-sm " + (levelColors[l.level] || "")
-                    }
-                  >
-                    {l.level}
-                    {levelNames[l.level] !== ""
-                      ? `(${levelNames[l.level]})`
-                      : ""}
-                  </span>
-                </td>
-                <td className="px-1 font-mono w-full">{l.message}</td>
+        <div className="flex-1 overflow-auto" ref={logsDiv} onScroll={onScroll}>
+          <table
+            className="block table-auto w-full text-sm overflow-hidden"
+            style={{ height: lineHeight * (logsCurrent.length + 1) }}
+          >
+            {/*<thead>
+              <tr className="border-b" style={{height: lineHeight}}>
+                <th className="font-medium">Time</th>
+                <th className="font-medium">Level</th>
+                <th className="font-medium">Message</th>
               </tr>
-            ))}
-            <tr className="text-transparent select-none">
-              <td className="px-1 text-center">0:00:00.000</td>
-              <td className="px-1.5 text-center">5(Critical)</td>
-              <td className="px-1 font-mono w-full"></td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>*/}
+            <tbody>
+              <tr style={{ height: lineHeight * visibleLogBegin }}>
+                <td />
+              </tr>
+              {logsCurrent
+                .slice(visibleLogBegin, visibleLogEnd)
+                .map((l, li) => (
+                  <tr
+                    key={li + visibleLogBegin}
+                    className="border-b"
+                    style={{ height: lineHeight }}
+                  >
+                    <td className="text-center">
+                      {format(l.time, "H:mm:ss.SSS")}
+                    </td>
+                    <td className="text-center">
+                      <span
+                        className={
+                          "px-0.5 rounded-sm " + (levelColors[l.level] || "")
+                        }
+                      >
+                        {l.level}
+                        {levelNames[l.level] !== ""
+                          ? `(${levelNames[l.level]})`
+                          : ""}
+                      </span>
+                    </td>
+                    <td className="px-1 font-mono w-full">{l.message}</td>
+                  </tr>
+                ))}
+              <tr className="text-transparent select-none">
+                <td className="px-1 text-center">0:00:00.000</td>
+                <td className="px-1.5 text-center">5(Critical)</td>
+                <td className="px-1 font-mono w-full"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </Card>
   );

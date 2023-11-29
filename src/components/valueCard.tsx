@@ -114,6 +114,7 @@ export function ValueCard(props: Props) {
       if (canvasDiv.current == null) {
         return;
       }
+      // ResizeObserver使うと重い
       if (
         divPreviousWidth.current != canvasDiv.current.clientWidth ||
         divPreviousHeight.current !== canvasDiv.current.clientHeight
