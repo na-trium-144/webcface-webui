@@ -17,27 +17,32 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const hasUpdate = useRef<boolean>(true);
+  const logsRaw = useRef<LogLine[]>([]);
+  const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [minLevel, setMinLevel] = useState<number>(2);
 
   const maxLine = 1000;
   useEffect(() => {
+    const updateLogsCurrent = () => {
+      setLogLine(logsRaw.current.length);
+      setLogsCurrent(logsRaw.current.filter((l) => l.level >= minLevel));
+      hasUpdate.current = false;
+    };
     const i = setInterval(() => {
       if (hasUpdate.current) {
-        setLogsCurrent(
-          props.member
-            .log()
-            .get()
-            .slice(-maxLine)
-            .filter((l) => l.level >= minLevel)
-        );
-        hasUpdate.current = false;
+        updateLogsCurrent();
       }
     }, 50);
+    updateLogsCurrent();
     return () => clearInterval(i);
-  }, [props.member, setLogsCurrent, minLevel]);
+  }, [props.member, setLogLine, setLogsCurrent, minLevel]);
   useEffect(() => {
     const update = () => {
+      logsRaw.current = logsRaw.current
+        .concat(props.member.log().get())
+        .slice(-maxLine);
+      props.member.log().clear();
       hasUpdate.current = true;
     };
     props.member.log().on(update);
@@ -62,8 +67,7 @@ export function LogCard(props: Props) {
               setMinLevel(parseInt(e.target.value));
             }}
           />
-          以上のログを表示: 全
-          <span className="px-1">{props.member.log().get().length}</span>
+          以上のログを表示: 全<span className="px-1">{logLine}</span>
           行中
           <span className="px-1">{logsCurrent.length}</span>行
         </div>
