@@ -2,6 +2,7 @@ import { Card } from "./card";
 import { Member, LogLine } from "webcface";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
+import { useLogStore } from "./logStoreProvider";
 
 interface Props {
   member: Member;
@@ -16,7 +17,8 @@ const levelColors = [
   "text-white bg-red-600 ",
 ];
 export function LogCard(props: Props) {
-  const hasUpdate = useRef<boolean>(true);
+  const logStore = useLogStore();
+  const hasUpdate = useRef<boolean>(false);
   const logsRaw = useRef<LogLine[]>([]);
   const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
@@ -44,16 +46,6 @@ export function LogCard(props: Props) {
       }
     }
   };
-  useEffect(() => {
-    onScroll();
-  }, []);
-  useEffect(() => {
-    if (logsDiv.current !== null) {
-      const observer = new ResizeObserver(onScroll);
-      observer.observe(logsDiv.current);
-      return () => observer.disconnect();
-    }
-  }, [followRealTime]);
   const followLog = (f: boolean) => {
     if (logsDiv.current !== null && f) {
       logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
@@ -61,6 +53,20 @@ export function LogCard(props: Props) {
     setFollowRealTime(f);
     followRealTimeRef.current = f;
   };
+  useEffect(() => {
+    logsRaw.current =
+      logStore.data.current.find((ld) => ld.name === props.member.name)?.log ||
+      [];
+    onScroll();
+    hasUpdate.current = true;
+  }, [props.member, logStore]);
+  useEffect(() => {
+    if (logsDiv.current !== null) {
+      const observer = new ResizeObserver(onScroll);
+      observer.observe(logsDiv.current);
+      return () => observer.disconnect();
+    }
+  }, [followRealTime]);
 
   const maxLine = 1000;
   useEffect(() => {
@@ -68,9 +74,11 @@ export function LogCard(props: Props) {
       setLogLine(logsRaw.current.length);
       const logsCurrent = logsRaw.current.filter((l) => l.level >= minLevel);
       setLogsCurrent(logsCurrent);
-      if (logsDiv.current !== null && followRealTimeRef.current) {
-        logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
-      }
+      setTimeout(() => {
+        if (logsDiv.current !== null && followRealTimeRef.current) {
+          logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+        }
+      });
       hasUpdate.current = false;
     };
     const i = setInterval(() => {
@@ -87,8 +95,10 @@ export function LogCard(props: Props) {
         .concat(props.member.log().get())
         .slice(-maxLine);
       props.member.log().clear();
+      logStore.setData(props.member.name, logsRaw.current);
       hasUpdate.current = true;
     };
+    update();
     props.member.log().on(update);
     return () => {
       props.member.log().off(update);

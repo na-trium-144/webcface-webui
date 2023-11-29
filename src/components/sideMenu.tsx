@@ -3,6 +3,7 @@ import { Client, Member, Value, View } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage } from "./lsProvider";
+import { useLogStore } from "./logStoreProvider";
 import {
   BroadcastRadio,
   Right,
@@ -135,6 +136,7 @@ interface MemberProps {
   views: View[];
 }
 function SideMenuMember(props: MemberProps) {
+  const logStore = useLogStore();
   const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
@@ -145,17 +147,13 @@ function SideMenuMember(props: MemberProps) {
     const update = () => {
       setTextNum(props.member.texts().length);
       setFuncNum(props.member.funcs().length);
-      setHasLog(props.member.log().get().length > 0);
+      setHasLog(
+        props.member.log().get().length > 0 ||
+        logStore.data.current.find((ld) => ld.name === props.member.name) !== undefined
+      );
     };
-    props.member.onTextEntry.on(update);
-    props.member.onFuncEntry.on(update);
-    props.member.log().on(update);
-    update();
-    return () => {
-      props.member.onTextEntry.off(update);
-      props.member.onFuncEntry.off(update);
-      props.member.log().off(update);
-    };
+    const i = setInterval(update, 100);
+    return () => clearInterval(i);
   }, [props.member]);
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
