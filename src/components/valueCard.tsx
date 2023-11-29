@@ -94,6 +94,7 @@ export function ValueCard(props: Props) {
           },
           legend: false,
         });
+        hasDataUpdate.current = true;
       }
     };
     const disposeChart = () => {

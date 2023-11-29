@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { Member, LogLine } from "webcface";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 
 interface Props {
@@ -16,22 +16,35 @@ const levelColors = [
   "text-white bg-red-600 ",
 ];
 export function LogCard(props: Props) {
+  const hasUpdate = useRef<boolean>(true);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [minLevel, setMinLevel] = useState<number>(2);
+
+  const maxLine = 1000;
   useEffect(() => {
-    const update = () =>
-      setLogsCurrent(
-        props.member
-          .log()
-          .get()
-          .filter((l) => l.level >= minLevel)
-      );
-    update();
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        setLogsCurrent(
+          props.member
+            .log()
+            .get()
+            .slice(-maxLine)
+            .filter((l) => l.level >= minLevel)
+        );
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [props.member, setLogsCurrent, minLevel]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
     props.member.log().on(update);
     return () => {
       props.member.log().off(update);
     };
-  }, [props.member, minLevel]);
+  }, [props.member]);
 
   return (
     <Card title={`${props.member.name} Logs`}>

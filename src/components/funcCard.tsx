@@ -8,8 +8,21 @@ interface Props {
   member: Member;
 }
 export function FuncCard(props: Props) {
+  const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
   useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
     props.member.onFuncEntry.on(update);
     return () => {
       props.member.onFuncEntry.off(update);

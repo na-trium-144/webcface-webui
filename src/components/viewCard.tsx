@@ -1,15 +1,28 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { View, ViewComponent, viewColor, viewComponentTypes } from "webcface";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useFuncResult } from "./funcResultProvider";
 
 interface Props {
   view: View;
 }
 export function ViewCard(props: Props) {
+  const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
   useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
     props.view.on(update);
     return () => props.view.off(update);
   }, [props.view, update]);
