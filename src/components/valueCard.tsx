@@ -24,7 +24,9 @@ export function ValueCard(props: Props) {
   const lastUpdate = useRef<Date>(new Date());
   const startTime = useRef<Date>(new Date());
   const [followRealTime, setFollowRealTime] = useState<boolean>(true);
+  const hasDataUpdate = useRef<boolean>(false);
 
+  // データをchartにpushする
   useEffect(() => {
     const onValueChange = () => {
       const val = props.value.tryGet();
@@ -39,10 +41,7 @@ export function ValueCard(props: Props) {
             y: val,
           });
         }
-        if (chart.current) {
-          chart.current.update();
-          console.log("update");
-        }
+        hasDataUpdate.current = true;
       }
     };
     props.value.tryGet();
@@ -50,6 +49,7 @@ export function ValueCard(props: Props) {
     return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
 
+  // follow状態をchartとstateにset
   const followChart = (f: boolean) => {
     if (chart.current) {
       chart.current.options.realTime = f;
@@ -59,6 +59,9 @@ export function ValueCard(props: Props) {
       setFollowRealTime(f);
     }
   };
+
+  const updateIntTime = 50;
+  // chartの作成、削除、一定周期での画面更新
   useEffect(() => {
     const createChart = () => {
       if (canvasDiv.current) {
@@ -68,7 +71,7 @@ export function ValueCard(props: Props) {
               name: "a",
               // timechartがDataPointsBufferクラスをexportしてなさそうなのでanyで渡す
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-              data: data.current as any, 
+              data: data.current as any,
             },
           ],
           baseTime: startTime.current.getTime(),
@@ -91,6 +94,7 @@ export function ValueCard(props: Props) {
           },
           legend: false,
         });
+        hasDataUpdate.current = true;
       }
     };
     const disposeChart = () => {
@@ -110,6 +114,7 @@ export function ValueCard(props: Props) {
       if (canvasDiv.current == null) {
         return;
       }
+      // ResizeObserver使うと重い
       if (
         divPreviousWidth.current != canvasDiv.current.clientWidth ||
         divPreviousHeight.current !== canvasDiv.current.clientHeight
@@ -120,18 +125,23 @@ export function ValueCard(props: Props) {
         // createChart();
         resizeChart();
       }
-    }, 100);
+      if (hasDataUpdate.current && chart.current !== null) {
+        chart.current.update();
+        hasDataUpdate.current = false;
+      }
+    }, updateIntTime);
     return () => {
       clearInterval(updateInt);
       disposeChart();
     };
   }, []);
+  // chartのfollow状態が変わったらstateを更新するinterval
   useEffect(() => {
     const i = setInterval(() => {
       if (chart.current && chart.current.options.realTime != followRealTime) {
         setFollowRealTime(chart.current.options.realTime);
       }
-    }, 100);
+    }, updateIntTime);
     return () => clearInterval(i);
   }, [followRealTime]);
   return (

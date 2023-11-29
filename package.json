@@ -16,7 +16,7 @@
     "react-dom": "^18.2.0",
     "react-grid-layout-next": "^2.2.0",
     "timechart": "github:huww98/TimeChart#v1.0.0-beta.10",
-    "webcface": "^1.0.3"
+    "webcface": "^1.0.4"
   },
   "devDependencies": {
     "@babel/runtime": "^7.23.2",

@@ -1,14 +1,27 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Member, Text } from "webcface";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   member: Member;
 }
 export function TextCard(props: Props) {
+  const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
   useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
     props.member.texts().map((t: Text) => t.on(update));
     const onTextEntry = (t: Text) => {
       t.on(update);
