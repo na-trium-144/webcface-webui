@@ -48,9 +48,11 @@ export function LogCard(props: Props) {
     onScroll();
   }, []);
   useEffect(() => {
-    const observer = new ResizeObserver(onScroll);
-    observer.observe(logsDiv.current);
-    return () => observer.disconnect();
+    if (logsDiv.current !== null) {
+      const observer = new ResizeObserver(onScroll);
+      observer.observe(logsDiv.current);
+      return () => observer.disconnect();
+    }
   }, [followRealTime]);
   const followLog = (f: boolean) => {
     if (logsDiv.current !== null && f) {

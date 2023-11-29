@@ -125,7 +125,7 @@ export function ValueCard(props: Props) {
         // createChart();
         resizeChart();
       }
-      if (hasDataUpdate.current) {
+      if (hasDataUpdate.current && chart.current !== null) {
         chart.current.update();
         hasDataUpdate.current = false;
       }
