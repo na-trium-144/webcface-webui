@@ -24,9 +24,11 @@ export function LogCard(props: Props) {
   const [visibleLogEnd, setVisibleLogEnd] = useState<number>(0);
   const logsDiv = useRef<HTMLDivElement>(null);
   const [minLevel, setMinLevel] = useState<number>(2);
+  const [followRealTime, setFollowRealTime] = useState<boolean>(true);
+  const followRealTimeRef = useRef<boolean>(true);
 
   const lineHeight = 24;
-  const onScroll = useCallback(() => {
+  const onScroll = () => {
     if (logsDiv.current !== null) {
       const newBegin = Math.floor(logsDiv.current.scrollTop / lineHeight);
       const newEnd =
@@ -34,16 +36,30 @@ export function LogCard(props: Props) {
           (logsDiv.current.scrollTop + logsDiv.current.clientHeight) /
             lineHeight
         ) + 1;
+      console.log(newBegin);
       setVisibleLogBegin(newBegin);
       setVisibleLogEnd(newEnd);
+      if (newEnd < logsCurrent.length) {
+        setFollowRealTime(false);
+        followRealTimeRef.current = false;
+      }
     }
+  };
+  useEffect(() => {
+    onScroll();
   }, []);
   useEffect(() => {
     const observer = new ResizeObserver(onScroll);
     observer.observe(logsDiv.current);
-    onScroll();
     return () => observer.disconnect();
-  }, []);
+  }, [followRealTime]);
+  const followLog = (f: boolean) => {
+    if (logsDiv.current !== null && f) {
+      logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+    }
+    setFollowRealTime(f);
+    followRealTimeRef.current = f;
+  };
 
   const maxLine = 1000;
   useEffect(() => {
@@ -51,9 +67,9 @@ export function LogCard(props: Props) {
       setLogLine(logsRaw.current.length);
       const logsCurrent = logsRaw.current.filter((l) => l.level >= minLevel);
       setLogsCurrent(logsCurrent);
-      // if (logsDiv.current !== null) {
-      //   logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
-      // }
+      if (logsDiv.current !== null && followRealTimeRef.current) {
+        logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+      }
       hasUpdate.current = false;
     };
     const i = setInterval(() => {
@@ -100,7 +116,7 @@ export function LogCard(props: Props) {
         </div>
         <div className="flex-1 overflow-auto" ref={logsDiv} onScroll={onScroll}>
           <table
-            className="block table-auto w-full text-sm overflow-hidden"
+            className="block table-auto min-w-full w-max text-sm overflow-y-hidden"
             style={{ height: lineHeight * (logsCurrent.length + 1) }}
           >
             {/*<thead>
@@ -147,6 +163,17 @@ export function LogCard(props: Props) {
               </tr>
             </tbody>
           </table>
+        </div>
+        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
+          <input
+            type="checkbox"
+            id={`follow-${props.member.name}-log`}
+            checked={followRealTime}
+            onChange={(e) => followLog(e.target.checked)}
+          />
+          <label htmlFor={`follow-${props.member.name}-log`}>
+            Follow Latest Data
+          </label>
         </div>
       </div>
     </Card>
