@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { Member, LogLine } from "webcface";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 
 interface Props {
@@ -36,7 +36,6 @@ export function LogCard(props: Props) {
           (logsDiv.current.scrollTop + logsDiv.current.clientHeight) /
             lineHeight
         ) + 1;
-      console.log(newBegin);
       setVisibleLogBegin(newBegin);
       setVisibleLogEnd(newEnd);
       if (newEnd < logsCurrent.length) {
