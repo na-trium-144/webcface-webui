@@ -217,7 +217,7 @@ function SideMenuMember(props: MemberProps) {
             />
           </li>
         )}
-        {funcNum > 0 && (
+        {hasLog && (
           <li>
             <SideMenuButton2
               name={"Logs"}
@@ -228,7 +228,7 @@ function SideMenuMember(props: MemberProps) {
             />
           </li>
         )}
-        {hasLog && (
+        {funcNum > 0 && (
           <li>
             <SideMenuButton2
               name={"Functions"}
