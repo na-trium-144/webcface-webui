@@ -88,6 +88,8 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         toggleOpened: (key: string) => {
           if (openedCards.includes(key)) {
             setOpenedCards(openedCards.filter((n) => n !== key));
+            // カードを閉じるときzをリセットする(-1にする)
+            setLayout(layout.map((l) => (l.i === key ? { ...l, z: -1 } : l)));
           } else {
             setOpenedCards(openedCards.concat([key]));
           }
