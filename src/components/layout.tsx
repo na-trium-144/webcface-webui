@@ -22,7 +22,7 @@ import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
 
 interface Props {
-  client: Client | null ;
+  client: Client | null;
 }
 
 export function LayoutMain(props: Props) {
@@ -39,9 +39,6 @@ export function LayoutMain(props: Props) {
     };
   }, [props.client, update]);
 
-  const [layouts, setLayouts] = useState<ResponsiveLayout<Breakpoint>>({});
-  const ls: LocalStorage = useLocalStorage();
-
   const breakpoints = {
     xxl: 1536,
     xl: 1280,
@@ -51,12 +48,19 @@ export function LayoutMain(props: Props) {
     xs: 0,
   };
   const cols = { xxl: 15, xl: 13, lg: 10, md: 7, sm: 6, xs: 2 };
+  const [layouts, setLayouts] = useState<ResponsiveLayout<Breakpoint>>({});
+  // 全breakpointで同じレイアウトをぶちこむ
   const layoutsAll = (layout: LayoutItem[]) => {
     return Object.keys(breakpoints).reduce((obj, k) => {
       obj[k] = layout.map((l) => ({ ...l }));
       return obj;
     }, {} as ResponsiveLayout<Breakpoint>);
   };
+
+  // lsのlayoutには現在表示していないものも含まれる
+  const ls: LocalStorage = useLocalStorage();
+  // 初期layoutとしてlsに以前のレイアウトがあればそれを使う
+  // 閉じたカードはzが-1になるのでその場合新しいzを振る
   const findLsLayout = (
     i: string,
     x: number,
@@ -67,15 +71,33 @@ export function LayoutMain(props: Props) {
     minH: number
   ) => {
     const l = ls.layout.find((l) => l.i === i);
+    const newZ =
+      ls.layout.reduce(
+        (maxZ, l) => (l.z !== undefined && l.z > maxZ ? l.z : maxZ),
+        0
+      ) + 1;
     if (l !== undefined) {
-      return { x: l.x, y: l.y, w: l.w, h: l.h, minW, minH };
+      if (l.z === -1) {
+        setTimeout(() =>
+          ls.setLayout(
+            ls.layout.map((l) => (l.i === i ? { ...l, z: newZ } : l))
+          )
+        );
+        return { x: l.x, y: l.y, w: l.w, z: newZ, h: l.h, minW, minH };
+      } else {
+        return { x: l.x, y: l.y, w: l.w, z: l.z, h: l.h, minW, minH };
+      }
     } else {
-      return { x, y, w, h, minW, minH };
+      setTimeout(() =>
+        ls.setLayout(ls.layout.concat([{ i, x, y, w, h, z: newZ }]))
+      );
+      return { x, y, w, h, z: newZ, minW, minH };
     }
   };
 
   const onLayoutChange = ({ layout }: { layout: LayoutItem[] }) => {
     if (ls.init) {
+      // lsに変更を反映する
       ls.setLayout((lsLayout: LayoutItem[]) => {
         for (let nli = 0; nli < layout.length; nli++) {
           const lli = lsLayout.findIndex((ll) => ll.i === layout[nli].i);
@@ -87,9 +109,17 @@ export function LayoutMain(props: Props) {
         }
         return lsLayout.slice();
       });
+      // rglに渡すbreakpointごとのレイアウトも変える
       setLayouts(layoutsAll(layout));
     }
   };
+
+  // カード閉じたのにlayoutsに残存しているやつがあったら消す
+  useEffect(() => {
+    if (layouts.xxl.filter((l) => !ls.isOpened(l.i)).length > 0) {
+      setLayouts(layoutsAll(layouts.xxl.filter((l) => ls.isOpened(l.i))));
+    }
+  }, [ls, layoutsAll, layouts]);
 
   return (
     <ResponsiveGridLayout
