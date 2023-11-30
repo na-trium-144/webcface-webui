@@ -71,7 +71,11 @@ export function LayoutMain(props: Props) {
     minH: number
   ) => {
     const l = ls.layout.find((l) => l.i === i);
-    const newZ = ls.layout.reduce((maxZ, l) => Math.max(l.z, maxZ), 0) + 1;
+    const newZ =
+      ls.layout.reduce(
+        (maxZ, l) => (l.z !== undefined && l.z > maxZ ? l.z : maxZ),
+        0
+      ) + 1;
     if (l !== undefined) {
       if (l.z === -1) {
         setTimeout(() =>
