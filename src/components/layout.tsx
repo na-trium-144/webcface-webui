@@ -22,7 +22,7 @@ import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
 
 interface Props {
-  client: Client | null ;
+  client: Client | null;
 }
 
 export function LayoutMain(props: Props) {
@@ -68,9 +68,9 @@ export function LayoutMain(props: Props) {
   ) => {
     const l = ls.layout.find((l) => l.i === i);
     if (l !== undefined) {
-      return { x: l.x, y: l.y, w: l.w, h: l.h, minW, minH };
+      return { x: l.x, y: l.y, w: l.w, z: l.z, h: l.h, minW, minH };
     } else {
-      return { x, y, w, h, minW, minH };
+      return { x, y, w, h, z: 0, minW, minH };
     }
   };
 
