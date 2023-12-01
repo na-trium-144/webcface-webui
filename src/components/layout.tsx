@@ -116,7 +116,10 @@ export function LayoutMain(props: Props) {
 
   // カード閉じたのにlayoutsに残存しているやつがあったら消す
   useEffect(() => {
-    if (layouts.xxl.filter((l) => !ls.isOpened(l.i)).length > 0) {
+    if (
+      layouts.xxl &&
+      layouts.xxl.filter((l) => !ls.isOpened(l.i)).length > 0
+    ) {
       setLayouts(layoutsAll(layouts.xxl.filter((l) => ls.isOpened(l.i))));
     }
   }, [ls, layoutsAll, layouts]);
