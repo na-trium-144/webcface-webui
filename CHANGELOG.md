@@ -1,3 +1,8 @@
+## [1.0.10] - 2023-12-01
+### Changed
+* 関数のoptionがセットされた引数で初期値を最初の選択肢にした (#80)
+* updated dependencies
+
 ## [1.0.9] - 2023-12-01
 ### Fixed
 * 起動時の cannot read properties of undefined エラーを修正 (#79)
