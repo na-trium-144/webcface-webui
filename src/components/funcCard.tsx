@@ -167,6 +167,8 @@ function FuncLine(props: { func: Func }) {
             return args[i];
           } else if (ac.init != null) {
             return ac.init;
+          } else if (ac.option && ac.option.length > 0) {
+            return ac.option[0];
           } else {
             switch (ac.type) {
               case valType.int_:
