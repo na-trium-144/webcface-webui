@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactElement } from "react";
-import { Client, Member, Value, View } from "webcface";
+import { Client, Member, Value, View, Image } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage } from "./lsProvider";
@@ -16,6 +16,7 @@ import {
   Info,
   FolderOpen,
   FolderClose,
+  Pic,
 } from "@icon-park/react";
 
 const iconFillColor = ["#333", "#6c6"];
@@ -31,6 +32,7 @@ export function SideMenu(props: Props) {
       update();
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
+      m.onImageEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -52,6 +54,7 @@ export function SideMenu(props: Props) {
           member={m}
           values={m.values()}
           views={m.views()}
+          images={m.images()}
         />
       ))}
     </>
@@ -61,7 +64,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | null;
+  kind: 0 | 3 | 5 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -107,21 +110,27 @@ function SideMenuValues(props: ValuesProps) {
           active={props.isOpened(
             v.kind === 0
               ? cardKey.value(props.member.name, v.fullName)
-              : cardKey.view(props.member.name, v.fullName)
+              : v.kind === 3
+              ? cardKey.view(props.member.name, v.fullName)
+              : cardKey.image(props.member.name, v.fullName)
           )}
           onClick={() =>
             props.toggleOpened(
               v.kind === 0
                 ? cardKey.value(props.member.name, v.fullName)
-                : cardKey.view(props.member.name, v.fullName)
+                : v.kind === 3
+                ? cardKey.view(props.member.name, v.fullName)
+                : cardKey.image(props.member.name, v.fullName)
             )
           }
           icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
           iconActive={
             v.kind === 0 ? (
               <Analysis theme="two-tone" fill={iconFillColor} />
-            ) : (
+            ) : v.kind === 3 ? (
               <PageTemplate theme="two-tone" fill={iconFillColor} />
+            ) : (
+              <Pic theme="two-tone" fill={iconFillColor} />
             )
           }
         />
@@ -134,6 +143,7 @@ interface MemberProps {
   member: Member;
   values: Value[];
   views: View[];
+  images: Image[];
 }
 function SideMenuMember(props: MemberProps) {
   const logStore = useLogStore();
@@ -149,7 +159,8 @@ function SideMenuMember(props: MemberProps) {
       setFuncNum(props.member.funcs().length);
       setHasLog(
         props.member.log().get().length > 0 ||
-        logStore.data.current.find((ld) => ld.name === props.member.name) !== undefined
+          logStore.data.current.find((ld) => ld.name === props.member.name) !==
+            undefined
       );
     };
     const i = setInterval(update, 100);
@@ -157,7 +168,10 @@ function SideMenuMember(props: MemberProps) {
   }, [props.member]);
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
-    const sortValueNames = (values: Value[] | View[], kind: 0 | 3) => {
+    const sortValueNames = (
+      values: Value[] | View[] | Image[],
+      kind: 0 | 3 | 5
+    ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
         let valueNamesCurrent = valueNames;
@@ -185,8 +199,9 @@ function SideMenuMember(props: MemberProps) {
     };
     sortValueNames(props.values, 0);
     sortValueNames(props.views, 3);
+    sortValueNames(props.images, 5);
     setValueNames(valueNames);
-  }, [props.values, props.views]);
+  }, [props.values, props.views, props.images]);
   return (
     <>
       <div>
