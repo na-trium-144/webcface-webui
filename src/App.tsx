@@ -12,12 +12,14 @@ export default function App() {
   const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
     clientDefault.current = new Client("", window.location.hostname, 7530);
+    clientDefault.current.start();
     if (parseInt(window.location.port) !== 7530) {
       clientLocation.current = new Client(
         "",
         window.location.hostname,
         parseInt(window.location.port)
       );
+      clientLocation.current.start();
     }
 
     // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
