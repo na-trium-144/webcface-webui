@@ -1,3 +1,7 @@
+## [1.0.12] - 2023-12-23
+### Changed
+* update webcface-js to 1.1.1
+
 ## [1.0.11] - 2023-12-19
 ### Changed
 * update webcface-js to 1.1.0 (#97)
