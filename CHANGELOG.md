@@ -1,3 +1,9 @@
+## [1.1.0] - 2023-12-26
+### Added
+* 画像を表示する機能を追加
+### Changed
+* update webcface-js to 1.2.0
+
 ## [1.0.12] - 2023-12-23
 ### Changed
 * update webcface-js to 1.1.1
