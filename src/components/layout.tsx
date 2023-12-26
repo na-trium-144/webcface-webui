@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Client, Member, Value, View } from "webcface";
+import { Client, Member, Value, View, Image } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -12,6 +12,7 @@ import {
 } from "react-grid-layout-next";
 const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOrig);
 import { ValueCard } from "./valueCard";
+import { ImageCard } from "./imageCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
 import { LogCard } from "./logCard";
@@ -32,6 +33,7 @@ export function LayoutMain(props: Props) {
       update();
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
+      m.onImageEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -168,6 +170,20 @@ export function LayoutMain(props: Props) {
             return (
               <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
                 <ViewCard view={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.images()), [] as Image[])
+        .map((v) => {
+          const key = cardKey.image(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
+                <ImageCard image={v} />
               </div>
             );
           }
