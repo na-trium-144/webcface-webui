@@ -1,3 +1,14 @@
+## [1.0.12] - 2023-12-23
+### Changed
+* update webcface-js to 1.1.1
+
+## [1.0.11] - 2023-12-19
+### Changed
+* update webcface-js to 1.1.0 (#97)
+* updated dependencies
+### Fixed
+* connectionInfoCardのoverflowを修正 (#98)
+
 ## [1.0.10] - 2023-12-01
 ### Changed
 * 関数のoptionがセットされた引数で初期値を最初の選択肢にした (#80)
