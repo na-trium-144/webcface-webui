@@ -41,7 +41,7 @@ export function SideMenu(props: Props) {
   }, [props.client, update]);
   return (
     <>
-      {window.serverAccess && <SideMenuButton2
+      {window.electronAPI && <SideMenuButton2
         name="About"
         active={ls.isOpened(cardKey.about())}
         onClick={() => ls.toggleOpened(cardKey.about())}

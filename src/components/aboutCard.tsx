@@ -1,11 +1,8 @@
 import { Card } from "./card";
-// import { useForceUpdate } from "../libs/forceUpdate";
-import {Versions} from "../libs/serverVersions"
-interface Props {
-}
-export function AboutCard(props: Props) {
-  const versions = window.versions as (Versions | undefined);
+import "../../renderer.d.ts";
 
+// import { useForceUpdate } from "../libs/forceUpdate";
+export function AboutCard(/*props: Props*/) {
   // const update = useForceUpdate();
   // useEffect(() => {
   //   const i = setInterval(update, 100);
@@ -17,15 +14,19 @@ export function AboutCard(props: Props) {
         <div className="w-max">
           <p className="text-sm flex items-center">
             <span className="">Node.js:</span>
-            <span className="pl-1">{versions?.node()}</span>
+            <span className="pl-1">{window.electronAPI?.versions.node()}</span>
           </p>
           <p className="text-sm flex items-center">
             <span className="">Chrome:</span>
-            <span className="pl-1">{versions?.chrome()}</span>
+            <span className="pl-1">
+              {window.electronAPI?.versions.chrome()}
+            </span>
           </p>
           <p className="text-sm flex items-center">
             <span className="">Electron:</span>
-            <span className="pl-1">{versions?.electron()}</span>
+            <span className="pl-1">
+              {window.electronAPI?.versions.electron()}
+            </span>
           </p>
         </div>
       </div>

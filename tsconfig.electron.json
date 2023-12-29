@@ -16,10 +16,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": "./",
-    "allowImportingTsExtensions": true,
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "allowImportingTsExtensions": true
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "electron"]
 }
