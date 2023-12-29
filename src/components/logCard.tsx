@@ -18,8 +18,59 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const logStore = useLogStore();
-  const hasUpdate = useRef<boolean>(false);
   const logsRaw = useRef<LogLine[]>([]);
+  const hasUpdate = useRef<boolean>(false);
+  const maxLine = 1000;
+  useEffect(() => {
+    const update = () => {
+      logsRaw.current = logsRaw.current
+        .concat(props.member.log().get())
+        .slice(-maxLine);
+      props.member.log().clear();
+      logStore.setData(props.member.name, logsRaw.current);
+      hasUpdate.current = true;
+    };
+    update();
+    props.member.log().on(update);
+    return () => {
+      props.member.log().off(update);
+    };
+  }, [props.member]);
+  useEffect(() => {
+    logsRaw.current =
+      logStore.data.current.find((ld) => ld.name === props.member.name)?.log ||
+      [];
+    onScroll();
+    hasUpdate.current = true;
+  }, [props.member, logStore]);
+
+  return (
+    <LogCardImpl
+      logsRaw={logsRaw}
+      hasUpdate={hasUpdate}
+      name={props.member.name}
+    />
+  );
+}
+export function LogCardServer() {
+  const logStore = useLogStore();
+  return (
+    <LogCardImpl
+      logsRaw={logStore.serverData}
+      hasUpdate={logStore.serverHasUpdate}
+      name={"webcface server"}
+    />
+  );
+}
+
+
+interface Props2 {
+  logsRaw: { current: LogLine[] };
+  hasUpdate: { current: boolean };
+  name: string;
+}
+function LogCardImpl(props: Props2) {
+  const { logsRaw, hasUpdate, name } = props;
   const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [visibleLogBegin, setVisibleLogBegin] = useState<number>(0);
@@ -54,13 +105,6 @@ export function LogCard(props: Props) {
     followRealTimeRef.current = f;
   };
   useEffect(() => {
-    logsRaw.current =
-      logStore.data.current.find((ld) => ld.name === props.member.name)?.log ||
-      [];
-    onScroll();
-    hasUpdate.current = true;
-  }, [props.member, logStore]);
-  useEffect(() => {
     if (logsDiv.current !== null) {
       const observer = new ResizeObserver(onScroll);
       observer.observe(logsDiv.current);
@@ -68,7 +112,6 @@ export function LogCard(props: Props) {
     }
   }, [followRealTime]);
 
-  const maxLine = 1000;
   useEffect(() => {
     const updateLogsCurrent = () => {
       setLogLine(logsRaw.current.length);
@@ -89,24 +132,9 @@ export function LogCard(props: Props) {
     updateLogsCurrent();
     return () => clearInterval(i);
   }, [props.member, setLogLine, setLogsCurrent, minLevel]);
-  useEffect(() => {
-    const update = () => {
-      logsRaw.current = logsRaw.current
-        .concat(props.member.log().get())
-        .slice(-maxLine);
-      props.member.log().clear();
-      logStore.setData(props.member.name, logsRaw.current);
-      hasUpdate.current = true;
-    };
-    update();
-    props.member.log().on(update);
-    return () => {
-      props.member.log().off(update);
-    };
-  }, [props.member]);
 
   return (
-    <Card title={`${props.member.name} Logs`}>
+    <Card title={`${name} Logs`}>
       <div className="flex flex-col w-full h-full">
         <div className="flex-none pl-2 pb-1">
           レベル
@@ -178,13 +206,11 @@ export function LogCard(props: Props) {
         <div className="flex-none flex items-center px-2 space-x-1 text-sm">
           <input
             type="checkbox"
-            id={`follow-${props.member.name}-log`}
+            id={`follow-${name}-log`}
             checked={followRealTime}
             onChange={(e) => followLog(e.target.checked)}
           />
-          <label htmlFor={`follow-${props.member.name}-log`}>
-            Follow Latest Data
-          </label>
+          <label htmlFor={`follow-${name}-log`}>Follow Latest Data</label>
         </div>
       </div>
     </Card>

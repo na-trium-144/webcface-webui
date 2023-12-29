@@ -2,12 +2,15 @@ import { app, BrowserWindow, shell, ipcMain } from "electron";
 // import { release } from "node:os";
 import { join } from "node:path";
 // import { update } from './update'
+import { ServerProcess } from "./serverProcess";
 
 process.env.DIST_ELECTRON = join(__dirname, "../");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
 process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
   ? join(process.env.DIST_ELECTRON, "../public")
   : process.env.DIST;
+
+const sp = new ServerProcess();
 
 // Disable GPU Acceleration for Windows 7
 // if (release().startsWith("6.1")) app.disableHardwareAcceleration();
@@ -61,7 +64,7 @@ function createWindow() {
 
   // Make all links open with the browser, not with the application
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("https:")){
+    if (url.startsWith("https:")) {
       void shell.openExternal(url);
     }
     return { action: "deny" };
@@ -71,7 +74,14 @@ function createWindow() {
   // update(win)
 }
 
-void app.whenReady().then(createWindow);
+void app.whenReady().then(() => {
+  sp.onLogAppend((data: string) => {
+    win.webContents.send("spLogAppend", data);
+  });
+  sp.start();
+  ipcMain.handle("spGetLogs", () => sp.logs);
+  createWindow();
+});
 
 app.on("window-all-closed", () => {
   win = null;
@@ -94,4 +104,3 @@ app.on("activate", () => {
     createWindow();
   }
 });
-

@@ -15,7 +15,7 @@ import { ValueCard } from "./valueCard";
 import { ImageCard } from "./imageCard";
 import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
-import { LogCard } from "./logCard";
+import { LogCard, LogCardServer } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { AboutCard } from "./aboutCard";
@@ -233,6 +233,17 @@ export function LayoutMain(props: Props) {
         }
         return null;
       })}
+      {(() => {
+        const key = cardKey.serverLog();
+        if (ls.isOpened(key)) {
+          return (
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
+              <LogCardServer />
+            </div>
+          );
+        }
+        return null;
+      })()}
     </ResponsiveGridLayout>
   );
 }
