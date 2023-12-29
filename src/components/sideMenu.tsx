@@ -41,6 +41,13 @@ export function SideMenu(props: Props) {
   }, [props.client, update]);
   return (
     <>
+      {window.serverAccess && <SideMenuButton2
+        name="About"
+        active={ls.isOpened(cardKey.about())}
+        onClick={() => ls.toggleOpened(cardKey.about())}
+        icon={<Info />}
+        iconActive={<Info theme="two-tone" fill={iconFillColor} />}
+      />}
       <SideMenuButton2
         name="Connection Info"
         active={ls.isOpened(cardKey.connectionInfo())}

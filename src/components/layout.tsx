@@ -18,6 +18,7 @@ import { FuncCard } from "./funcCard";
 import { LogCard } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
+import { AboutCard } from "./aboutCard";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
@@ -137,6 +138,16 @@ export function LayoutMain(props: Props) {
       allowOverlap
       draggableHandle=".MyCardHandle"
     >
+      {(() => {
+        const key = cardKey.about();
+        if (ls.isOpened(key)) {
+          return (
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
+              <AboutCard />
+            </div>
+          );
+        }
+      })()}
       {(() => {
         const key = cardKey.connectionInfo();
         if (ls.isOpened(key)) {
