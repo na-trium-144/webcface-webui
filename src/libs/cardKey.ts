@@ -6,6 +6,7 @@ export const view = (member: string, field: string) =>
 export const image = (member: string, field: string) =>
   `${member}:image:${field}`;
 export const text = (member: string) => `${member}:text`;
+export const robotModel = (member: string) => `${member}:robotModel`;
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string) => `${member}:log`;
 export const connectionInfo = () => ":connectionInfo";

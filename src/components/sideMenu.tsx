@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactElement } from "react";
-import { Client, Member, Value, View, Image } from "webcface";
+import { Client, Member, Value, View, Image, RobotModel } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage } from "./lsProvider";
@@ -33,6 +33,7 @@ export function SideMenu(props: Props) {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
+      m.onRobotModelEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -55,6 +56,7 @@ export function SideMenu(props: Props) {
           values={m.values()}
           views={m.views()}
           images={m.images()}
+          robotModels={m.robotModels()}
         />
       ))}
     </>
@@ -64,7 +66,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | 5 | null;
+  kind: 0 | 3 | 5 | 6 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -112,7 +114,9 @@ function SideMenuValues(props: ValuesProps) {
               ? cardKey.value(props.member.name, v.fullName)
               : v.kind === 3
               ? cardKey.view(props.member.name, v.fullName)
-              : cardKey.image(props.member.name, v.fullName)
+              : v.kind === 5
+              ? cardKey.image(props.member.name, v.fullName)
+              : cardKey.robotModel(props.member.name, v.fullName)
           )}
           onClick={() =>
             props.toggleOpened(
@@ -120,7 +124,9 @@ function SideMenuValues(props: ValuesProps) {
                 ? cardKey.value(props.member.name, v.fullName)
                 : v.kind === 3
                 ? cardKey.view(props.member.name, v.fullName)
-                : cardKey.image(props.member.name, v.fullName)
+                : v.kind === 5
+                ? cardKey.image(props.member.name, v.fullName)
+                : cardKey.robotModel(props.member.name, v.fullName)
             )
           }
           icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
@@ -144,6 +150,7 @@ interface MemberProps {
   values: Value[];
   views: View[];
   images: Image[];
+  robotModels: RobotModel[];
 }
 function SideMenuMember(props: MemberProps) {
   const logStore = useLogStore();
@@ -169,8 +176,8 @@ function SideMenuMember(props: MemberProps) {
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (
-      values: Value[] | View[] | Image[],
-      kind: 0 | 3 | 5
+      values: Value[] | View[] | Image[] | RobotModel[],
+      kind: 0 | 3 | 5 | 6
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -200,8 +207,9 @@ function SideMenuMember(props: MemberProps) {
     sortValueNames(props.values, 0);
     sortValueNames(props.views, 3);
     sortValueNames(props.images, 5);
+    sortValueNames(props.robotModels, 6);
     setValueNames(valueNames);
-  }, [props.values, props.views, props.images]);
+  }, [props.values, props.views, props.images, props.robotModels]);
   return (
     <>
       <div>
