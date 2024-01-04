@@ -29,24 +29,38 @@ export function RobotModelCard(props: Props) {
     return () => props.robotModel.off(update);
   }, [props.robotModel]);
 
-  const [worldTf, setWorldTf] = useState<Transform>(
-    new Transform([0, 0, 0], [0, 0, 0])
-  );
-  const [mouse, setMouse] = useState<boolean>(false);
+  const worldTf = useRef<Transform>(new Transform([0, 0, 0], [0, 0, 0]));
+  const [worldScale, setWorldScale] = useState<number>(1);
+  const moveSpeed = 0.01;
+  const rotateSpeed = 0.01;
+  // const scrollSpeed = 0.002;
+  const scaleRate = 1.001;
 
   return (
-    <Card title={`${props.robotModel.name}:${props.robotModel.name}`}>
+    <Card title={`${props.robotModel.member.name}:${props.robotModel.name}`}>
       <div className="w-full h-full">
         <Canvas
-          onMouseDown={() => setMouse(true)}
-          onMouseUp={() => setMouse(false)}
           onMouseMove={(e) => {
-            if (mouse) {
-              moveX(-e.movementX / 100);
-              moveY(e.movementY / 100);
+            if (e.buttons & 1) {
+              if (e.ctrlKey) {
+                worldTf.current.pos[2] += -e.movementX * moveSpeed;
+                worldTf.current.pos[1] += -e.movementY * moveSpeed;
+              } else {
+                worldTf.current.tfMatrix = multiply(
+                  new Transform(
+                    [0, 0, 0],
+                    [-e.movementY * rotateSpeed, e.movementX * rotateSpeed, 0]
+                  ).tfMatrix,
+                  worldTf.current.tfMatrix
+                );
+              }
             }
           }}
-          onWheel={(e) => zoom(e.deltaY)}
+          onWheel={(e) => {
+            setWorldScale(worldScale * scaleRate ** -e.deltaY);
+            // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
+          }}
+          camera={{ fov: 75, near: 0.1, far: 1000, position: [5, 0, 0] }}
         >
           <ambientLight intensity={Math.PI / 2} />
           <spotLight
@@ -62,7 +76,8 @@ export function RobotModelCard(props: Props) {
             intensity={Math.PI}
           />
           <Box
-            worldToBase={worldTf}
+            worldToBase={worldTf.current}
+            worldScale={worldScale}
             baseToOrigin={new Transform([0, 0, 0], [0, 0, 0])}
             color="yellow"
           />
@@ -75,30 +90,29 @@ export function RobotModelCard(props: Props) {
 interface LinkProps {
   worldToBase: Transform;
   baseToOrigin: Transform;
+  worldScale: number;
   color: string;
 }
 
 function Box(props: LinkProps & { boxSize: number[] }) {
   const meshRef = useRef();
   useFrame((state, delta) => {
-    const meshTf = multiply(
-      props.worldToBase.tfMatrix,
-      props.baseToOrigin.tfMatrix
-    );
     const meshPos = new Transform(
-      [meshTf[0][3], meshTf[1][3], meshTf[2][3]],
-      [meshTf[0].slice(0, 3), meshTf[1].slice(0, 3), meshTf[2].slice(0, 3)]
+      multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
     );
-    meshRef.current.position.x = meshPos.pos[0];
-    meshRef.current.position.y = meshPos.pos[1];
-    meshRef.current.position.z = meshPos.pos[2];
+    meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
+    meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
+    meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
+    meshRef.current.rotation.order = "ZYX";
     meshRef.current.rotation.z = meshPos.rot[0];
     meshRef.current.rotation.y = meshPos.rot[1];
     meshRef.current.rotation.x = meshPos.rot[2];
+    // meshRef.current.rotation.x += delta;
+    // meshRef.current.rotation.z += delta;
   });
 
   return (
-    <mesh ref={meshRef}>
+    <mesh ref={meshRef} scale={props.worldScale}>
       <boxGeometry args={props.boxSize} />
       <meshStandardMaterial color={props.color} />
     </mesh>
