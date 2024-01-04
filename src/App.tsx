@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { Client } from "webcface";
+import { Client, LogLine } from "webcface";
 import "./index.css";
 import { LayoutMain } from "./components/layout";
 import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
+import { useLogStore } from "./components/logStoreProvider";
 
 export default function App() {
+  const logStore = useLogStore();
   const [client, setClient] = useState<Client | null>(null);
   const clientDefault = useRef<Client | null>(null); // 7530ポートに接続するクライアント
   const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
@@ -49,6 +51,28 @@ export default function App() {
     }, 100);
     return () => clearInterval(i);
   }, [client]);
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      const maxLine = 1000;
+      const onLogAppend = (_event, data: LogLine) => {
+        logStore.serverData.current = logStore.serverData.current
+          .concat([data])
+          .slice(-maxLine);
+        logStore.serverHasUpdate.current = true;
+      };
+      window.electronAPI.sp.onLogAppend(onLogAppend);
+      void (async () => {
+        logStore.serverData.current = (
+          await window.electronAPI.sp.getLogs()
+        ).slice(-maxLine);
+        logStore.serverHasUpdate.current = true;
+      })();
+      return () => {
+        window.electronAPI.sp.offLogAppend(onLogAppend);
+      };
+    }
+  }, []);
 
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 

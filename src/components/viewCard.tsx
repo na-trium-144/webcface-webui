@@ -68,7 +68,7 @@ interface VCProps {
   "rose",
 ];*/
 // console.log(colorName.reduce((prev, c) => prev + `["border-${c}-300 bg-${c}-100 hover:bg-${c}-200 active:bg-${c}-300 ", "text-${c}-500"],\n`, ""))
-const buttonColorClass = [
+export const buttonColorClass = [
   [
     "border-inherit-300 bg-inherit-100 hover:bg-inherit-200 active:bg-inherit-300 ",
     "text-inherit-500",
