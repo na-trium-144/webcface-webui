@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { RobotModel, RobotLink, Transform } from "webcface";
+import { RobotModel, RobotLink, Transform, robotGeometryType } from "webcface";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { multiply } from "mathjs";
@@ -31,7 +31,12 @@ export function RobotModelCard(props: Props) {
     return () => props.robotModel.off(update);
   }, [props.robotModel]);
 
-  const worldTf = useRef<Transform>(new Transform([0, 0, 0], [0, 0, 0]));
+  // デフォルトでは(0, 0, 5)から見下ろしていて、xが右、yが上
+  // (1, 1, 1) の方向から見下ろすような図にしたい
+  const worldTf = useRef<Transform>(new Transform(multiply(
+    new Transform([0, 0, 0], [0, 0, -Math.PI / 4]).tfMatrix,
+    new Transform([0, 0, 0], [Math.PI * 5 / 4, 0, 0]).tfMatrix,
+  )));
   const [worldScale, setWorldScale] = useState<number>(1);
   const moveSpeed = 0.01;
   const rotateSpeed = 0.01;
@@ -44,13 +49,13 @@ export function RobotModelCard(props: Props) {
         <Canvas
           onMouseMove={(e) => {
             if ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4) {
-              worldTf.current.pos[2] += -e.movementX * moveSpeed;
+              worldTf.current.pos[0] += e.movementX * moveSpeed;
               worldTf.current.pos[1] += -e.movementY * moveSpeed;
             } else if (e.buttons & 1) {
               worldTf.current.tfMatrix = multiply(
                 new Transform(
                   [0, 0, 0],
-                  [-e.movementY * rotateSpeed, e.movementX * rotateSpeed, 0]
+                  [0, e.movementX * rotateSpeed, e.movementY * rotateSpeed]
                 ).tfMatrix,
                 worldTf.current.tfMatrix
               );
@@ -60,7 +65,6 @@ export function RobotModelCard(props: Props) {
             setWorldScale(worldScale * scaleRate ** -e.deltaY);
             // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
           }}
-          camera={{ fov: 75, near: 0.1, far: 1000, position: [5, 0, 0] }}
         >
           <ambientLight intensity={Math.PI / 2} />
           <spotLight
@@ -68,16 +72,16 @@ export function RobotModelCard(props: Props) {
             angle={0.15}
             penumbra={1}
             decay={0}
-            intensity={Math.PI}
+            intensity={Math.PI / 4}
           />
           <pointLight
             position={[-10, -10, -10]}
             decay={0}
-            intensity={Math.PI}
+            intensity={Math.PI / 4}
           />
           {props.robotModel.get().map((ln, i) => {
             switch (ln.geometry.type) {
-              case 1:
+              case robotGeometryType.line:
                 return (
                   <Line
                     key={i}
@@ -95,8 +99,19 @@ export function RobotModelCard(props: Props) {
                     color={ln.color == 0 ? "gray" : colorName[ln.color]}
                   />
                 );
-
-              case 3:
+              case robotGeometryType.plane:
+                return (
+                  <Plane
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={ln.geometry.origin}
+                    width={ln.geometry.asPlane.width}
+                    height={ln.geometry.asPlane.height}
+                    color={ln.color == 0 ? "gray" : colorName[ln.color]}
+                  />
+                );
+              case robotGeometryType.box:
                 return (
                   <Box
                     key={i}
@@ -121,6 +136,19 @@ interface LinkProps {
   color: string;
 }
 
+function transformMesh(props: LinkProps, meshRef: { current: any }) {
+  const meshPos = new Transform(
+    multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
+  );
+  meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
+  meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
+  meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
+  meshRef.current.rotation.order = "ZYX";
+  meshRef.current.rotation.z = meshPos.rot[0];
+  meshRef.current.rotation.y = meshPos.rot[1];
+  meshRef.current.rotation.x = meshPos.rot[2];
+}
+
 function Line(props: LinkProps & { originToEnd: Transform }) {
   const meshRef = useRef();
   useLayoutEffect(() => {
@@ -130,18 +158,7 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
     ]);
     meshRef.current.geometry.verticesNeedUpdate = true;
   }, [props.originToEnd]);
-  useFrame((state, delta) => {
-    const meshPos = new Transform(
-      multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
-    );
-    meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
-    meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
-    meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
-    meshRef.current.rotation.order = "ZYX";
-    meshRef.current.rotation.z = meshPos.rot[0];
-    meshRef.current.rotation.y = meshPos.rot[1];
-    meshRef.current.rotation.x = meshPos.rot[2];
-  });
+  useFrame((state, delta) => transformMesh(props, meshRef));
   return (
     <line ref={meshRef} scale={props.worldScale}>
       <lineBasicMaterial color={props.color} />
@@ -149,22 +166,21 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
   );
 }
 
+function Plane(props: LinkProps & { width: number; height: number }) {
+  const meshRef = useRef();
+  useFrame((state, delta) => transformMesh(props, meshRef));
+
+  return (
+    <mesh ref={meshRef} scale={props.worldScale}>
+      <planeGeometry args={[props.width, props.height]} />
+      <meshStandardMaterial color={props.color} />
+    </mesh>
+  );
+}
+
 function Box(props: LinkProps & { boxSize: number[] }) {
   const meshRef = useRef();
-  useFrame((state, delta) => {
-    const meshPos = new Transform(
-      multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
-    );
-    meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
-    meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
-    meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
-    meshRef.current.rotation.order = "ZYX";
-    meshRef.current.rotation.z = meshPos.rot[0];
-    meshRef.current.rotation.y = meshPos.rot[1];
-    meshRef.current.rotation.x = meshPos.rot[2];
-    // meshRef.current.rotation.x += delta;
-    // meshRef.current.rotation.z += delta;
-  });
+  useFrame((state, delta) => transformMesh(props, meshRef));
 
   return (
     <mesh ref={meshRef} scale={props.worldScale}>
