@@ -40,7 +40,7 @@ export function ViewCard(props: Props) {
 interface VCProps {
   vc: ViewComponent;
 }
-/*const colorName = [
+export const colorName = [
   "inherit",
   "black",
   "white",
@@ -66,7 +66,7 @@ interface VCProps {
   "fuchsia",
   "pink",
   "rose",
-];*/
+];
 // console.log(colorName.reduce((prev, c) => prev + `["border-${c}-300 bg-${c}-100 hover:bg-${c}-200 active:bg-${c}-300 ", "text-${c}-500"],\n`, ""))
 const buttonColorClass = [
   [

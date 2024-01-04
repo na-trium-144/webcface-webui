@@ -1,9 +1,11 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { RobotModel, RobotLink, Transform } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { multiply } from "mathjs";
+import { colorName } from "./viewCard";
+import * as THREE from "three";
 
 interface Props {
   robotModel: RobotModel;
@@ -41,19 +43,17 @@ export function RobotModelCard(props: Props) {
       <div className="w-full h-full">
         <Canvas
           onMouseMove={(e) => {
-            if (e.buttons & 1) {
-              if (e.ctrlKey) {
-                worldTf.current.pos[2] += -e.movementX * moveSpeed;
-                worldTf.current.pos[1] += -e.movementY * moveSpeed;
-              } else {
-                worldTf.current.tfMatrix = multiply(
-                  new Transform(
-                    [0, 0, 0],
-                    [-e.movementY * rotateSpeed, e.movementX * rotateSpeed, 0]
-                  ).tfMatrix,
-                  worldTf.current.tfMatrix
-                );
-              }
+            if ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4) {
+              worldTf.current.pos[2] += -e.movementX * moveSpeed;
+              worldTf.current.pos[1] += -e.movementY * moveSpeed;
+            } else if (e.buttons & 1) {
+              worldTf.current.tfMatrix = multiply(
+                new Transform(
+                  [0, 0, 0],
+                  [-e.movementY * rotateSpeed, e.movementX * rotateSpeed, 0]
+                ).tfMatrix,
+                worldTf.current.tfMatrix
+              );
             }
           }}
           onWheel={(e) => {
@@ -75,12 +75,39 @@ export function RobotModelCard(props: Props) {
             decay={0}
             intensity={Math.PI}
           />
-          <Box
-            worldToBase={worldTf.current}
-            worldScale={worldScale}
-            baseToOrigin={new Transform([0, 0, 0], [0, 0, 0])}
-            color="yellow"
-          />
+          {props.robotModel.get().map((ln, i) => {
+            switch (ln.geometry.type) {
+              case 1:
+                return (
+                  <Line
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={
+                      new Transform(
+                        multiply(
+                          ln.originFromBase.tfMatrix,
+                          ln.geometry.origin.tfMatrix
+                        )
+                      )
+                    }
+                    originToEnd={ln.geometry.asLine.end}
+                    color={ln.color == 0 ? "gray" : colorName[ln.color]}
+                  />
+                );
+
+              case 3:
+                return (
+                  <Box
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={ln.geometry.origin}
+                    color={ln.color == 0 ? "gray" : colorName[ln.color]}
+                  />
+                );
+            }
+          })}
         </Canvas>
       </div>
     </Card>
@@ -92,6 +119,34 @@ interface LinkProps {
   baseToOrigin: Transform;
   worldScale: number;
   color: string;
+}
+
+function Line(props: LinkProps & { originToEnd: Transform }) {
+  const meshRef = useRef();
+  useLayoutEffect(() => {
+    meshRef.current.geometry.setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(...props.originToEnd.pos),
+    ]);
+    meshRef.current.geometry.verticesNeedUpdate = true;
+  }, [props.originToEnd]);
+  useFrame((state, delta) => {
+    const meshPos = new Transform(
+      multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
+    );
+    meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
+    meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
+    meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
+    meshRef.current.rotation.order = "ZYX";
+    meshRef.current.rotation.z = meshPos.rot[0];
+    meshRef.current.rotation.y = meshPos.rot[1];
+    meshRef.current.rotation.x = meshPos.rot[2];
+  });
+  return (
+    <line ref={meshRef} scale={props.worldScale}>
+      <lineBasicMaterial color={props.color} />
+    </line>
+  );
 }
 
 function Box(props: LinkProps & { boxSize: number[] }) {
