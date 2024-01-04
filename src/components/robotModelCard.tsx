@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { RobotModel, RobotLink, Transform, robotGeometryType } from "webcface";
+import { RobotModel, Transform, robotGeometryType } from "webcface";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { multiply } from "mathjs";
@@ -136,7 +136,7 @@ interface LinkProps {
   color: string;
 }
 
-function transformMesh(props: LinkProps, meshRef: { current: any }) {
+function transformMesh(props: LinkProps, meshRef: { current: THREE.Mesh }) {
   const meshPos = new Transform(
     multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
   );
@@ -150,7 +150,7 @@ function transformMesh(props: LinkProps, meshRef: { current: any }) {
 }
 
 function Line(props: LinkProps & { originToEnd: Transform }) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null!);
   useLayoutEffect(() => {
     meshRef.current.geometry.setFromPoints([
       new THREE.Vector3(0, 0, 0),
@@ -158,7 +158,7 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
     ]);
     meshRef.current.geometry.verticesNeedUpdate = true;
   }, [props.originToEnd]);
-  useFrame((state, delta) => transformMesh(props, meshRef));
+  useFrame(() => transformMesh(props, meshRef));
   return (
     <line ref={meshRef} scale={props.worldScale}>
       <lineBasicMaterial color={props.color} />
@@ -168,7 +168,7 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
 
 function Plane(props: LinkProps & { width: number; height: number }) {
   const meshRef = useRef();
-  useFrame((state, delta) => transformMesh(props, meshRef));
+  useFrame(() => transformMesh(props, meshRef));
 
   return (
     <mesh ref={meshRef} scale={props.worldScale}>
@@ -180,7 +180,7 @@ function Plane(props: LinkProps & { width: number; height: number }) {
 
 function Box(props: LinkProps & { boxSize: number[] }) {
   const meshRef = useRef();
-  useFrame((state, delta) => transformMesh(props, meshRef));
+  useFrame(() => transformMesh(props, meshRef));
 
   return (
     <mesh ref={meshRef} scale={props.worldScale}>
