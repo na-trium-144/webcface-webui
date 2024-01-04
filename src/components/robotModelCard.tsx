@@ -51,9 +51,9 @@ export function RobotModelCard(props: Props) {
     )
   );
   const [worldScale, setWorldScale] = useState<number>(1);
-  const moveSpeed = 0.01;
+  const moveSpeed = 0.01 / worldScale;
   const rotateSpeed = 0.01;
-  // const scrollSpeed = 0.002;
+  // const scrollSpeed = 0.002 * worldScale;
   const scaleRate = 1.001;
 
   const [pointerPos, setPointerPos] = useState<THREE.Vector3 | null>(null);
@@ -61,17 +61,14 @@ export function RobotModelCard(props: Props) {
   const onPointerMoveOnMesh = (ln: RobotLink, e: ThreeEvent<MouseEvent>) => {
     const pointerPos = e.intersections[0].point;
     const pointerPosTf = new Transform([
-      pointerPos.x,
-      pointerPos.y,
-      pointerPos.z,
+      pointerPos.x / worldScale,
+      pointerPos.y / worldScale,
+      pointerPos.z / worldScale,
     ]);
     const pointerPosWorld = new Transform(
       multiply(inv(worldTf.current.tfMatrix), pointerPosTf.tfMatrix)
     );
-    // todo: なんか値が間違っている
-    setPointerPos(
-      new THREE.Vector3(...pointerPosWorld.pos.map((x) => x / worldScale))
-    );
+    setPointerPos(new THREE.Vector3(...pointerPosWorld.pos));
     setPointerLink(ln);
     e.stopPropagation();
   };
