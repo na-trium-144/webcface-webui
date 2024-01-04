@@ -30,10 +30,12 @@ export class ServerProcess {
   proc: ChildProcess | null = null;
   logs: LogLine[] = [];
   logAppendCallback: (data: LogLine) => void = () => undefined;
+  url: string = "";
   onLogAppend(callback: (data: LogLine) => void) {
     this.logAppendCallback = callback;
   }
   start(port = 7530) {
+    this.logs = []
     this.proc = spawn("webcface-server", ["-vv", "-p", port]);
     this.proc.stderr.setEncoding("utf8");
     this.proc.stderr.on("data", (data: string) => {
@@ -41,11 +43,15 @@ export class ServerProcess {
       for (const l of lines) {
         const llSplit = l.split("] ");
         if (llSplit.length >= 4) {
+          const message = llSplit.slice(3).join("] ");
           const log = {
             time: new Date(llSplit[0].slice(1)),
             level: getLogLevel(llSplit[2]),
-            message: llSplit[1] + "] " + llSplit.slice(3).join("] "),
+            message: llSplit[1] + "] " + message,
           };
+          if (message.startsWith("http")) {
+            this.url = message;
+          }
           this.logAppendCallback(log);
           this.logs.push(log);
         } else {
@@ -56,7 +62,13 @@ export class ServerProcess {
       }
     });
     this.proc.on("exit", (code) => {
-      console.log(`child process exited with code ${code}`);
+      const log = {
+        time: new Date(),
+        level: 5,
+        message: `child process exited with code ${code}`,
+      };
+      this.logAppendCallback(log);
+      this.logs.push(log);
       this.proc = null;
     });
   }

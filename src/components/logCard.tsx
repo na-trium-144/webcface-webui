@@ -40,7 +40,7 @@ export function LogCard(props: Props) {
     logsRaw.current =
       logStore.data.current.find((ld) => ld.name === props.member.name)?.log ||
       [];
-    onScroll();
+    // onScroll();
     hasUpdate.current = true;
   }, [props.member, logStore]);
 

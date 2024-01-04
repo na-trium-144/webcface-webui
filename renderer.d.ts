@@ -10,9 +10,12 @@ export interface IElectronAPI {
     electron: () => string;
   };
   sp: {
-    getLogs: () => LogLine[];
+    getLogs: () => Promise<LogLine[]>;
+    getUrl: () => Promise<string>;
+    getRunning: () => Promise<boolean>;
     onLogAppend: (callback: (event, data: LogLine) => void) => void;
     offLogAppend: (callback: (event, data: LogLine) => void) => void;
+    restart: () => void;
   };
 }
 

@@ -64,9 +64,9 @@ function createWindow() {
 
   // Make all links open with the browser, not with the application
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("https:")) {
-      void shell.openExternal(url);
-    }
+    // if (url.startsWith("https:")) {
+    void shell.openExternal(url);
+    // }
     return { action: "deny" };
   });
 
@@ -80,12 +80,18 @@ void app.whenReady().then(() => {
   });
   sp.start();
   ipcMain.handle("spGetLogs", () => sp.logs);
+  ipcMain.handle("spGetUrl", () => sp.url);
+  ipcMain.handle("spGetRunning", () => sp.running);
+  ipcMain.on("spRestart", () => sp.start());
   createWindow();
 });
 
 app.on("window-all-closed", () => {
   win = null;
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") {
+    sp.disconnect();
+    app.quit();
+  }
 });
 
 app.on("second-instance", () => {
