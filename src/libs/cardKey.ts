@@ -7,6 +7,7 @@ export const image = (member: string, field: string) =>
   `${member}:image:${field}`;
 export const text = (member: string) => `${member}:text`;
 export const robotModel = (member: string) => `${member}:robotModel`;
+export const canvas3D = (member: string) => `${member}:canvas3D`;
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string) => `${member}:log`;
 export const connectionInfo = () => ":connectionInfo";

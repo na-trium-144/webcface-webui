@@ -1,5 +1,13 @@
 import { useState, useEffect, ReactElement } from "react";
-import { Client, Member, Value, View, Image, RobotModel } from "webcface";
+import {
+  Client,
+  Member,
+  Value,
+  View,
+  Image,
+  RobotModel,
+  Canvas3D,
+} from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage } from "./lsProvider";
@@ -34,6 +42,7 @@ export function SideMenu(props: Props) {
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
       m.onRobotModelEntry.on(update);
+      m.onCanvas3DEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -57,6 +66,7 @@ export function SideMenu(props: Props) {
           views={m.views()}
           images={m.images()}
           robotModels={m.robotModels()}
+          canvas3Ds={m.canvas3DEntries()}
         />
       ))}
     </>
@@ -66,7 +76,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | 5 | 6 | null;
+  kind: 0 | 3 | 5 | 6 | 7 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -116,7 +126,9 @@ function SideMenuValues(props: ValuesProps) {
               ? cardKey.view(props.member.name, v.fullName)
               : v.kind === 5
               ? cardKey.image(props.member.name, v.fullName)
-              : cardKey.robotModel(props.member.name, v.fullName)
+              : v.kind === 6
+              ? cardKey.robotModel(props.member.name, v.fullName)
+              : cardKey.canvas3D(props.member.name, v.fullName)
           )}
           onClick={() =>
             props.toggleOpened(
@@ -126,7 +138,9 @@ function SideMenuValues(props: ValuesProps) {
                 ? cardKey.view(props.member.name, v.fullName)
                 : v.kind === 5
                 ? cardKey.image(props.member.name, v.fullName)
-                : cardKey.robotModel(props.member.name, v.fullName)
+                : v.kind === 6
+                ? cardKey.robotModel(props.member.name, v.fullName)
+                : cardKey.canvas3D(props.member.name, v.fullName)
             )
           }
           icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
@@ -151,6 +165,7 @@ interface MemberProps {
   views: View[];
   images: Image[];
   robotModels: RobotModel[];
+  canvas3Ds: Canvas3D[];
 }
 function SideMenuMember(props: MemberProps) {
   const logStore = useLogStore();
@@ -177,7 +192,7 @@ function SideMenuMember(props: MemberProps) {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (
       values: Value[] | View[] | Image[] | RobotModel[],
-      kind: 0 | 3 | 5 | 6
+      kind: 0 | 3 | 5 | 6 | 7
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -208,8 +223,15 @@ function SideMenuMember(props: MemberProps) {
     sortValueNames(props.views, 3);
     sortValueNames(props.images, 5);
     sortValueNames(props.robotModels, 6);
+    sortValueNames(props.canvas3Ds, 7);
     setValueNames(valueNames);
-  }, [props.values, props.views, props.images, props.robotModels]);
+  }, [
+    props.values,
+    props.views,
+    props.images,
+    props.robotModels,
+    props.canvas3Ds,
+  ]);
   return (
     <>
       <div>
