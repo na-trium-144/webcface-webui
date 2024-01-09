@@ -9,6 +9,7 @@ import {
   geometryType,
   Canvas3D,
   canvas3DComponentType,
+  robotJointType,
 } from "webcface";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
@@ -48,12 +49,34 @@ export function Canvas3DCard(props: Canvas3DProps) {
               c.robotModel.on(update);
             }
             for (const ln of c.robotModel.get()) {
+              let jointTf = new Transform();
+              if (c.angles.has(ln.joint.name)) {
+                const a = c.angles.get(ln.joint.name) || 0;
+                switch (ln.joint.type) {
+                  case robotJointType.rotational:
+                    jointTf = new Transform(
+                      [0, 0, 0],
+                      [a - ln.joint.angle, 0, 0]
+                    );
+                    break;
+                  case robotJointType.prismatic:
+                    jointTf = new Transform(
+                      [0, 0, a - ln.joint.angle],
+                      [0, 0, 0]
+                    );
+                    break;
+                }
+              }
               canvasData.push({
                 link: ln,
                 geometry: ln.geometry,
                 color: ln.color,
                 origin: new Transform(
-                  multiply(c.origin.tfMatrix, ln.originFromBase.tfMatrix)
+                  multiply(
+                    c.origin.tfMatrix,
+                    ln.originFromBase.tfMatrix,
+                    jointTf.tfMatrix
+                  )
                 ),
               });
             }
@@ -482,7 +505,8 @@ function Cylinder(
           multiply(
             props.baseToOrigin.tfMatrix,
             props.centerBottom.tfMatrix,
-            new Transform([props.length / 2, 0, 0], [Math.PI / 2, 0, 0]).tfMatrix
+            new Transform([props.length / 2, 0, 0], [Math.PI / 2, 0, 0])
+              .tfMatrix
           )
         ),
       },
