@@ -6,8 +6,10 @@ export const view = (member: string, field: string) =>
 export const image = (member: string, field: string) =>
   `${member}:image:${field}`;
 export const text = (member: string) => `${member}:text`;
-export const robotModel = (member: string) => `${member}:robotModel`;
-export const canvas3D = (member: string) => `${member}:canvas3D`;
+export const robotModel = (member: string, field: string) =>
+  `${member}:robotModel:${field}`;
+export const canvas3D = (member: string, field: string) =>
+  `${member}:canvas3D:${field}`;
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string) => `${member}:log`;
 export const connectionInfo = () => ":connectionInfo";

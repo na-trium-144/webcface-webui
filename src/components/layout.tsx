@@ -213,7 +213,7 @@ export function LayoutMain(props: Props) {
           if (ls.isOpened(key)) {
             return (
               <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
-                <Canvas3DCard robotModel={v} />
+                <Canvas3DCard canvas3D={v} />
               </div>
             );
           }

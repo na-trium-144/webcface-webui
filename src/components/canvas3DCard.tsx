@@ -4,6 +4,7 @@ import {
   RobotModel,
   RobotLink,
   Transform,
+  Point,
   Geometry,
   geometryType,
   Canvas3D,
@@ -206,16 +207,71 @@ export function Canvas3DCardImpl(props: Props) {
                     key={i}
                     worldToBase={worldTf.current}
                     worldScale={worldScale}
-                    baseToOrigin={
-                      new Transform(
-                        multiply(
-                          o.origin.tfMatrix,
-                          o.geometry.asPlane.origin.tfMatrix
-                        )
-                      )
-                    }
+                    baseToOrigin={o.origin}
+                    center={o.geometry.asPlane.origin}
                     width={o.geometry.asPlane.width}
                     height={o.geometry.asPlane.height}
+                    color={o.color == 0 ? "gray" : colorName[o.color]}
+                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
+                      onPointerMoveOnMesh(o, e)
+                    }
+                  />
+                );
+              case geometryType.box:
+                return (
+                  <Box
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={o.origin}
+                    vertex1={o.geometry.asBox.vertex1}
+                    vertex2={o.geometry.asBox.vertex2}
+                    color={o.color == 0 ? "gray" : colorName[o.color]}
+                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
+                      onPointerMoveOnMesh(o, e)
+                    }
+                  />
+                );
+              case geometryType.circle:
+                return (
+                  <Circle
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={o.origin}
+                    center={o.geometry.asCircle.origin}
+                    radius={o.geometry.asCircle.radius}
+                    color={o.color == 0 ? "gray" : colorName[o.color]}
+                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
+                      onPointerMoveOnMesh(o, e)
+                    }
+                  />
+                );
+              case geometryType.cylinder:
+                return (
+                  <Cylinder
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={o.origin}
+                    centerBottom={o.geometry.asCylinder.origin}
+                    radius={o.geometry.asCylinder.radius}
+                    length={o.geometry.asCylinder.length}
+                    color={o.color == 0 ? "gray" : colorName[o.color]}
+                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
+                      onPointerMoveOnMesh(o, e)
+                    }
+                  />
+                );
+              case geometryType.sphere:
+                return (
+                  <Sphere
+                    key={i}
+                    worldToBase={worldTf.current}
+                    worldScale={worldScale}
+                    baseToOrigin={o.origin}
+                    center={o.geometry.asSphere.origin}
+                    radius={o.geometry.asSphere.radius}
                     color={o.color == 0 ? "gray" : colorName[o.color]}
                     onPointerMove={(e: ThreeEvent<MouseEvent>) =>
                       onPointerMoveOnMesh(o, e)
@@ -265,21 +321,24 @@ function transformMesh(props: LinkProps, meshRef: { current: THREE.Mesh }) {
   meshRef.current.rotation.x = meshPos.rot[2];
 }
 
-function Line(props: LinkProps & { originToEnd: Transform }) {
+function Line(props: LinkProps & { originToBegin: Point; originToEnd: Point }) {
   // 表示用のlineと、raycast用のcylinder(透明)を描画
   const lineRef = useRef<THREE.Line>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
   useLayoutEffect(() => {
     lineRef.current.geometry.setFromPoints([
-      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(...props.originToBegin.pos),
       new THREE.Vector3(...props.originToEnd.pos),
     ]);
     lineRef.current.geometry.verticesNeedUpdate = true;
-  }, [props.originToEnd]);
+  }, [props.originToBegin, props.originToEnd]);
+  const beginToEnd = [
+    props.originToEnd.pos[0] - props.originToBegin.pos[0],
+    props.originToEnd.pos[1] - props.originToBegin.pos[1],
+    props.originToEnd.pos[2] - props.originToBegin.pos[2],
+  ];
   const len = Math.sqrt(
-    props.originToEnd.pos[0] ** 2 +
-      props.originToEnd.pos[1] ** 2 +
-      props.originToEnd.pos[2] ** 2
+    beginToEnd[0] ** 2 + beginToEnd[1] ** 2 + beginToEnd[2] ** 2
   );
   useFrame(() => {
     transformMesh(props, lineRef);
@@ -289,20 +348,14 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
         baseToOrigin: new Transform(
           multiply(
             props.baseToOrigin.tfMatrix,
-            new Transform(
-              [0, 0, 0],
-              [
-                Math.atan2(props.originToEnd.pos[1], props.originToEnd.pos[0]),
-                Math.atan2(
-                  props.originToEnd.pos[2],
-                  Math.sqrt(
-                    props.originToEnd.pos[0] ** 2 +
-                      props.originToEnd.pos[1] ** 2
-                  )
-                ),
-                0,
-              ]
-            ).tfMatrix,
+            new Transform(props.originToBegin.pos, [
+              Math.atan2(beginToEnd[1], beginToEnd[0]),
+              Math.atan2(
+                beginToEnd[2],
+                Math.sqrt(beginToEnd[0] ** 2 + beginToEnd[1] ** 2)
+              ),
+              0,
+            ]).tfMatrix,
             new Transform([len / 2, 0, 0], [Math.PI / 2, 0, 0]).tfMatrix
           )
         ),
@@ -327,10 +380,23 @@ function Line(props: LinkProps & { originToEnd: Transform }) {
     </>
   );
 }
+// 以降、line以外はどれもだいたい同じ実装
 
-function Plane(props: LinkProps & { width: number; height: number }) {
+function Plane(
+  props: LinkProps & { center: Transform; width: number; height: number }
+) {
   const meshRef = useRef();
-  useFrame(() => transformMesh(props, meshRef));
+  useFrame(() =>
+    transformMesh(
+      {
+        ...props,
+        baseToOrigin: new Transform(
+          multiply(props.baseToOrigin.tfMatrix, props.center.tfMatrix)
+        ),
+      },
+      meshRef
+    )
+  );
 
   return (
     <mesh
@@ -339,6 +405,127 @@ function Plane(props: LinkProps & { width: number; height: number }) {
       onPointerMove={props.onPointerMove}
     >
       <planeGeometry args={[props.width, props.height]} />
+      <meshStandardMaterial color={props.color} />
+    </mesh>
+  );
+}
+function Box(props: LinkProps & { vertex1: Point; vertex2: Point }) {
+  const meshRef = useRef();
+  const center = new Transform([
+    (props.vertex1.pos[0] + props.vertex2.pos[0]) / 2,
+    (props.vertex1.pos[1] + props.vertex2.pos[1]) / 2,
+    (props.vertex1.pos[2] + props.vertex2.pos[2]) / 2,
+  ]);
+  const size = [
+    Math.abs(props.vertex1.pos[0] - props.vertex2.pos[0]),
+    Math.abs(props.vertex1.pos[1] - props.vertex2.pos[1]),
+    Math.abs(props.vertex1.pos[2] - props.vertex2.pos[2]),
+  ];
+  useFrame(() =>
+    transformMesh(
+      {
+        ...props,
+        baseToOrigin: new Transform(
+          multiply(props.baseToOrigin.tfMatrix, center.tfMatrix)
+        ),
+      },
+      meshRef
+    )
+  );
+
+  return (
+    <mesh
+      ref={meshRef}
+      scale={props.worldScale}
+      onPointerMove={props.onPointerMove}
+    >
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={props.color} />
+    </mesh>
+  );
+}
+function Circle(props: LinkProps & { center: Transform; radius: number }) {
+  const meshRef = useRef();
+  useFrame(() =>
+    transformMesh(
+      {
+        ...props,
+        baseToOrigin: new Transform(
+          multiply(props.baseToOrigin.tfMatrix, props.center.tfMatrix)
+        ),
+      },
+      meshRef
+    )
+  );
+
+  return (
+    <mesh
+      ref={meshRef}
+      scale={props.worldScale}
+      onPointerMove={props.onPointerMove}
+    >
+      <circleGeometry args={[props.radius]} />
+      <meshStandardMaterial color={props.color} />
+    </mesh>
+  );
+}
+
+function Cylinder(
+  props: LinkProps & { centerBottom: Transform; radius: number; length: number }
+) {
+  const meshRef = useRef();
+  useFrame(() =>
+    transformMesh(
+      {
+        ...props,
+        baseToOrigin: new Transform(
+          multiply(
+            props.baseToOrigin.tfMatrix,
+            props.centerBottom.tfMatrix,
+            new Transform([props.length / 2, 0, 0], [Math.PI / 2, 0, 0]).tfMatrix
+          )
+        ),
+      },
+      meshRef
+    )
+  );
+
+  return (
+    <mesh
+      ref={meshRef}
+      scale={props.worldScale}
+      onPointerMove={props.onPointerMove}
+    >
+      <cylinderGeometry args={[props.radius, props.radius, props.length]} />
+      <meshStandardMaterial color={props.color} />
+    </mesh>
+  );
+}
+
+function Sphere(props: LinkProps & { center: Point; radius: number }) {
+  const meshRef = useRef();
+  useFrame(() =>
+    transformMesh(
+      {
+        ...props,
+        baseToOrigin: new Transform(
+          multiply(
+            props.baseToOrigin.tfMatrix,
+            new Transform(props.center.pos).tfMatrix
+          )
+        ),
+      },
+      meshRef
+    )
+  );
+
+  return (
+    <mesh
+      ref={meshRef}
+      scale={props.worldScale}
+      onPointerMove={props.onPointerMove}
+    >
+      <sphereGeometry args={[props.radius]} />
       <meshStandardMaterial color={props.color} />
     </mesh>
   );
