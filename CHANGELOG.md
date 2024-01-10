@@ -1,3 +1,9 @@
+## [1.2.0] - 2024-01-10
+### Added
+* RobotModel, Canvas3Dを表示する機能を追加 (#121)
+### Changed
+* update webcface-js to 1.3.0
+
 ## [1.1.0] - 2023-12-26
 ### Added
 * 画像を表示する機能を追加
