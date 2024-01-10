@@ -191,7 +191,7 @@ function SideMenuMember(props: MemberProps) {
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (
-      values: Value[] | View[] | Image[] | RobotModel[],
+      values: Value[] | View[] | Image[] | RobotModel[] | Canvas3D[],
       kind: 0 | 3 | 5 | 6 | 7
     ) => {
       for (const v of values) {

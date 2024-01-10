@@ -11,9 +11,9 @@ import {
   canvas3DComponentType,
   robotJointType,
 } from "webcface";
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, RefObject } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
-import { multiply, inv } from "mathjs";
+import { multiply, inv } from "../libs/math";
 import { colorName } from "./viewCard";
 import * as THREE from "three";
 
@@ -331,29 +331,34 @@ interface LinkProps {
   onPointerMove: (e: ThreeEvent<MouseEvent>) => void;
 }
 
-function transformMesh(props: LinkProps, meshRef: { current: THREE.Mesh }) {
-  const meshPos = new Transform(
-    multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
-  );
-  meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
-  meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
-  meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
-  meshRef.current.rotation.order = "ZYX";
-  meshRef.current.rotation.z = meshPos.rot[0];
-  meshRef.current.rotation.y = meshPos.rot[1];
-  meshRef.current.rotation.x = meshPos.rot[2];
+function transformMesh(
+  props: LinkProps,
+  meshRef: RefObject<THREE.Mesh | THREE.Line>
+) {
+  if (meshRef.current != null) {
+    const meshPos = new Transform(
+      multiply(props.worldToBase.tfMatrix, props.baseToOrigin.tfMatrix)
+    );
+    meshRef.current.position.x = meshPos.pos[0] * props.worldScale;
+    meshRef.current.position.y = meshPos.pos[1] * props.worldScale;
+    meshRef.current.position.z = meshPos.pos[2] * props.worldScale;
+    meshRef.current.rotation.order = "ZYX";
+    meshRef.current.rotation.z = meshPos.rot[0];
+    meshRef.current.rotation.y = meshPos.rot[1];
+    meshRef.current.rotation.x = meshPos.rot[2];
+  }
 }
 
 function Line(props: LinkProps & { originToBegin: Point; originToEnd: Point }) {
   // 表示用のlineと、raycast用のcylinder(透明)を描画
-  const lineRef = useRef<THREE.Line>(null!);
-  const meshRef = useRef<THREE.Mesh>(null!);
+  const lineRef = useRef<THREE.Line>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   useLayoutEffect(() => {
-    lineRef.current.geometry.setFromPoints([
+    lineRef.current?.geometry.setFromPoints([
       new THREE.Vector3(...props.originToBegin.pos),
       new THREE.Vector3(...props.originToEnd.pos),
     ]);
-    lineRef.current.geometry.verticesNeedUpdate = true;
+    // lineRef.current.geometry.verticesNeedUpdate = true;
   }, [props.originToBegin, props.originToEnd]);
   const beginToEnd = [
     props.originToEnd.pos[0] - props.originToBegin.pos[0],
@@ -389,7 +394,10 @@ function Line(props: LinkProps & { originToBegin: Point; originToEnd: Point }) {
 
   return (
     <>
-      <line ref={lineRef} scale={props.worldScale}>
+      <line
+        ref={lineRef as unknown as RefObject<SVGLineElement>}
+        scale={props.worldScale}
+      >
         <lineBasicMaterial color={props.color} />
       </line>
       <mesh
@@ -408,7 +416,7 @@ function Line(props: LinkProps & { originToBegin: Point; originToEnd: Point }) {
 function Plane(
   props: LinkProps & { center: Transform; width: number; height: number }
 ) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   useFrame(() =>
     transformMesh(
       {
@@ -433,13 +441,13 @@ function Plane(
   );
 }
 function Box(props: LinkProps & { vertex1: Point; vertex2: Point }) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   const center = new Transform([
     (props.vertex1.pos[0] + props.vertex2.pos[0]) / 2,
     (props.vertex1.pos[1] + props.vertex2.pos[1]) / 2,
     (props.vertex1.pos[2] + props.vertex2.pos[2]) / 2,
   ]);
-  const size = [
+  const size: [number, number, number] = [
     Math.abs(props.vertex1.pos[0] - props.vertex2.pos[0]),
     Math.abs(props.vertex1.pos[1] - props.vertex2.pos[1]),
     Math.abs(props.vertex1.pos[2] - props.vertex2.pos[2]),
@@ -468,7 +476,7 @@ function Box(props: LinkProps & { vertex1: Point; vertex2: Point }) {
   );
 }
 function Circle(props: LinkProps & { center: Transform; radius: number }) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   useFrame(() =>
     transformMesh(
       {
@@ -496,7 +504,7 @@ function Circle(props: LinkProps & { center: Transform; radius: number }) {
 function Cylinder(
   props: LinkProps & { centerBottom: Transform; radius: number; length: number }
 ) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   useFrame(() =>
     transformMesh(
       {
@@ -527,7 +535,7 @@ function Cylinder(
 }
 
 function Sphere(props: LinkProps & { center: Point; radius: number }) {
-  const meshRef = useRef();
+  const meshRef = useRef<THREE.Mesh>(null);
   useFrame(() =>
     transformMesh(
       {
