@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Client, Member, Value, View, Image } from "webcface";
+import { Client, Member, Value, View, Image, RobotModel, Canvas3D } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -17,6 +17,8 @@ import { TextCard } from "./textCard";
 import { FuncCard } from "./funcCard";
 import { LogCard } from "./logCard";
 import { ViewCard } from "./viewCard";
+import { RobotModelCard } from "./robotModelCard";
+import { Canvas3DCard } from "./canvas3DCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage, LocalStorage } from "./lsProvider";
@@ -184,6 +186,34 @@ export function LayoutMain(props: Props) {
             return (
               <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
                 <ImageCard image={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.robotModels()), [] as RobotModel[])
+        .map((v) => {
+          const key = cardKey.robotModel(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
+                <RobotModelCard robotModel={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.canvas3DEntries()), [] as Canvas3D[])
+        .map((v) => {
+          const key = cardKey.canvas3D(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
+                <Canvas3DCard canvas3D={v} />
               </div>
             );
           }
