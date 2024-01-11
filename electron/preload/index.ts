@@ -1,6 +1,7 @@
 import { ipcRenderer } from "electron";
 import "../../renderer.d.ts";
-import { LogLine } from "../main/serverProcess";
+import { LogLine } from "../logLine";
+import { LauncherCommand } from "../config";
 
 window.electronAPI = {
   versions: {
@@ -23,4 +24,8 @@ window.electronAPI = {
   openWorkdirDialog: (path: string) =>
     ipcRenderer.invoke("openWorkdirDialog", path),
   dirname: (path: string) => ipcRenderer.invoke("dirname", path),
+  launcher: {
+    setCommands: (commands: LauncherCommand[]) => ipcRenderer.send("launcherSetCommands", commands),
+    getCommands: () => ipcRenderer.invoke("launcherGetCommands"),
+  }
 };

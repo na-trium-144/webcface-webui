@@ -1,21 +1,19 @@
 import { Card } from "./card";
-import { useForceUpdate } from "../libs/forceUpdate";
-import { Member, Text } from "webcface";
-import { useEffect, useRef, useState } from "react";
+import { viewColor } from "webcface";
+import { useEffect, useState } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
-import { Right, Down } from "@icon-park/react";
+import { Right, Down, Delete, Plus, CheckOne } from "@icon-park/react";
+import { LauncherCommand } from "../../electron/config";
 import "../../renderer.d.ts";
 
-interface LauncherCommand {
-  name: string;
-  exec: string;
-  workdir: string;
-}
-interface Props {}
-export function LauncherCard(props: Props) {
+export function LauncherCard() {
   const [config, setConfig] = useState<LauncherCommand[]>([]);
-
+  useEffect(() => {
+    void window.electronAPI.launcher.getCommands().then((commands) => {
+      setConfig(commands);
+    });
+  }, []);
   return (
     <Card title={`Launcher Settings`}>
       <div className="h-full overflow-y-auto">
@@ -27,10 +25,11 @@ export function LauncherCard(props: Props) {
               setConfig={(c: LauncherCommand) =>
                 setConfig(config.map((oc, oi) => (oi === i ? c : oc)))
               }
+              onDelete={() => setConfig(config.filter((oc, oi) => oi !== i))}
             />
           ))}
         </ul>
-        <div>
+        <div className="mt-2 flex space-x-2">
           <Button
             onClick={() => {
               setConfig(
@@ -43,9 +42,18 @@ export function LauncherCard(props: Props) {
                 ])
               );
             }}
-            className="mt-2 "
+            className="flex items-center space-x-1"
           >
-            + Add New
+            <Plus />
+            <span>Add New Command</span>
+          </Button>
+          <Button
+            className="flex items-center space-x-1"
+            bgColor={viewColor.yellow}
+            onClick={() => window.electronAPI.launcher.setCommands(config)}
+          >
+            <CheckOne />
+            <span>Save & Restart</span>
           </Button>
         </div>
       </div>
@@ -56,6 +64,7 @@ export function LauncherCard(props: Props) {
 interface LineProps {
   config: LauncherCommand;
   setConfig: (c: LauncherCommand) => void;
+  onDelete: () => void;
 }
 export function LauncherConfigLine(props: LineProps) {
   const [open, setOpen] = useState<boolean>(false);
@@ -94,6 +103,12 @@ export function LauncherConfigLine(props: LineProps) {
                     }
                     className="w-full "
                     widthClass="w-full "
+                    caption={
+                      <>
+                        <div>実行するコマンド</div>
+                        <div>(引数なども設定可能)</div>
+                      </>
+                    }
                   />
                 </td>
                 <td>
@@ -132,6 +147,7 @@ export function LauncherConfigLine(props: LineProps) {
                     }
                     className="w-full "
                     widthClass="w-full "
+                    caption={<div>実行するディレクトリ</div>}
                   />
                 </td>
                 <td>
@@ -152,6 +168,17 @@ export function LauncherConfigLine(props: LineProps) {
               </tr>
             </tbody>
           </table>
+          <div>
+            <Button
+              rounded="full"
+              className="py-0.5 flex items-center space-x-1"
+              bgColor={viewColor.red}
+              onClick={props.onDelete}
+            >
+              <Delete />
+              <span>Delete</span>
+            </Button>
+          </div>
         </div>
       )}
     </li>

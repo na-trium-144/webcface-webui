@@ -1,5 +1,29 @@
 import { ChildProcess, spawn } from "child_process";
 
+export class Process {
+  proc: ChildProcess | null = null;
+  start(cmd: string[]) {
+    this.proc = spawn(cmd[0], cmd.slice(1), {
+      stdio: ["pipe", "inherit", "inherit"],
+    });
+    this.proc.on("exit", () => {
+      this.proc = null;
+    });
+  }
+  write(data: string) {
+    this.proc.stdin.write(data);
+  }
+  writeEnd() {
+    this.proc.stdin.end();
+  }
+  get running() {
+    return this.proc !== null;
+  }
+  kill() {
+    this.proc?.kill();
+  }
+}
+
 export interface LogLine {
   level: number;
   time: Date;
@@ -26,8 +50,7 @@ function getLogLevel(levelStr: string) {
   }
   return 2;
 }
-export class ServerProcess {
-  proc: ChildProcess | null = null;
+export class ServerProcess extends Process {
   logs: LogLine[] = [];
   logAppendCallback: (data: LogLine) => void = () => undefined;
   url: string = "";
@@ -35,7 +58,7 @@ export class ServerProcess {
     this.logAppendCallback = callback;
   }
   start(port = 7530) {
-    this.logs = []
+    this.logs = [];
     this.proc = spawn("webcface-server", ["-vv", "-p", port]);
     this.proc.stderr.setEncoding("utf8");
     this.proc.stderr.on("data", (data: string) => {
@@ -71,11 +94,5 @@ export class ServerProcess {
       this.logs.push(log);
       this.proc = null;
     });
-  }
-  get running() {
-    return this.proc !== null;
-  }
-  disconnect() {
-    this.proc?.disconnect();
   }
 }

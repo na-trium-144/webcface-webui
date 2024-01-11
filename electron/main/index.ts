@@ -2,7 +2,10 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 // import { release } from "node:os";
 import { join, dirname } from "node:path";
 // import { update } from './update'
-import { ServerProcess } from "./serverProcess";
+import { ServerProcess, Process } from "./serverProcess";
+import { LauncherCommand, ServerConfig } from "../config";
+import { writeConfig, readConfigSync } from "./configIO";
+import toml from "@iarna/toml";
 
 process.env.DIST_ELECTRON = join(__dirname, "../");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
@@ -11,6 +14,21 @@ process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
   : process.env.DIST;
 
 const sp = new ServerProcess();
+const launcher = new Process();
+const config = readConfigSync();
+
+function startLauncher(newCommands?: LauncherCommand[]) {
+  if(newCommands !== undefined){
+    config.launcher.command = newCommands;
+    writeConfig(config);
+  }
+  if (launcher.running) {
+    launcher.kill();
+  }
+  launcher.start(["webcface-launcher", "-s"]);
+  launcher.write(toml.stringify(config.launcher));
+  launcher.writeEnd();
+}
 
 // Disable GPU Acceleration for Windows 7
 // if (release().startsWith("6.1")) app.disableHardwareAcceleration();
@@ -19,6 +37,9 @@ const sp = new ServerProcess();
 if (process.platform === "win32") app.setAppUserModelId(app.getName());
 
 if (!app.requestSingleInstanceLock()) {
+  console.error(
+    "Error: app.requestSingleInstanceLock failed. (another webcface-server-gui process is running?)"
+  );
   app.quit();
   process.exit(0);
 }
@@ -81,6 +102,7 @@ void app.whenReady().then(() => {
     }
   });
   sp.start();
+  startLauncher();
   ipcMain.handle("spGetLogs", () => sp.logs);
   ipcMain.handle("spGetUrl", () => sp.url);
   ipcMain.handle("spGetRunning", () => sp.running);
@@ -102,6 +124,10 @@ void app.whenReady().then(() => {
     return dialogResult.filePaths[0] || "";
   });
   ipcMain.handle("dirname", (_event, path: string) => dirname(path));
+  ipcMain.on("launcherSetCommands", (_event, commands: LauncherCommand[]) =>
+    startLauncher(commands)
+  );
+  ipcMain.handle("launcherGetCommands", () => config.launcher.command || []);
   createWindow();
 });
 

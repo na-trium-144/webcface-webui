@@ -1,8 +1,6 @@
-interface LogLine {
-  level: number;
-  time: Date;
-  message: string;
-}
+import { LogLine } from "./electron/logLine";
+import { ServerConfig, LauncherCommand } from "./electron/config";
+
 export interface IElectronAPI {
   versions: {
     node: () => string;
@@ -20,6 +18,10 @@ export interface IElectronAPI {
   openExecDialog: (path: string) => Promise<string>;
   openWorkdirDialog: (path: string) => Promise<string>;
   dirname: (path: string) => Promise<string>;
+  launcher: {
+    setCommands: (commands: LauncherCommand[]) => void;
+    getCommands: () => Promise<LauncherCommand[]>;
+  };
 }
 
 declare global {

@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@icon-park/react": "^1.4.2",
     "@react-three/fiber": "^8.15.12",
     "@types/three": "^0.160.0",
@@ -40,6 +41,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
+    "tree-kill": "^1.2.2",
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
     "vite-plugin-electron": "^0.15.5",
