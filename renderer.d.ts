@@ -17,6 +17,9 @@ export interface IElectronAPI {
     offLogAppend: (callback: (event, data: LogLine) => void) => void;
     restart: () => void;
   };
+  openExecDialog: (path: string) => Promise<string>;
+  openWorkdirDialog: (path: string) => Promise<string>;
+  dirname: (path: string) => Promise<string>;
 }
 
 declare global {

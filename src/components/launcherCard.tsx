@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
 import { Right, Down } from "@icon-park/react";
+import "../../renderer.d.ts";
 
 interface LauncherCommand {
   name: string;
@@ -84,7 +85,7 @@ export function LauncherConfigLine(props: LineProps) {
             <tbody>
               <tr>
                 <td>Exec:</td>
-                <td  className="w-full">
+                <td className="w-full">
                   <Input
                     type="string"
                     value={props.config.exec}
@@ -95,10 +96,34 @@ export function LauncherConfigLine(props: LineProps) {
                     widthClass="w-full "
                   />
                 </td>
+                <td>
+                  <Button
+                    onClick={async () => {
+                      let workdir = props.config.workdir;
+                      if (
+                        workdir ===
+                        (await window.electronAPI.dirname(props.config.exec))
+                      ) {
+                        workdir = "";
+                      }
+                      const exec = await window.electronAPI.openExecDialog(
+                        props.config.exec
+                      );
+                      if (exec !== "") {
+                        if (workdir === "") {
+                          workdir = await window.electronAPI.dirname(exec);
+                        }
+                        props.setConfig({ ...props.config, exec, workdir });
+                      }
+                    }}
+                  >
+                    ...
+                  </Button>
+                </td>
               </tr>
               <tr>
                 <td>WorkDir:</td>
-                <td  className="w-full">
+                <td>
                   <Input
                     type="string"
                     value={props.config.workdir}
@@ -108,6 +133,21 @@ export function LauncherConfigLine(props: LineProps) {
                     className="w-full "
                     widthClass="w-full "
                   />
+                </td>
+                <td>
+                  <Button
+                    onClick={async () => {
+                      const workdir =
+                        await window.electronAPI.openWorkdirDialog(
+                          props.config.workdir
+                        );
+                      if (workdir !== "") {
+                        props.setConfig({ ...props.config, workdir });
+                      }
+                    }}
+                  >
+                    ...
+                  </Button>
                 </td>
               </tr>
             </tbody>

@@ -1,6 +1,6 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 // import { release } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 // import { update } from './update'
 import { ServerProcess } from "./serverProcess";
 
@@ -76,13 +76,32 @@ function createWindow() {
 
 void app.whenReady().then(() => {
   sp.onLogAppend((data: string) => {
-    win.webContents.send("spLogAppend", data);
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("spLogAppend", data);
+    }
   });
   sp.start();
   ipcMain.handle("spGetLogs", () => sp.logs);
   ipcMain.handle("spGetUrl", () => sp.url);
   ipcMain.handle("spGetRunning", () => sp.running);
   ipcMain.on("spRestart", () => sp.start());
+  ipcMain.handle("openExecDialog", async (_event, path: string) => {
+    const dialogResult = await dialog.showOpenDialog(win, {
+      title: "Open Executable",
+      defaultPath: path || undefined,
+      properties: ["openFile"],
+    });
+    return dialogResult.filePaths[0] || "";
+  });
+  ipcMain.handle("openWorkdirDialog", async (_event, path: string) => {
+    const dialogResult = await dialog.showOpenDialog(win, {
+      title: "Open Working Directory",
+      defaultPath: path || undefined,
+      properties: ["openDirectory"],
+    });
+    return dialogResult.filePaths[0] || "";
+  });
+  ipcMain.handle("dirname", (_event, path: string) => dirname(path));
   createWindow();
 });
 

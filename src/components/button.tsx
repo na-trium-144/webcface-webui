@@ -6,7 +6,7 @@ interface Props {
   rounded?: "md" | "full";
   bgColor?: number;
   textColor?: number;
-  onClick: () => void;
+  onClick: () => void | Promise<void>;
   children?: ReactElement;
   disabled?: boolean;
   className?: string;
@@ -24,7 +24,7 @@ export function Button(props: Props) {
         (props.rounded === "full" ? "rounded-full " : "rounded-md ") +
         (props.className !== undefined ? props.className : "")
       }
-      onClick={props.onClick}
+      onClick={() => void props.onClick()}
       disabled={props.disabled}
     >
       {props.children}

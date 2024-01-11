@@ -19,4 +19,8 @@ window.electronAPI = {
       ipcRenderer.off("spLogAppend", callback),
     restart: () => ipcRenderer.send("spRestart"),
   },
+  openExecDialog: (path: string) => ipcRenderer.invoke("openExecDialog", path),
+  openWorkdirDialog: (path: string) =>
+    ipcRenderer.invoke("openWorkdirDialog", path),
+  dirname: (path: string) => ipcRenderer.invoke("dirname", path),
 };
