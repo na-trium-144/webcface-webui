@@ -9,6 +9,7 @@ interface Props {
   onClick: () => void;
   children?: ReactElement;
   disabled?: boolean;
+  className?: string;
 }
 export function Button(props: Props) {
   return (
@@ -20,7 +21,8 @@ export function Button(props: Props) {
           ? "border-neutral-400 bg-neutral-300 shadow-none "
           : bgButtonColorClass(props.bgColor || viewColor.green) +
             "shadow-md active:shadow-none ") +
-        (props.rounded === "full" ? "rounded-full " : "rounded-md ")
+        (props.rounded === "full" ? "rounded-full " : "rounded-md ") +
+        (props.className !== undefined ? props.className : "")
       }
       onClick={props.onClick}
       disabled={props.disabled}

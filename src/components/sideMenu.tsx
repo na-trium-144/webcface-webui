@@ -320,6 +320,15 @@ function SideMenuServer() {
             iconActive={<Info theme="two-tone" fill={iconFillColor} />}
           />
         </li>
+        <li>
+          <SideMenuButton2
+            name="Launcher Config"
+            active={ls.isOpened(cardKey.launcher())}
+            onClick={() => ls.toggleOpened(cardKey.launcher())}
+            icon={<Info />}
+            iconActive={<Info theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
       </ul>
     </>
   );

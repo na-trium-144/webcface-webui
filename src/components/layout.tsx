@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Client, Member, Value, View, Image, RobotModel, Canvas3D } from "webcface";
+import {
+  Client,
+  Member,
+  Value,
+  View,
+  Image,
+  RobotModel,
+  Canvas3D,
+} from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -21,6 +29,7 @@ import { RobotModelCard } from "./robotModelCard";
 import { Canvas3DCard } from "./canvas3DCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { AboutCard } from "./aboutCard";
+import { LauncherCard } from "./launcherCard";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
@@ -146,6 +155,16 @@ export function LayoutMain(props: Props) {
           return (
             <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
               <AboutCard />
+            </div>
+          );
+        }
+      })()}
+      {(() => {
+        const key = cardKey.launcher();
+        if (ls.isOpened(key)) {
+          return (
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
+              <LauncherCard />
             </div>
           );
         }

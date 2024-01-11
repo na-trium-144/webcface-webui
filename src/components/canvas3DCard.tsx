@@ -14,7 +14,7 @@ import {
 import { useState, useEffect, useRef, useLayoutEffect, RefObject } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { multiply, inv } from "../libs/math";
-import { colorName } from "./viewCard";
+import { colorName } from "../libs/color";
 import * as THREE from "three";
 
 interface Canvas3DProps {

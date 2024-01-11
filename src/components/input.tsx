@@ -4,8 +4,10 @@ import { Caption } from "./caption";
 const inputClass = "border-0 outline-0 px-1 peer ";
 
 interface Props {
-  isError: boolean;
-  setIsError: (error: boolean) => void;
+  isError?: boolean;
+  setIsError?: (error: boolean) => void;
+  className?: string;
+  widthClass?: string;
   name?: string;
   type: "select" | "number" | "float" | "string" | "boolean";
   value: string | number | boolean;
@@ -17,7 +19,13 @@ interface Props {
 }
 export function Input(props: Props) {
   return (
-    <div className="inline-block relative pt-3">
+    <div
+      className={
+        "inline-block relative " +
+        (props.name !== undefined ? "pt-3 " : "") +
+        (props.className !== undefined ? props.className : "")
+      }
+    >
       {props.type === "select" ? (
         <SelectInput {...props} />
       ) : props.type === "number" ? (
@@ -54,7 +62,11 @@ export function Input(props: Props) {
 function SelectInput(props: Props) {
   return (
     <select
-      className={inputClass + "px-0 "}
+      className={
+        inputClass +
+        "px-0 " +
+        (props.widthClass != undefined ? props.widthClass : "")
+      }
       value={String(props.value)}
       onChange={(e) => props.setValue(e.target.value)}
     >
@@ -71,12 +83,15 @@ function NumberInput(props: Props) {
   return (
     <input
       type="number"
-      className={inputClass + "w-20"}
+      className={
+        inputClass +
+        (props.widthClass != undefined ? props.widthClass : "w-20 ")
+      }
       value={(props.value as number) || 0}
       min={props.min != null ? props.min : undefined}
       max={props.max != null ? props.max : undefined}
       onChange={(e) => {
-        props.setIsError(!e.target.checkValidity());
+        props.setIsError && props.setIsError(!e.target.checkValidity());
         props.setValue(e.target.value);
       }}
     />
@@ -90,8 +105,9 @@ function BooleanInput(props: Props) {
       onClick={() => props.setValue(!props.value)}
       className={
         inputClass +
-        "cursor-pointer inline-block pl-1 w-12 " +
-        "hover:text-green-700 active:text-green-700 "
+        "cursor-pointer inline-block pl-1 " +
+        "hover:text-green-700 active:text-green-700 " +
+        (props.widthClass != undefined ? props.widthClass : "w-12 ")
       }
     >
       {props.value ? "true" : "false"}
@@ -101,17 +117,20 @@ function BooleanInput(props: Props) {
 
 function FloatInput(props: Props) {
   useEffect(() => {
-    props.setIsError(
-      props.value === "" || 
-      isNaN(Number(props.value)) ||
-        (props.min != null && props.min > Number(props.value)) ||
-        (props.max != null && props.max < Number(props.value))
-    );
+    props.setIsError &&
+      props.setIsError(
+        props.value === "" ||
+          isNaN(Number(props.value)) ||
+          (props.min != null && props.min > Number(props.value)) ||
+          (props.max != null && props.max < Number(props.value))
+      );
   }, [props.value, props.min, props.max]);
   return (
     <input
       type="text"
-      className={inputClass}
+      className={
+        inputClass + (props.widthClass != undefined ? props.widthClass : "")
+      }
       size={6}
       value={String(props.value)}
       onChange={(e) => {
@@ -123,15 +142,18 @@ function FloatInput(props: Props) {
 
 function StringInput(props: Props) {
   useEffect(() => {
-    props.setIsError(
-      (props.min != null && props.min > String(props.value).length) ||
-        (props.max != null && props.max < String(props.value).length)
-    );
+    props.setIsError &&
+      props.setIsError(
+        (props.min != null && props.min > String(props.value).length) ||
+          (props.max != null && props.max < String(props.value).length)
+      );
   }, [props.value, props.min, props.max]);
   return (
     <input
       type="text"
-      className={inputClass}
+      className={
+        inputClass + (props.widthClass != undefined ? props.widthClass : "")
+      }
       size={6}
       value={String(props.value)}
       onChange={(e) => {

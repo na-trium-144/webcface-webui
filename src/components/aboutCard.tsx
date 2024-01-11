@@ -31,17 +31,16 @@ export function AboutCard(/*props: Props*/) {
             ) : (
               <>
                 <span className="pl-1 text-red-500">Not Running</span>
-                <span className="ml-2 inline-block">
-                  <Button
-                    bgColor={viewColor.yellow}
-                    onClick={() => {
-                      logStore.serverData.current = [];
-                      window.electronAPI?.sp.restart();
-                    }}
-                  >
-                    Restart
-                  </Button>
-                </span>
+                <Button
+                  className="ml-2 inline-block"
+                  bgColor={viewColor.yellow}
+                  onClick={() => {
+                    logStore.serverData.current = [];
+                    window.electronAPI?.sp.restart();
+                  }}
+                >
+                  Restart
+                </Button>
               </>
             )}
           </p>

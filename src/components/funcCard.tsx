@@ -121,7 +121,7 @@ function FuncLine(props: { func: Func }) {
               setIsError={(isError) =>
                 setErrors(errors.map((ce, ci) => (i === ci ? isError : ce)))
               }
-              name={ac.name}
+              name={ac.name || ""}
               type={argType(ac)}
               value={args[i]}
               setValue={(arg) =>
@@ -137,15 +137,14 @@ function FuncLine(props: { func: Func }) {
         ))}
       </span>
       <span className="pl-0.5 pr-2">)</span>
-      <span className="py-1 inline-block">
-        <Button
-          rounded="full"
-          disabled={errors.includes(true)}
-          onClick={() => addResult(props.func.runAsync(...args))}
-        >
-          Run
-        </Button>
-      </span>
+      <Button
+        className="my-1 inline-block"
+        rounded="full"
+        disabled={errors.includes(true)}
+        onClick={() => addResult(props.func.runAsync(...args))}
+      >
+        Run
+      </Button>
     </>
   );
 }

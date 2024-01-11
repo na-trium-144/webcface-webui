@@ -15,3 +15,4 @@ export const log = (member: string) => `${member}:log`;
 export const connectionInfo = () => ":connectionInfo";
 export const about = () => ":about";
 export const serverLog = () => ":serverLog";
+export const launcher = () => ":launcher";
