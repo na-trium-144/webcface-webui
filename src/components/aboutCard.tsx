@@ -3,8 +3,8 @@ import "../../renderer.d.ts";
 import { useState, useEffect } from "react";
 // import { useForceUpdate } from "../libs/forceUpdate";
 import { useLogStore } from "./logStoreProvider";
-import { buttonColorClass } from "./viewCard";
 import { viewColor } from "webcface";
+import { Button } from "./button";
 
 export function AboutCard(/*props: Props*/) {
   // const update = useForceUpdate();
@@ -31,19 +31,17 @@ export function AboutCard(/*props: Props*/) {
             ) : (
               <>
                 <span className="pl-1 text-red-500">Not Running</span>
-                <button
-                  className={
-                    "ml-2 rounded-md border px-2 shadow-md active:shadow-none " +
-                    buttonColorClass[viewColor.yellow][0] +
-                    buttonColorClass[viewColor.black][1]
-                  }
-                  onClick={() => {
-                    logStore.serverData.current = [];
-                    window.electronAPI?.sp.restart();
-                  }}
-                >
-                  Restart
-                </button>
+                <span className="ml-2 inline-block">
+                  <Button
+                    bgColor={viewColor.yellow}
+                    onClick={() => {
+                      logStore.serverData.current = [];
+                      window.electronAPI?.sp.restart();
+                    }}
+                  >
+                    Restart
+                  </Button>
+                </span>
               </>
             )}
           </p>
@@ -58,7 +56,11 @@ export function AboutCard(/*props: Props*/) {
           <p className="flex items-baseline">
             <span className="text-sm">WebUI URL:</span>
             {url !== "" && (
-              <a className="pl-1 underline text-blue-500" href={url} target="_blank">
+              <a
+                className="pl-1 underline text-blue-500"
+                href={url}
+                target="_blank"
+              >
                 {url}
               </a>
             )}
