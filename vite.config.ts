@@ -77,6 +77,18 @@ export default defineConfig(({ command }) => {
         global: "window",
         "process.env": {},
       },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              three: ["three"],
+              fiber: ["@react-three/fiber"],
+              math: ["mathjs"],
+              webcface: ["webcface"],
+            },
+          },
+        },
+      },
     };
   }
 });
