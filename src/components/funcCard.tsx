@@ -51,7 +51,7 @@ export function FuncCard(props: Props) {
 
 function argType(
   argConfig: Arg
-): "select" | "number" | "boolean" | "float" | "text" {
+): "select" | "number" | "boolean" | "float" | "string" {
   if (argConfig.option && argConfig.option.length > 0) {
     return "select";
   } else {
@@ -63,7 +63,7 @@ function argType(
       case valType.float_:
         return "float";
       default:
-        return "text";
+        return "string";
     }
   }
 }

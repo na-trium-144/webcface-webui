@@ -3,7 +3,7 @@ import ReactSwitch from "react-switch";
 interface Props {
   checked: boolean;
   disabled?: boolean;
-  onChange: (checked: bool) => void;
+  onChange: (checked: boolean) => void;
 }
 export function Switch(props: Props) {
   return (

@@ -3,13 +3,13 @@ import { LogLine } from "webcface";
 
 export interface LogStoreData {
   serverData: { current: LogLine[] };
-  serverHasUpdate: {current:boolean};
+  serverHasUpdate: { current: boolean };
   data: { current: { name: string; log: LogLine[] }[] };
   setData: (name: string, log: LogLine[]) => void;
 }
 const LogStoreContext = createContext<LogStoreData>({
   serverData: { current: [] },
-  serverHasUpdate: false,
+  serverHasUpdate: { current: false },
   data: { current: [] },
   setData: () => undefined,
 });

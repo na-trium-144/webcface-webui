@@ -1,5 +1,5 @@
 import { viewColor } from "webcface";
-import { ReactElement } from "react";
+import { ReactNode } from "react";
 import { bgButtonColorClass, textColorClass } from "../libs/color";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   bgColor?: number;
   textColor?: number;
   onClick: () => void | Promise<void>;
-  children?: ReactElement;
+  children?: ReactNode;
   disabled?: boolean;
   className?: string;
 }

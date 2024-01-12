@@ -3,9 +3,10 @@ export interface LauncherCommand {
   exec: string;
   workdir: string;
 }
+export interface ServerConfigLauncher {
+  enabled: boolean;
+  command: LauncherCommand[];
+}
 export interface ServerConfig {
-  launcher: {
-    enabled: boolean;
-    command: LauncherCommand[];
-  };
+  launcher: ServerConfigLauncher;
 }

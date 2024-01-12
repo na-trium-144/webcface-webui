@@ -11,8 +11,8 @@ export class Process {
   start(cmd: string[]) {
     this.logs = [];
     this.proc = spawn(cmd[0], cmd.slice(1));
-    this.proc.stderr.setEncoding("utf8");
-    this.proc.stderr.on("data", (data: string) => {
+    this.proc.stderr?.setEncoding("utf8");
+    this.proc.stderr?.on("data", (data: string) => {
       const lines = data.slice(0, data.lastIndexOf("\n")).split("\n");
       for (const l of lines) {
         const llSplit = l.split("] ");
@@ -48,10 +48,10 @@ export class Process {
     });
   }
   write(data: string) {
-    this.proc.stdin.write(data);
+    this.proc?.stdin?.write(data);
   }
   writeEnd() {
-    this.proc.stdin.end();
+    this.proc?.stdin?.end();
   }
   get running() {
     return (

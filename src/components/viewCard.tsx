@@ -1,9 +1,9 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { View, ViewComponent, viewColor, viewComponentTypes } from "webcface";
+import { View, ViewComponent, viewComponentTypes } from "webcface";
 import { useEffect, useRef } from "react";
 import { useFuncResult } from "./funcResultProvider";
-import { bgButtonColorClass, textColorClass } from "../libs/color";
+import { textColorClass } from "../libs/color";
 import { Button } from "./button";
 
 interface Props {

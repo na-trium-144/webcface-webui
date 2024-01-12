@@ -20,9 +20,9 @@ window.electronAPI = {
     getLogs: () => ipcRenderer.invoke("spGetLogs"),
     getUrl: () => ipcRenderer.invoke("spGetUrl"),
     getRunning: () => ipcRenderer.invoke("spGetRunning"),
-    onLogAppend: (callback: (event, data: LogLine) => void) =>
+    onLogAppend: (callback: (event: object, data: LogLine) => void) =>
       ipcRenderer.on("spLogAppend", callback),
-    offLogAppend: (callback: (event, data: LogLine) => void) =>
+    offLogAppend: (callback: (event: object, data: LogLine) => void) =>
       ipcRenderer.off("spLogAppend", callback),
     restart: () => ipcRenderer.send("spRestart"),
   },

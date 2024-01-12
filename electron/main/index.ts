@@ -3,9 +3,14 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 import { join, dirname } from "node:path";
 // import { update } from './update'
 import { Process } from "./serverProcess";
-import { LauncherCommand } from "../config";
-import { writeConfig, readConfigSync, defaultConfig } from "./configIO";
-import toml from "@iarna/toml";
+import { LauncherCommand, ServerConfigLauncher } from "../config";
+import { LogLine } from "../logLine";
+import {
+  writeConfig,
+  readConfigSync,
+  defaultConfig,
+  tomlStringify,
+} from "./configIO";
 
 process.env.DIST_ELECTRON = join(__dirname, "../");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
@@ -38,7 +43,7 @@ function startLauncher(newCommands?: LauncherCommand[]) {
   }
   if (config.launcher.enabled) {
     launcher.start(["webcface-launcher", "-s"]);
-    launcher.write(toml.stringify(config.launcher));
+    launcher.write(tomlStringify<ServerConfigLauncher>(config.launcher));
     launcher.writeEnd();
   }
 }
@@ -112,7 +117,7 @@ function createWindow() {
 }
 
 void app.whenReady().then(() => {
-  sp.onLogAppend((data: string) => {
+  sp.onLogAppend((data: LogLine) => {
     if (win && !win.isDestroyed()) {
       win.webContents.send("spLogAppend", data);
     }
@@ -120,33 +125,37 @@ void app.whenReady().then(() => {
   startServer();
   startLauncher();
   ipcMain.on("configImport", () => {
-    const dialogResult = dialog.showOpenDialogSync(win, {
-      title: "Open Config File",
-      properties: ["openFile"],
-      filters: [{ name: "Config File", extensions: ["toml"] }],
-    });
-    if (dialogResult) {
-      try {
-        config = readConfigSync(dialogResult[0]);
-        startLauncher();
-        win.webContents.send("load");
-        writeConfig(config);
-      } catch (e) {
-        dialog.showErrorBox(
-          "WebCFace-Server",
-          `Error reading config file: ${String(e)}`
-        );
+    if (win) {
+      const dialogResult = dialog.showOpenDialogSync(win, {
+        title: "Open Config File",
+        properties: ["openFile"],
+        filters: [{ name: "Config File", extensions: ["toml"] }],
+      });
+      if (dialogResult) {
+        try {
+          config = readConfigSync(dialogResult[0]);
+          startLauncher();
+          win.webContents.send("load");
+          writeConfig(config);
+        } catch (e) {
+          dialog.showErrorBox(
+            "WebCFace-Server",
+            `Error reading config file: ${String(e)}`
+          );
+        }
       }
     }
   });
   ipcMain.on("configExport", () => {
-    const dialogResult = dialog.showSaveDialogSync(win, {
-      title: "Save Config File",
-      properties: ["showOverwriteConfirmation"],
-      filters: [{ name: "Config File", extensions: ["toml"] }],
-    });
-    if (dialogResult) {
-      writeConfig(config, dialogResult);
+    if (win) {
+      const dialogResult = dialog.showSaveDialogSync(win, {
+        title: "Save Config File",
+        properties: ["showOverwriteConfirmation"],
+        filters: [{ name: "Config File", extensions: ["toml"] }],
+      });
+      if (dialogResult) {
+        writeConfig(config, dialogResult);
+      }
     }
   });
   ipcMain.handle("spGetLogs", () => sp.logs);
@@ -154,20 +163,28 @@ void app.whenReady().then(() => {
   ipcMain.handle("spGetRunning", () => sp.running);
   ipcMain.on("spRestart", () => startServer());
   ipcMain.handle("openExecDialog", async (_event, path: string) => {
-    const dialogResult = await dialog.showOpenDialog(win, {
-      title: "Open Executable",
-      defaultPath: path || undefined,
-      properties: ["openFile"],
-    });
-    return dialogResult.filePaths[0] || "";
+    if (win) {
+      const dialogResult = await dialog.showOpenDialog(win, {
+        title: "Open Executable",
+        defaultPath: path || undefined,
+        properties: ["openFile"],
+      });
+      return dialogResult.filePaths[0] || "";
+    } else {
+      return "";
+    }
   });
   ipcMain.handle("openWorkdirDialog", async (_event, path: string) => {
-    const dialogResult = await dialog.showOpenDialog(win, {
-      title: "Open Working Directory",
-      defaultPath: path || undefined,
-      properties: ["openDirectory"],
-    });
-    return dialogResult.filePaths[0] || "";
+    if (win) {
+      const dialogResult = await dialog.showOpenDialog(win, {
+        title: "Open Working Directory",
+        defaultPath: path || undefined,
+        properties: ["openDirectory"],
+      });
+      return dialogResult.filePaths[0] || "";
+    } else {
+      return "";
+    }
   });
   ipcMain.handle("dirname", (_event, path: string) => dirname(path));
   ipcMain.on("launcherSetCommands", (_event, commands: LauncherCommand[]) =>

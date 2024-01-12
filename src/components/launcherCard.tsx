@@ -17,7 +17,7 @@ export function LauncherCard() {
 
   const [config, setConfig] = useState<LauncherCommand[]>([]);
   useEffect(() => {
-    void window.electronAPI.launcher.getCommands().then((commands) => {
+    void window.electronAPI?.launcher.getCommands().then((commands) => {
       setConfig(commands);
     });
   }, [serverLoad]);
@@ -32,7 +32,7 @@ export function LauncherCard() {
               setConfig={(c: LauncherCommand) =>
                 setConfig(config.map((oc, oi) => (oi === i ? c : oc)))
               }
-              onDelete={() => setConfig(config.filter((oc, oi) => oi !== i))}
+              onDelete={() => setConfig(config.filter((_oc, oi) => oi !== i))}
             />
           ))}
         </ul>
@@ -57,7 +57,7 @@ export function LauncherCard() {
           <Button
             className="flex items-center space-x-1"
             bgColor={viewColor.yellow}
-            onClick={() => window.electronAPI.launcher.setCommands(config)}
+            onClick={() => window.electronAPI?.launcher.setCommands(config)}
           >
             <CheckOne />
             <span>Save & Restart</span>
@@ -81,8 +81,8 @@ export function LauncherConfigLine(props: LineProps) {
         <Input
           type="string"
           value={props.config.name}
-          setValue={(name: string) =>
-            props.setConfig({ ...props.config, name })
+          setValue={(name: string | number | boolean) =>
+            props.setConfig({ ...props.config, name: String(name) })
           }
           widthClass="w-40 "
         />
@@ -105,8 +105,8 @@ export function LauncherConfigLine(props: LineProps) {
                   <Input
                     type="string"
                     value={props.config.exec}
-                    setValue={(exec: string) =>
-                      props.setConfig({ ...props.config, exec })
+                    setValue={(exec: string | number | boolean) =>
+                      props.setConfig({ ...props.config, exec: String(exec) })
                     }
                     className="w-full "
                     widthClass="w-full "
@@ -124,16 +124,18 @@ export function LauncherConfigLine(props: LineProps) {
                       let workdir = props.config.workdir;
                       if (
                         workdir ===
-                        (await window.electronAPI.dirname(props.config.exec))
+                        (await window.electronAPI?.dirname(props.config.exec))
                       ) {
                         workdir = "";
                       }
-                      const exec = await window.electronAPI.openExecDialog(
-                        props.config.exec
-                      );
+                      const exec =
+                        (await window.electronAPI?.openExecDialog(
+                          props.config.exec
+                        )) || "";
                       if (exec !== "") {
                         if (workdir === "") {
-                          workdir = await window.electronAPI.dirname(exec);
+                          workdir =
+                            (await window.electronAPI?.dirname(exec)) || "";
                         }
                         props.setConfig({ ...props.config, exec, workdir });
                       }
@@ -149,8 +151,11 @@ export function LauncherConfigLine(props: LineProps) {
                   <Input
                     type="string"
                     value={props.config.workdir}
-                    setValue={(workdir: string) =>
-                      props.setConfig({ ...props.config, workdir })
+                    setValue={(workdir: string | number | boolean) =>
+                      props.setConfig({
+                        ...props.config,
+                        workdir: String(workdir),
+                      })
                     }
                     className="w-full "
                     widthClass="w-full "
@@ -161,9 +166,9 @@ export function LauncherConfigLine(props: LineProps) {
                   <Button
                     onClick={async () => {
                       const workdir =
-                        await window.electronAPI.openWorkdirDialog(
+                        (await window.electronAPI?.openWorkdirDialog(
                           props.config.workdir
-                        );
+                        )) || "";
                       if (workdir !== "") {
                         props.setConfig({ ...props.config, workdir });
                       }

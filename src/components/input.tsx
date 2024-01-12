@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, ReactNode } from "react";
 import { Caption } from "./caption";
 
 const inputClass = "border-0 outline-0 px-1 peer ";
@@ -15,7 +15,7 @@ interface Props {
   option?: string[] | number[];
   min?: number | null;
   max?: number | null;
-  caption?: ReactElement;
+  caption?: ReactNode;
 }
 export function Input(props: Props) {
   return (

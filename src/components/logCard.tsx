@@ -131,7 +131,7 @@ function LogCardImpl(props: Props2) {
     }, 50);
     updateLogsCurrent();
     return () => clearInterval(i);
-  }, [props.member, setLogLine, setLogsCurrent, minLevel]);
+  }, [setLogLine, setLogsCurrent, minLevel]);
 
   return (
     <Card title={`${name} Logs`}>

@@ -13,12 +13,16 @@ export default function App() {
   const clientDefault = useRef<Client | null>(null); // 7530ポートに接続するクライアント
   const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
-    clientDefault.current = new Client("", window.location.hostname, 7530);
+    clientDefault.current = new Client(
+      "",
+      window.location.hostname || "localhost",
+      7530
+    );
     clientDefault.current.start();
-    if (parseInt(window.location.port) !== 7530) {
+    if (window.location.port && parseInt(window.location.port) !== 7530) {
       clientLocation.current = new Client(
         "",
-        window.location.hostname,
+        window.location.hostname || "localhost",
         parseInt(window.location.port)
       );
       clientLocation.current.start();
@@ -55,7 +59,7 @@ export default function App() {
   useEffect(() => {
     if (window.electronAPI) {
       const maxLine = 1000;
-      const onLogAppend = (_event, data: LogLine) => {
+      const onLogAppend = (_event: object, data: LogLine) => {
         logStore.serverData.current = logStore.serverData.current
           .concat([data])
           .slice(-maxLine);
@@ -63,13 +67,15 @@ export default function App() {
       };
       window.electronAPI.sp.onLogAppend(onLogAppend);
       void (async () => {
-        logStore.serverData.current = (
-          await window.electronAPI.sp.getLogs()
-        ).slice(-maxLine);
-        logStore.serverHasUpdate.current = true;
+        if (window.electronAPI) {
+          logStore.serverData.current = (
+            await window.electronAPI.sp.getLogs()
+          ).slice(-maxLine);
+          logStore.serverHasUpdate.current = true;
+        }
       })();
       return () => {
-        window.electronAPI.sp.offLogAppend(onLogAppend);
+        window.electronAPI?.sp.offLogAppend(onLogAppend);
       };
     }
   }, []);
