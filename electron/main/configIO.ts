@@ -6,6 +6,7 @@ import { readFileSync, writeFile } from "fs";
 function defaultConfig() {
   return {
     launcher: {
+      enabled: false,
       command: [],
     },
   } as ServerConfig;

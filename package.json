@@ -21,6 +21,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-grid-layout-next": "^2.2.0",
+    "react-switch": "^7.0.0",
     "three": "^0.160.0",
     "timechart": "github:huww98/TimeChart#v1.0.0-beta.10",
     "webcface": "^1.3.0"

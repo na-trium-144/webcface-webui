@@ -5,54 +5,101 @@ import { useState, useEffect } from "react";
 import { useLogStore } from "./logStoreProvider";
 import { viewColor } from "webcface";
 import { Button } from "./button";
+import { Switch } from "./switch";
+import { LogLine } from "../../electron/logLine";
 
+interface StatusProps {
+  isRunning: boolean | null;
+  onRestart: () => void;
+}
+function RunStatus(props: StatusProps) {
+  if (props.isRunning === true) {
+    return <span className="pl-1 text-green-500">Running</span>;
+  } else if (props.isRunning === false) {
+    return (
+      <>
+        <span className="pl-1 text-red-500">Not Running</span>
+        <Button
+          className="ml-2 inline-block"
+          bgColor={viewColor.yellow}
+          onClick={props.onRestart}
+        >
+          Restart
+        </Button>
+      </>
+    );
+  } else {
+    return <span />;
+  }
+}
 export function AboutCard(/*props: Props*/) {
   // const update = useForceUpdate();
   const logStore = useLogStore();
-  const [running, setRunning] = useState<boolean>(false);
+  const [running, setRunning] = useState<boolean | null>(null);
   const [url, setUrl] = useState<string>("");
+
+  const [launcherEnabled, setLauncherEnabled] = useState<boolean>(false);
+  const [launcherRunning, setLauncherRunning] = useState<boolean | null>(null);
+  const [launcherLogs, setLauncherLogs] = useState<LogLine[]>([]);
+  const startStopLauncher = (checked: boolean) => {
+    if (checked) {
+      window.electronAPI?.launcher.enable();
+      setLauncherLogs([]);
+    } else {
+      window.electronAPI?.launcher.disable();
+      setLauncherRunning(null);
+    }
+    setLauncherEnabled(checked);
+  };
+  useEffect(() => {
+    void window.electronAPI?.launcher
+      .getEnabled()
+      .then((e) => setLauncherEnabled(e));
+  }, []);
+
   useEffect(() => {
     const update = () => {
       void window.electronAPI?.sp.getRunning().then((r) => setRunning(r));
       void window.electronAPI?.sp.getUrl().then((u) => setUrl(u));
+      if (launcherEnabled) {
+        void window.electronAPI?.launcher.getRunning().then((r) => {
+          setLauncherRunning(r);
+          if (!r) {
+            void window.electronAPI?.launcher
+              .getLogs()
+              .then((l) => setLauncherLogs(l));
+          }
+        });
+      }
     };
     update();
     const i = setInterval(update, 100);
     return () => clearInterval(i);
-  }, []);
+  }, [launcherEnabled]);
+
   return (
     <Card title={`Server Status`}>
       <div className="w-full h-full overflow-auto">
-        <div className="w-max">
-          <p className="flex items-baseline">
+        <ul className="list-none w-max">
+          <li className="flex items-baseline">
             <span className="text-sm">Server Status:</span>
-            {running ? (
-              <span className="pl-1 text-green-500">Running</span>
-            ) : (
-              <>
-                <span className="pl-1 text-red-500">Not Running</span>
-                <Button
-                  className="ml-2 inline-block"
-                  bgColor={viewColor.yellow}
-                  onClick={() => {
-                    logStore.serverData.current = [];
-                    window.electronAPI?.sp.restart();
-                  }}
-                >
-                  Restart
-                </Button>
-              </>
-            )}
-          </p>
+            <RunStatus
+              isRunning={running}
+              onRestart={() => {
+                logStore.serverData.current = [];
+                window.electronAPI?.sp.restart();
+              }}
+            />
+          </li>
           {!running &&
             logStore.serverData.current
               .filter((ll) => ll.level >= 5)
               .map((ll, i) => (
-                <p className="pl-8 text-sm font-mono" key={i}>
+                <li className="pl-8 text-sm font-mono" key={i}>
                   {ll.message}
-                </p>
+                </li>
               ))}
-          <p className="flex items-baseline">
+          <li className="flex items-baseline">
             <span className="text-sm">WebUI URL:</span>
             {url !== "" && (
               <a
@@ -63,8 +110,31 @@ export function AboutCard(/*props: Props*/) {
                 {url}
               </a>
             )}
-          </p>
-        </div>
+          </li>
+          <li className="flex items-baseline">
+            <span className="text-sm">Launcher:</span>
+            <span className="pl-1">
+              <Switch checked={launcherEnabled} onChange={startStopLauncher} />
+            </span>
+            {launcherEnabled && (
+              <RunStatus
+                isRunning={launcherRunning}
+                onRestart={() => {
+                  startStopLauncher(true);
+                }}
+              />
+            )}
+          </li>
+          {launcherEnabled &&
+            !launcherRunning &&
+            launcherLogs
+              .filter((ll) => ll.level >= 5)
+              .map((ll, i) => (
+                <li className="pl-8 text-sm font-mono" key={i}>
+                  {ll.message}
+                </li>
+              ))}
+        </ul>
       </div>
     </Card>
   );

@@ -5,6 +5,7 @@ export interface LauncherCommand {
 }
 export interface ServerConfig {
   launcher: {
+    enabled: boolean;
     command: LauncherCommand[];
   };
 }

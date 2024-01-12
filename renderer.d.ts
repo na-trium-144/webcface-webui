@@ -21,6 +21,11 @@ export interface IElectronAPI {
   launcher: {
     setCommands: (commands: LauncherCommand[]) => void;
     getCommands: () => Promise<LauncherCommand[]>;
+    enable: () => void;
+    disable: () => void;
+    getLogs: () => Promise<LogLine[]>;
+    getEnabled: () => Promise<boolean>;
+    getRunning: () => Promise<boolean>;
   };
 }
 

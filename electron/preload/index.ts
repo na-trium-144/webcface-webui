@@ -27,5 +27,10 @@ window.electronAPI = {
   launcher: {
     setCommands: (commands: LauncherCommand[]) => ipcRenderer.send("launcherSetCommands", commands),
     getCommands: () => ipcRenderer.invoke("launcherGetCommands"),
+    enable: () => ipcRenderer.send("launcherEnable"),
+    disable: () => ipcRenderer.send("launcherDisable"),
+    getRunning: () => ipcRenderer.invoke("launcherGetRunning"),
+    getEnabled: () => ipcRenderer.invoke("launcherGetEnabled"),
+    getLogs: () => ipcRenderer.invoke("launcherGetLogs"),
   }
 };

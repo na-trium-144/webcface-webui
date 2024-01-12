@@ -2,8 +2,8 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 // import { release } from "node:os";
 import { join, dirname } from "node:path";
 // import { update } from './update'
-import { ServerProcess, Process } from "./serverProcess";
-import { LauncherCommand, ServerConfig } from "../config";
+import { Process } from "./serverProcess";
+import { LauncherCommand } from "../config";
 import { writeConfig, readConfigSync } from "./configIO";
 import toml from "@iarna/toml";
 
@@ -13,21 +13,32 @@ process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
   ? join(process.env.DIST_ELECTRON, "../public")
   : process.env.DIST;
 
-const sp = new ServerProcess();
+const sp = new Process();
 const launcher = new Process();
 const config = readConfigSync();
 
+function startServer() {
+  sp.start(["webcface-server", "-vv", "-p", "7530"]);
+}
+function stopServer() {
+  sp.kill();
+}
 function startLauncher(newCommands?: LauncherCommand[]) {
-  if(newCommands !== undefined){
+  if (newCommands !== undefined) {
     config.launcher.command = newCommands;
     writeConfig(config);
   }
   if (launcher.running) {
     launcher.kill();
   }
-  launcher.start(["webcface-launcher", "-s"]);
-  launcher.write(toml.stringify(config.launcher));
-  launcher.writeEnd();
+  if (config.launcher.enabled) {
+    launcher.start(["webcface-launcher", "-s"]);
+    launcher.write(toml.stringify(config.launcher));
+    launcher.writeEnd();
+  }
+}
+function stopLauncher() {
+  launcher.kill();
 }
 
 // Disable GPU Acceleration for Windows 7
@@ -101,12 +112,12 @@ void app.whenReady().then(() => {
       win.webContents.send("spLogAppend", data);
     }
   });
-  sp.start();
+  startServer();
   startLauncher();
   ipcMain.handle("spGetLogs", () => sp.logs);
   ipcMain.handle("spGetUrl", () => sp.url);
   ipcMain.handle("spGetRunning", () => sp.running);
-  ipcMain.on("spRestart", () => sp.start());
+  ipcMain.on("spRestart", () => startServer());
   ipcMain.handle("openExecDialog", async (_event, path: string) => {
     const dialogResult = await dialog.showOpenDialog(win, {
       title: "Open Executable",
@@ -128,13 +139,25 @@ void app.whenReady().then(() => {
     startLauncher(commands)
   );
   ipcMain.handle("launcherGetCommands", () => config.launcher.command || []);
+  ipcMain.handle("launcherGetLogs", () => launcher.logs);
+  ipcMain.on("launcherEnable", () => {
+    config.launcher.enabled = true;
+    writeConfig(config);
+    startLauncher();
+  });
+  ipcMain.on("launcherDisable", () => {
+    config.launcher.enabled = false;
+    writeConfig(config);
+    stopLauncher();
+  });
+  ipcMain.handle("launcherGetRunning", () => launcher.running);
+  ipcMain.handle("launcherGetEnabled", () => config.launcher.enabled);
   createWindow();
 });
 
 app.on("window-all-closed", () => {
   win = null;
   if (process.platform !== "darwin") {
-    sp.disconnect();
     app.quit();
   }
 });
@@ -154,4 +177,9 @@ app.on("activate", () => {
   } else {
     createWindow();
   }
+});
+
+app.on("quit", () => {
+  stopServer();
+  stopLauncher();
 });
