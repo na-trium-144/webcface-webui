@@ -12,7 +12,7 @@ interface Props {
   type: "select" | "number" | "float" | "string" | "boolean";
   value: string | number | boolean;
   setValue: (value: string | number | boolean) => void;
-  option?: string[] | number[];
+  option?: (string | number)[];
   min?: number | null;
   max?: number | null;
   caption?: ReactNode;
