@@ -304,6 +304,24 @@ function SideMenuServer() {
       <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
         <li>
           <SideMenuButton2
+            name="Import Config..."
+            active={false}
+            onClick={() => window.electronAPI?.config.import()}
+            icon={<Info />}
+            iconActive={<Info theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
+            name="Export Config..."
+            active={false}
+            onClick={() => window.electronAPI?.config.export()}
+            icon={<Info />}
+            iconActive={<Info theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
             name="Server Status"
             active={ls.isOpened(cardKey.about())}
             onClick={() => ls.toggleOpened(cardKey.about())}

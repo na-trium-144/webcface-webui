@@ -4,7 +4,7 @@ import { join, dirname } from "node:path";
 // import { update } from './update'
 import { Process } from "./serverProcess";
 import { LauncherCommand } from "../config";
-import { writeConfig, readConfigSync } from "./configIO";
+import { writeConfig, readConfigSync, defaultConfig } from "./configIO";
 import toml from "@iarna/toml";
 
 process.env.DIST_ELECTRON = join(__dirname, "../");
@@ -15,7 +15,12 @@ process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
 
 const sp = new Process();
 const launcher = new Process();
-const config = readConfigSync();
+let config = defaultConfig();
+try {
+  config = readConfigSync();
+} catch (e) {
+  console.error(`Error reading config file: ${String(e)}`);
+}
 
 function startServer() {
   sp.start(["webcface-server", "-vv", "-p", "7530"]);
@@ -114,6 +119,36 @@ void app.whenReady().then(() => {
   });
   startServer();
   startLauncher();
+  ipcMain.on("configImport", () => {
+    const dialogResult = dialog.showOpenDialogSync(win, {
+      title: "Open Config File",
+      properties: ["openFile"],
+      filters: [{ name: "Config File", extensions: ["toml"] }],
+    });
+    if (dialogResult) {
+      try {
+        config = readConfigSync(dialogResult[0]);
+        startLauncher();
+        win.webContents.send("load");
+        writeConfig(config);
+      } catch (e) {
+        dialog.showErrorBox(
+          "WebCFace-Server",
+          `Error reading config file: ${String(e)}`
+        );
+      }
+    }
+  });
+  ipcMain.on("configExport", () => {
+    const dialogResult = dialog.showSaveDialogSync(win, {
+      title: "Save Config File",
+      properties: ["showOverwriteConfirmation"],
+      filters: [{ name: "Config File", extensions: ["toml"] }],
+    });
+    if (dialogResult) {
+      writeConfig(config, dialogResult);
+    }
+  });
   ipcMain.handle("spGetLogs", () => sp.logs);
   ipcMain.handle("spGetUrl", () => sp.url);
   ipcMain.handle("spGetRunning", () => sp.running);

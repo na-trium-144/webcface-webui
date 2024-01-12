@@ -7,6 +7,12 @@ export interface IElectronAPI {
     chrome: () => string;
     electron: () => string;
   };
+  onLoad: (callback: () => void) => void;
+  offLoad: (callback: () => void) => void;
+  config: {
+    import: () => void;
+    export: () => void;
+  };
   sp: {
     getLogs: () => Promise<LogLine[]>;
     getUrl: () => Promise<string>;

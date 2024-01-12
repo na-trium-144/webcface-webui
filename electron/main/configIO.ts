@@ -3,13 +3,13 @@ import { ServerConfig } from "../config";
 import { join } from "path";
 import { readFileSync, writeFile } from "fs";
 
-function defaultConfig() {
+export function defaultConfig(): ServerConfig {
   return {
     launcher: {
       enabled: false,
       command: [],
     },
-  } as ServerConfig;
+  };
 }
 function configPath() {
   if (process.env.APPDATA !== undefined) {
@@ -18,17 +18,12 @@ function configPath() {
     return join(process.env.HOME, ".webcface.sg.toml");
   }
 }
-export function readConfigSync(): ServerConfig {
-  try {
-    const configStr = readFileSync(configPath(), "utf8");
-    return toml.parse(configStr) as ServerConfig;
-  } catch (e) {
-    console.error(`Error reading config file: ${String(e)}`);
-    return defaultConfig();
-  }
+export function readConfigSync(path?: string): ServerConfig {
+  const configStr = readFileSync(path || configPath(), "utf8");
+  return toml.parse(configStr) as ServerConfig;
 }
-export function writeConfig(config: ServerConfig) {
-  writeFile(configPath(), toml.stringify(config), (e) => {
+export function writeConfig(config: ServerConfig, path?: string) {
+  writeFile(path || configPath(), toml.stringify(config), (e) => {
     if (e != null) {
       console.error(`Error writing config file: ${String(e)}`);
     }

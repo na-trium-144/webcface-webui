@@ -35,6 +35,13 @@ function RunStatus(props: StatusProps) {
 export function AboutCard(/*props: Props*/) {
   // const update = useForceUpdate();
   const logStore = useLogStore();
+  const [serverLoad, setServerLoad] = useState<number>(0);
+  useEffect(() => {
+    const update = () => setServerLoad((n) => n + 1);
+    window.electronAPI?.onLoad(update);
+    return () => window.electronAPI?.offLoad(update);
+  }, []);
+
   const [running, setRunning] = useState<boolean | null>(null);
   const [url, setUrl] = useState<string>("");
 
@@ -55,7 +62,7 @@ export function AboutCard(/*props: Props*/) {
     void window.electronAPI?.launcher
       .getEnabled()
       .then((e) => setLauncherEnabled(e));
-  }, []);
+  }, [serverLoad]);
 
   useEffect(() => {
     const update = () => {

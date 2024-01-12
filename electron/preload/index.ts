@@ -10,6 +10,12 @@ window.electronAPI = {
     electron: () => process.versions.electron,
     // 関数だけでなく変数も公開できます
   },
+  onLoad: (callback: () => void) => ipcRenderer.on("load", callback),
+  offLoad: (callback: () => void) => ipcRenderer.off("load", callback),
+  config: {
+    import: () => ipcRenderer.send("configImport"),
+    export: () => ipcRenderer.send("configExport"),
+  },
   sp: {
     getLogs: () => ipcRenderer.invoke("spGetLogs"),
     getUrl: () => ipcRenderer.invoke("spGetUrl"),
@@ -25,12 +31,13 @@ window.electronAPI = {
     ipcRenderer.invoke("openWorkdirDialog", path),
   dirname: (path: string) => ipcRenderer.invoke("dirname", path),
   launcher: {
-    setCommands: (commands: LauncherCommand[]) => ipcRenderer.send("launcherSetCommands", commands),
+    setCommands: (commands: LauncherCommand[]) =>
+      ipcRenderer.send("launcherSetCommands", commands),
     getCommands: () => ipcRenderer.invoke("launcherGetCommands"),
     enable: () => ipcRenderer.send("launcherEnable"),
     disable: () => ipcRenderer.send("launcherDisable"),
     getRunning: () => ipcRenderer.invoke("launcherGetRunning"),
     getEnabled: () => ipcRenderer.invoke("launcherGetEnabled"),
     getLogs: () => ipcRenderer.invoke("launcherGetLogs"),
-  }
+  },
 };

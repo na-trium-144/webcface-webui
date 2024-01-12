@@ -8,12 +8,19 @@ import { LauncherCommand } from "../../electron/config";
 import "../../renderer.d.ts";
 
 export function LauncherCard() {
+  const [serverLoad, setServerLoad] = useState<number>(0);
+  useEffect(() => {
+    const update = () => setServerLoad((n) => n + 1);
+    window.electronAPI?.onLoad(update);
+    return () => window.electronAPI?.offLoad(update);
+  }, []);
+
   const [config, setConfig] = useState<LauncherCommand[]>([]);
   useEffect(() => {
     void window.electronAPI.launcher.getCommands().then((commands) => {
       setConfig(commands);
     });
-  }, []);
+  }, [serverLoad]);
   return (
     <Card title={`Launcher Settings`}>
       <div className="h-full overflow-y-auto">
