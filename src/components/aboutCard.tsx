@@ -113,6 +113,7 @@ export function AboutCard(/*props: Props*/) {
                 className="pl-1 underline text-blue-500"
                 href={url}
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 {url}
               </a>
