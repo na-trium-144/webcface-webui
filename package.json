@@ -10,7 +10,7 @@
     "dev": "vite",
     "edev": "env ELECTRON=1 vite",
     "build": "tsc -p tsconfig.static.json && vite build",
-    "ebuild": "tsc -p tsconfig.electron.json && env ELECTRON=1 vite build && electron-builder",
+    "ebuild": "tsc -p tsconfig.electron.json && env ELECTRON=1 vite build && electron-builder --publish never",
     "lint": "eslint src electron --ext ts,tsx --report-unused-disable-directives",
     "preview": "vite preview"
   },

@@ -19,6 +19,6 @@
   },
   "linux": {
     "target": ["AppImage"],
-    "artifactName": "${productName}_${version}_${arch}.${ext}",
-  }
+    "artifactName": "${productName}_${version}_${arch}.${ext}"
+  },
 }

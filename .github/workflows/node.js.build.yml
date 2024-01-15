@@ -61,11 +61,13 @@ jobs:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${{github.workspace}}:/workspace"
           shell: /bin/sh
           install: |
             apt-get update -q -y
             apt-get install -q -y curl
-            curl -sL https://deb.nodesource.com/setup | bash -
+            curl -sL https://deb.nodesource.com/setup_18.x | bash -
             apt-get install -q -y nodejs
 
           # Produce a binary artifact and place it in the mounted volume
