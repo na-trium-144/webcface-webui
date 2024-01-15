@@ -124,19 +124,22 @@ jobs:
         path: electron/armv7/
     - name: Create tar.gz archive
       run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
-    - name: Prepare deb package files (all)
+    - name: Prepare deb package files
       run: |
         mkdir -p .debpkg/usr/share/webcface/
         cp -r dist .debpkg/usr/share/webcface/
         cp -r .debpkg .debpkg-amd64
         mkdir .debpkg-amd64/bin
         cp electron/amd64/* .debpkg-amd64/bin/webcface-webui-server
+        cp electron/amd64/* ./
         cp -r .debpkg .debpkg-arm64
         mkdir .debpkg-arm64/bin
         cp electron/aarch64/* .debpkg-arm64/bin/webcface-webui-server
+        cp electron/aarch64/* ./
         cp -r .debpkg .debpkg-armhf
         mkdir .debpkg-armhf/bin
         cp electron/armv7/* .debpkg-armhf/bin/webcface-webui-server
+        cp electron/armv7/* ./
     - uses: jiro4989/build-deb-action@v3
       with:
         package: webcface-webui
@@ -175,4 +178,4 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ALLOW_EMPTY_CHANGELOG: true
       with:
-        args: "*.tar.gz,*.deb,*.zip"
+        args: "*.tar.gz,*.deb,*.zip,*.AppImage"

@@ -29,7 +29,7 @@ npm run build
 * Electronでビルドし、アプリケーションとして起動して使います。
 * WebUIの機能に加え、webcface-serverを自動で起動し、またwebcface-launcherなどの設定と起動ができます。
 * こちらもWebCFaceのインストール時、またcmake時に自動でインストールされます。
-	* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)のzipファイル(windows)、amd64,arm64,armhfのdebパッケージ(Ubuntu,Debian)でダウンロードできます。
+	* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)のzipファイル(windows)、amd64,arm64,armhfのdebパッケージ(Ubuntu,Debian)、またはAppImage(linux)でダウンロードできます。
 
 ### Development
 
