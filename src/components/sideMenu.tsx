@@ -25,6 +25,13 @@ import {
   FolderOpen,
   FolderClose,
   Pic,
+  UploadWeb,
+  DownloadWeb,
+  DatabasePoint,
+  ListSuccess,
+  SwitchButton,
+  RobotTwo,
+  CoordinateSystem,
 } from "@icon-park/react";
 
 const iconFillColor = ["#333", "#6c6"];
@@ -51,6 +58,7 @@ export function SideMenu(props: Props) {
   }, [props.client, update]);
   return (
     <>
+      {window.electronAPI && <SideMenuServer />}
       <SideMenuButton2
         name="Connection Info"
         active={ls.isOpened(cardKey.connectionInfo())}
@@ -143,14 +151,30 @@ function SideMenuValues(props: ValuesProps) {
                 : cardKey.canvas3D(props.member.name, v.fullName)
             )
           }
-          icon={v.kind === 0 ? <Analysis /> : <PageTemplate />}
+          icon={
+            v.kind === 0 ? (
+              <Analysis />
+            ) : v.kind === 3 ? (
+              <PageTemplate />
+            ) : v.kind === 5 ? (
+              <Pic />
+            ) : v.kind === 6 ? (
+              <RobotTwo />
+            ) : (
+              <CoordinateSystem />
+            )
+          }
           iconActive={
             v.kind === 0 ? (
               <Analysis theme="two-tone" fill={iconFillColor} />
             ) : v.kind === 3 ? (
               <PageTemplate theme="two-tone" fill={iconFillColor} />
-            ) : (
+            ) : v.kind === 5 ? (
               <Pic theme="two-tone" fill={iconFillColor} />
+            ) : v.kind === 6 ? (
+              <RobotTwo theme="two-tone" fill={iconFillColor} />
+            ) : (
+              <CoordinateSystem theme="two-tone" fill={iconFillColor} />
             )
           }
         />
@@ -282,6 +306,70 @@ function SideMenuMember(props: MemberProps) {
             />
           </li>
         )}
+      </ul>
+    </>
+  );
+}
+
+function SideMenuServer() {
+  const ls = useLocalStorage();
+  const [open, setOpen] = useState<boolean>(false);
+  return (
+    <>
+      <div>
+        <SideMenuButton
+          name="Server"
+          onClick={() => setOpen(!open)}
+          active={open}
+          icon={<DatabasePoint />}
+        />
+      </div>
+      <ul className={"pl-4 " + (open ? "block " : "hidden ")}>
+        <li>
+          <SideMenuButton2
+            name="Import Config..."
+            active={false}
+            onClick={() => window.electronAPI?.config.import()}
+            icon={<UploadWeb />}
+            iconActive={<UploadWeb theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
+            name="Export Config..."
+            active={false}
+            onClick={() => window.electronAPI?.config.export()}
+            icon={<DownloadWeb />}
+            iconActive={<DownloadWeb theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
+            name="Server Status"
+            active={ls.isOpened(cardKey.about())}
+            onClick={() => ls.toggleOpened(cardKey.about())}
+            icon={<SwitchButton />}
+            iconActive={<SwitchButton theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
+            name="Logs"
+            active={ls.isOpened(cardKey.serverLog())}
+            onClick={() => ls.toggleOpened(cardKey.serverLog())}
+            icon={<Abnormal />}
+            iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
+        <li>
+          <SideMenuButton2
+            name="Launcher Config"
+            active={ls.isOpened(cardKey.launcher())}
+            onClick={() => ls.toggleOpened(cardKey.launcher())}
+            icon={<ListSuccess />}
+            iconActive={<ListSuccess theme="two-tone" fill={iconFillColor} />}
+          />
+        </li>
       </ul>
     </>
   );

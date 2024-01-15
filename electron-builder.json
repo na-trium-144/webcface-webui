@@ -1,0 +1,24 @@
+/**
+ * @see https://www.electron.build/configuration/configuration
+ */
+{
+  "appId": "com.github.na-trium-144.webcface-webui-server",
+  "productName": "webcface-webui-server",
+  "asar": true,
+  "directories": {
+    "output": "release"
+  },
+  "files": ["dist-electron", "dist"],
+  "mac": {
+    "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "target": []
+  },
+  "win": {
+    "target": "zip",
+    "artifactName": "${productName}_${version}_${arch}.${ext}"
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "artifactName": "${productName}_${version}_${arch}.${ext}"
+  },
+}

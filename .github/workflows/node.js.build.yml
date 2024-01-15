@@ -9,7 +9,7 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build:
+  build-dist:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,21 +29,117 @@ jobs:
       with:
         name: dist
         path: ${{github.workspace}}/dist/*
+
+  build-electron-amd64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run ebuild
+    - uses: actions/upload-artifact@v3
+      with:
+        name: electron-amd64
+        path: ${{github.workspace}}/release/*.AppImage
+
+  build-electron-multiarch:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        arch: [aarch64, armv7]
+        distro: [ubuntu22.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2
+        name: Build artifact
+        id: build
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${{github.workspace}}:/workspace"
+          shell: /bin/sh
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y curl
+            curl -sL https://deb.nodesource.com/setup_18.x | bash -
+            apt-get install -q -y nodejs build-essential
+
+          # Produce a binary artifact and place it in the mounted volume
+          run: |
+            cd /workspace
+            npm ci --maxsockets 1
+            npm run ebuild
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: electron-${{matrix.arch}}
+          path: ${{github.workspace}}/release/*.AppImage
+
+  build-win64:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run ebuild-win
+      shell: cmd
+    - uses: actions/upload-artifact@v3
+      with:
+        name: electron-win64
+        path: ${{github.workspace}}/release/*.zip
+
   release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build-dist, build-electron-amd64, build-electron-multiarch, build-win64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
       with:
         name: dist
         path: dist/
+    - uses: actions/download-artifact@v3
+      with:
+        name: electron-win64
+    - uses: actions/download-artifact@v3
+      with:
+        name: electron-amd64
+        path: electron/amd64/
+    - uses: actions/download-artifact@v3
+      with:
+        name: electron-aarch64
+        path: electron/aarch64/
+    - uses: actions/download-artifact@v3
+      with:
+        name: electron-armv7
+        path: electron/armv7/
     - name: Create tar.gz archive
       run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
     - name: Prepare deb package files
       run: |
         mkdir -p .debpkg/usr/share/webcface/
         cp -r dist .debpkg/usr/share/webcface/
+        cp -r .debpkg .debpkg-amd64
+        mkdir .debpkg-amd64/bin
+        cp electron/amd64/* .debpkg-amd64/bin/webcface-webui-server
+        cp electron/amd64/* ./
+        cp -r .debpkg .debpkg-arm64
+        mkdir .debpkg-arm64/bin
+        cp electron/aarch64/* .debpkg-arm64/bin/webcface-webui-server
+        cp electron/aarch64/* ./
+        cp -r .debpkg .debpkg-armhf
+        mkdir .debpkg-armhf/bin
+        cp electron/armv7/* .debpkg-armhf/bin/webcface-webui-server
+        cp electron/armv7/* ./
     - uses: jiro4989/build-deb-action@v3
       with:
         package: webcface-webui
@@ -52,10 +148,34 @@ jobs:
         version: ${{ github.ref }} # refs/tags/v*.*.*
         arch: 'all'
         desc: 'UI Application for WebCFace'
+    - uses: jiro4989/build-deb-action@v3
+      with:
+        package: webcface-webui
+        package_root: .debpkg-amd64
+        maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
+        version: ${{ github.ref }}-s # refs/tags/v*.*.*
+        arch: 'amd64'
+        desc: 'UI Application for WebCFace (With Server Mode)'
+    - uses: jiro4989/build-deb-action@v3
+      with:
+        package: webcface-webui
+        package_root: .debpkg-arm64
+        maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
+        version: ${{ github.ref }}-s # refs/tags/v*.*.*
+        arch: 'arm64'
+        desc: 'UI Application for WebCFace (With Server Mode)'
+    - uses: jiro4989/build-deb-action@v3
+      with:
+        package: webcface-webui
+        package_root: .debpkg-armhf
+        maintainer: "na-trium-144 <nakak_u21@yahoo.co.jp>"
+        version: ${{ github.ref }}-s # refs/tags/v*.*.*
+        arch: 'armhf'
+        desc: 'UI Application for WebCFace (With Server Mode)'
     - name: Release
       uses: docker://antonyurchenko/git-release:v5
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ALLOW_EMPTY_CHANGELOG: true
       with:
-        args: "*.tar.gz,*.deb"
+        args: "*.tar.gz,*.deb,*.zip,*.AppImage"

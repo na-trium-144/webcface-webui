@@ -13,3 +13,6 @@ export const canvas3D = (member: string, field: string) =>
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string) => `${member}:log`;
 export const connectionInfo = () => ":connectionInfo";
+export const about = () => ":about";
+export const serverLog = () => ":serverLog";
+export const launcher = () => ":launcher";
