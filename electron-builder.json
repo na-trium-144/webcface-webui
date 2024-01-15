@@ -14,7 +14,7 @@
     "target": []
   },
   "win": {
-    "target": "portable",
+    "target": "zip",
     "artifactName": "${productName}_${version}_${arch}.${ext}"
   },
   "linux": {
