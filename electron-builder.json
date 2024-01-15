@@ -2,42 +2,23 @@
  * @see https://www.electron.build/configuration/configuration
  */
 {
-  "appId": "YourAppID",
+  "appId": "com.github.na-trium-144.webcface-webui-server",
+  "productName": "webcface-webui-server",
   "asar": true,
   "directories": {
-    "output": "release/${version}"
+    "output": "release"
   },
-  "files": [
-    "dist-electron",
-    "dist"
-  ],
+  "files": ["dist-electron", "dist"],
   "mac": {
-    "artifactName": "${productName}_${version}.${ext}",
-    "target": [
-      "dmg",
-      "zip"
-    ]
+    "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "target": []
   },
   "win": {
-    "target": [
-      {
-        "target": "nsis",
-        "arch": [
-          "x64"
-        ]
-      }
-    ],
-    "artifactName": "${productName}_${version}.${ext}"
+    "target": [],
+    "artifactName": "${productName}_${version}_${arch}.${ext}"
   },
-  "nsis": {
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
-  },
-  "publish": {
-    "provider": "generic",
-    "channel": "latest",
-    "url": "https://github.com/electron-vite/electron-vite-react/releases/download/v0.9.9/"
+  "linux": {
+    "target": ["AppImage"],
+    "artifactName": "${productName}_${version}_${arch}.${ext}",
   }
 }
