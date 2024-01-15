@@ -74,14 +74,14 @@ jobs:
             npm ci
             npm run ebuild
 
-    - uses: actions/upload-artifact@v3
-      with:
-        name: electron-${{matrix.arch}}
-        path: ${{github.workspace}}/release/*.AppImage
+      - uses: actions/upload-artifact@v3
+        with:
+          name: electron-${{matrix.arch}}
+          path: ${{github.workspace}}/release/*.AppImage
 
   release:
     runs-on: ubuntu-latest
-    needs: [build, build-electron-amd64, build-electron-multiarch]
+    needs: [build-dist, build-electron-amd64, build-electron-multiarch]
     steps:
     - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
