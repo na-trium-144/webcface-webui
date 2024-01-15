@@ -89,7 +89,8 @@ function createWindow() {
       contextIsolation: false,
     },
   });
-
+  win.setMenu(null);
+  
   if (url) {
     // electron-vite-vue#298
     void win.loadURL(url);
