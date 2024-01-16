@@ -5,6 +5,7 @@ import { Input } from "./input";
 import { Button } from "./button";
 import { Right, Down, Delete, Plus, CheckOne } from "@icon-park/react";
 import { LauncherCommand } from "../../electron/config";
+import { isEqual } from "lodash";
 import "../../renderer.d.ts";
 
 export function LauncherCard() {
@@ -16,15 +17,29 @@ export function LauncherCard() {
   }, []);
 
   const [config, setConfig] = useState<LauncherCommand[]>([]);
+  const [savedConfig, setSavedConfig] = useState<LauncherCommand[]>([]);
   const [launcherEnabled, setLauncherEnabled] = useState<boolean>(false);
   useEffect(() => {
     void window.electronAPI?.launcher.getCommands().then((commands) => {
-      setConfig(commands);
+      setSavedConfig((savedConfig) => {
+        setConfig((config) => {
+          if (isEqual(config, savedConfig)) {
+            return commands;
+          } else {
+            return config;
+          }
+        });
+        return commands;
+      });
     });
     void window.electronAPI?.launcher
       .getEnabled()
       .then((e) => setLauncherEnabled(e));
   }, [serverLoad]);
+  const saveCommands = () => {
+    window.electronAPI?.launcher.setCommands(config);
+    setSavedConfig(config);
+  };
   return (
     <Card title={`Launcher Settings`}>
       <div className="h-full overflow-y-auto">
@@ -60,11 +75,21 @@ export function LauncherCard() {
           </Button>
           <Button
             className="flex items-center space-x-1"
-            bgColor={viewColor.yellow}
-            onClick={() => window.electronAPI?.launcher.setCommands(config)}
+            bgColor={viewColor.orange}
+            onClick={saveCommands}
+            disabled={isEqual(config, savedConfig)}
           >
             <CheckOne />
             <span>{launcherEnabled ? "Save & Restart" : "Save"}</span>
+          </Button>
+          <Button
+            className="flex items-center space-x-1"
+            bgColor={viewColor.red}
+            onClick={() => setConfig(savedConfig)}
+            disabled={isEqual(config, savedConfig)}
+          >
+            <CheckOne />
+            <span>Cancel</span>
           </Button>
         </div>
       </div>
