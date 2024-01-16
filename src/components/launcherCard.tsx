@@ -3,11 +3,32 @@ import { viewColor } from "webcface";
 import { useEffect, useState } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
-import { Right, Down, Delete, Plus, CheckOne } from "@icon-park/react";
+import {
+  Right,
+  Down,
+  Delete,
+  Plus,
+  CheckOne,
+  CloseSmall,
+  ArrowUp,
+  ArrowDown,
+} from "@icon-park/react";
 import { LauncherCommand } from "../../electron/config";
 import { isEqual } from "lodash";
 import "../../renderer.d.ts";
 
+function swapArray<T>(array: T[], index1: number, index2: number): T[] {
+  return array.map((c, i) => {
+    switch (i) {
+      case index1:
+        return array[index2];
+      case index2:
+        return array[index1];
+      default:
+        return c;
+    }
+  });
+}
 export function LauncherCard() {
   const [serverLoad, setServerLoad] = useState<number>(0);
   useEffect(() => {
@@ -19,6 +40,7 @@ export function LauncherCard() {
   const [config, setConfig] = useState<LauncherCommand[]>([]);
   const [savedConfig, setSavedConfig] = useState<LauncherCommand[]>([]);
   const [launcherEnabled, setLauncherEnabled] = useState<boolean>(false);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   useEffect(() => {
     void window.electronAPI?.launcher.getCommands().then((commands) => {
       setSavedConfig((savedConfig) => {
@@ -48,10 +70,28 @@ export function LauncherCard() {
             <LauncherConfigLine
               key={i}
               config={c}
+              open={i === openIndex}
+              setOpen={(open: boolean) => setOpenIndex(open ? i : null)}
               setConfig={(c: LauncherCommand) =>
                 setConfig(config.map((oc, oi) => (oi === i ? c : oc)))
               }
               onDelete={() => setConfig(config.filter((_oc, oi) => oi !== i))}
+              moveUp={
+                i === 0
+                  ? null
+                  : () => {
+                      setConfig(swapArray(config, i, i - 1));
+                      setOpenIndex(i - 1);
+                    }
+              }
+              moveDown={
+                i === config.length - 1
+                  ? null
+                  : () => {
+                      setConfig(swapArray(config, i, i + 1));
+                      setOpenIndex(i + 1);
+                    }
+              }
             />
           ))}
         </ul>
@@ -88,7 +128,7 @@ export function LauncherCard() {
             onClick={() => setConfig(savedConfig)}
             disabled={isEqual(config, savedConfig)}
           >
-            <CheckOne />
+            <CloseSmall />
             <span>Cancel</span>
           </Button>
         </div>
@@ -98,12 +138,15 @@ export function LauncherCard() {
 }
 
 interface LineProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
   config: LauncherCommand;
   setConfig: (c: LauncherCommand) => void;
   onDelete: () => void;
+  moveUp: null | (() => void);
+  moveDown: null | (() => void);
 }
 export function LauncherConfigLine(props: LineProps) {
-  const [open, setOpen] = useState<boolean>(false);
   return (
     <li>
       <div className="flex items-center speces-x-1">
@@ -118,13 +161,13 @@ export function LauncherConfigLine(props: LineProps) {
         <button
           className="hover:text-green-700"
           onClick={() => {
-            setOpen(!open);
+            props.setOpen(!props.open);
           }}
         >
-          {open ? <Down className="pt-0.5" /> : <Right />}
+          {props.open ? <Down className="pt-0.5" /> : <Right />}
         </button>
       </div>
-      {open && (
+      {props.open && (
         <div className="">
           <table>
             <tbody>
@@ -209,15 +252,31 @@ export function LauncherConfigLine(props: LineProps) {
               </tr>
             </tbody>
           </table>
-          <div>
+          <div className="mt-1 mb-3 flex space-x-2">
             <Button
               rounded="full"
-              className="py-0.5 flex items-center space-x-1"
+              className="flex items-center space-x-1"
               bgColor={viewColor.red}
               onClick={props.onDelete}
             >
               <Delete />
               <span>Delete</span>
+            </Button>
+            <Button
+              rounded="full"
+              className="flex items-center space-x-1"
+              onClick={props.moveUp || (() => undefined)}
+              disabled={!props.moveUp}
+            >
+              <ArrowUp />
+            </Button>
+            <Button
+              rounded="full"
+              className="flex items-center space-x-1"
+              onClick={props.moveDown || (() => undefined)}
+              disabled={!props.moveDown}
+            >
+              <ArrowDown />
             </Button>
           </div>
         </div>
