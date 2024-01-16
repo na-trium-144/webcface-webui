@@ -1,7 +1,7 @@
 import toml from "@iarna/toml";
 import { ServerConfig } from "../config";
-import { join } from "path";
-import { readFileSync, writeFile } from "fs";
+import { join, dirname } from "path";
+import { readFileSync, writeFile, mkdir } from "fs";
 
 export function tomlStringify<T>(obj: T) {
   return toml.stringify(obj as unknown as toml.JsonMap);
@@ -30,9 +30,15 @@ export function readConfigSync(path?: string): ServerConfig {
   return tomlParse<ServerConfig>(configStr);
 }
 export function writeConfig(config: ServerConfig, path?: string) {
-  writeFile(path || configPath(), tomlStringify<ServerConfig>(config), (e) => {
-    if (e != null) {
-      console.error(`Error writing config file: ${String(e)}`);
-    }
+  mkdir(dirname(path || configPath()), { recursive: true }, () => {
+    writeFile(
+      path || configPath(),
+      tomlStringify<ServerConfig>(config),
+      (e) => {
+        if (e != null) {
+          console.error(`Error writing config file: ${String(e)}`);
+        }
+      }
+    );
   });
 }
