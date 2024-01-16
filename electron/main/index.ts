@@ -200,13 +200,13 @@ void app.whenReady().then(() => {
     config.launcher.enabled = true;
     writeConfig(config);
     startLauncher();
-    win.webContents.send("stateChange");
+    win?.webContents.send("stateChange");
   });
   ipcMain.on("launcherDisable", () => {
     config.launcher.enabled = false;
     writeConfig(config);
     stopLauncher();
-    win.webContents.send("stateChange");
+    win?.webContents.send("stateChange");
   });
   ipcMain.handle("launcherGetRunning", () => launcher.running);
   ipcMain.handle("launcherGetEnabled", () => config.launcher.enabled);
