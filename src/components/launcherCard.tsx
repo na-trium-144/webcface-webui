@@ -95,7 +95,7 @@ export function LauncherCard() {
             />
           ))}
         </ul>
-        <div className="mt-2 flex space-x-2">
+        <div className="mt-2">
           <Button
             onClick={() => {
               setConfig(
@@ -108,13 +108,13 @@ export function LauncherCard() {
                 ])
               );
             }}
-            className="flex items-center space-x-1"
+            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
           >
             <Plus />
             <span>Add New Command</span>
           </Button>
           <Button
-            className="flex items-center space-x-1"
+            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
             bgColor={viewColor.orange}
             onClick={saveCommands}
             disabled={isEqual(config, savedConfig)}
@@ -123,7 +123,7 @@ export function LauncherCard() {
             <span>{launcherEnabled ? "Save & Restart" : "Save"}</span>
           </Button>
           <Button
-            className="flex items-center space-x-1"
+            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
             bgColor={viewColor.red}
             onClick={() => setConfig(savedConfig)}
             disabled={isEqual(config, savedConfig)}
