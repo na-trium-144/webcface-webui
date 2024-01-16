@@ -11,15 +11,19 @@ export function LauncherCard() {
   const [serverLoad, setServerLoad] = useState<number>(0);
   useEffect(() => {
     const update = () => setServerLoad((n) => n + 1);
-    window.electronAPI?.onLoad(update);
-    return () => window.electronAPI?.offLoad(update);
+    window.electronAPI?.onStateChange(update);
+    return () => window.electronAPI?.offStateChange(update);
   }, []);
 
   const [config, setConfig] = useState<LauncherCommand[]>([]);
+  const [launcherEnabled, setLauncherEnabled] = useState<boolean>(false);
   useEffect(() => {
     void window.electronAPI?.launcher.getCommands().then((commands) => {
       setConfig(commands);
     });
+    void window.electronAPI?.launcher
+      .getEnabled()
+      .then((e) => setLauncherEnabled(e));
   }, [serverLoad]);
   return (
     <Card title={`Launcher Settings`}>
@@ -60,7 +64,7 @@ export function LauncherCard() {
             onClick={() => window.electronAPI?.launcher.setCommands(config)}
           >
             <CheckOne />
-            <span>Save & Restart</span>
+            <span>{launcherEnabled ? "Save & Restart" : "Save"}</span>
           </Button>
         </div>
       </div>

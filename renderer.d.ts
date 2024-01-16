@@ -7,8 +7,8 @@ export interface IElectronAPI {
     chrome: () => string;
     electron: () => string;
   };
-  onLoad: (callback: () => void) => void;
-  offLoad: (callback: () => void) => void;
+  onStateChange: (callback: () => void) => void;
+  offStateChange: (callback: () => void) => void;
   config: {
     import: () => void;
     export: () => void;
