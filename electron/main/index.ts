@@ -90,7 +90,7 @@ function createWindow() {
     },
   });
   win.setMenu(null);
-  
+
   if (url) {
     // electron-vite-vue#298
     void win.loadURL(url);
@@ -136,7 +136,7 @@ void app.whenReady().then(() => {
         try {
           config = readConfigSync(dialogResult[0]);
           startLauncher();
-          win.webContents.send("load");
+          win.webContents.send("stateChange");
           writeConfig(config);
         } catch (e) {
           dialog.showErrorBox(
@@ -149,12 +149,15 @@ void app.whenReady().then(() => {
   });
   ipcMain.on("configExport", () => {
     if (win) {
-      const dialogResult = dialog.showSaveDialogSync(win, {
+      let dialogResult = dialog.showSaveDialogSync(win, {
         title: "Save Config File",
         properties: ["showOverwriteConfirmation"],
         filters: [{ name: "Config File", extensions: ["toml"] }],
       });
       if (dialogResult) {
+        if (!dialogResult.endsWith(".toml")) {
+          dialogResult += ".toml";
+        }
         writeConfig(config, dialogResult);
       }
     }
@@ -197,11 +200,13 @@ void app.whenReady().then(() => {
     config.launcher.enabled = true;
     writeConfig(config);
     startLauncher();
+    win?.webContents.send("stateChange");
   });
   ipcMain.on("launcherDisable", () => {
     config.launcher.enabled = false;
     writeConfig(config);
     stopLauncher();
+    win?.webContents.send("stateChange");
   });
   ipcMain.handle("launcherGetRunning", () => launcher.running);
   ipcMain.handle("launcherGetEnabled", () => config.launcher.enabled);

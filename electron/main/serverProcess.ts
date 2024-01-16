@@ -8,6 +8,18 @@ export class Process {
   onLogAppend(callback: (data: LogLine) => void) {
     this.logAppendCallback = callback;
   }
+  logAppend(log: string | LogLine) {
+    if (typeof log === "string") {
+      this.logAppend({
+        time: new Date(),
+        level: 5,
+        message: log,
+      });
+    } else {
+      this.logAppendCallback(log);
+      this.logs.push(log);
+    }
+  }
   start(cmd: string[]) {
     this.logs = [];
     this.proc = spawn(cmd[0], cmd.slice(1));
@@ -26,25 +38,19 @@ export class Process {
           if (message.startsWith("http")) {
             this.url = message;
           }
-          this.logAppendCallback(log);
-          this.logs.push(log);
+          this.logAppend(log);
         } else {
-          const log = { level: 5, time: new Date(), message: l };
-          this.logAppendCallback(log);
-          this.logs.push(log);
+          this.logAppend(l);
         }
       }
     });
     this.proc.on("exit", (code, signal) => {
-      const log = {
-        time: new Date(),
-        level: 5,
-        message: `child process exited with code ${
-          code !== null ? code : signal
-        }`,
-      };
-      this.logAppendCallback(log);
-      this.logs.push(log);
+      this.logAppend(
+        `child process exited with code ${code !== null ? code : signal}`
+      );
+    });
+    this.proc.on("error", (e) => {
+      this.logAppend(String(e));
     });
   }
   write(data: string) {

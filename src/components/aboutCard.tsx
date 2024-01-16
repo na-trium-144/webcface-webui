@@ -38,8 +38,8 @@ export function AboutCard(/*props: Props*/) {
   const [serverLoad, setServerLoad] = useState<number>(0);
   useEffect(() => {
     const update = () => setServerLoad((n) => n + 1);
-    window.electronAPI?.onLoad(update);
-    return () => window.electronAPI?.offLoad(update);
+    window.electronAPI?.onStateChange(update);
+    return () => window.electronAPI?.offStateChange(update);
   }, []);
 
   const [running, setRunning] = useState<boolean | null>(null);
