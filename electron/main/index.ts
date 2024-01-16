@@ -149,12 +149,15 @@ void app.whenReady().then(() => {
   });
   ipcMain.on("configExport", () => {
     if (win) {
-      const dialogResult = dialog.showSaveDialogSync(win, {
+      let dialogResult = dialog.showSaveDialogSync(win, {
         title: "Save Config File",
         properties: ["showOverwriteConfirmation"],
         filters: [{ name: "Config File", extensions: ["toml"] }],
       });
       if (dialogResult) {
+        if (!dialogResult.endsWith(".toml")) {
+          dialogResult += ".toml";
+        }
         writeConfig(config, dialogResult);
       }
     }
