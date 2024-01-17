@@ -1,5 +1,6 @@
 import { useFuncResult } from "./funcResultProvider";
 import { useState, useEffect } from "react";
+import { CloseSmall } from "@icon-park/react";
 
 interface ResultDisplay {
   member: string;
@@ -93,13 +94,13 @@ export function FuncResultList() {
           : "ease-in opacity-0 scale-90 -z-10 ")
       }
     >
-      <ul>
+      <ul className="max-w-full">
         {resultsDisplay.map(
           (d, i) =>
             d.show && (
               <li key={i}>
-                <span className="text-xs pr-1">{d.member}</span>
-                <span className="text-sm pr-1">{d.name}</span>
+                <span className="text-xs pr-1 break-all">{d.member}</span>
+                <span className="text-sm pr-1 break-all">{d.name}</span>
                 {
                   [
                     <span className="text-sm text-blue-500 ">
@@ -108,16 +109,29 @@ export function FuncResultList() {
                     <span className="text-sm text-green-500 ">Running...</span>,
                     <>
                       <span className="text-sm pr-1">ok</span>
-                      <span className="text-sm font-mono">{d.result}</span>
+                      <span className="text-sm font-mono break-all">
+                        {d.result}
+                      </span>
                     </>,
                     <>
-                      <span className="text-red-500 text-sm pr-1">Error</span>
-                      <span className="text-red-500 text-sm font-mono">
+                      <span className="text-red-500 text-sm font-mono break-all">
                         {d.result}
                       </span>
                     </>,
                   ][d.status]
                 }
+                <button
+                  className="relative inline-block w-4 h-4 ml-1 bottom-1"
+                  onClick={() =>
+                    setResultsDisplay((resultsDisplay) =>
+                      resultsDisplay.map((d, j) =>
+                        i === j ? { ...d, show: false } : d
+                      )
+                    )
+                  }
+                >
+                  <CloseSmall className="absolute top-0 left-0" />
+                </button>
               </li>
             )
         )}
