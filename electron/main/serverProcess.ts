@@ -4,7 +4,7 @@ export class Process {
   proc: ChildProcess | null = null;
   logs: LogLine[] = [];
   logAppendCallback: (data: LogLine) => void = () => undefined;
-  url: string = "";
+  url: string[] = [];
   onLogAppend(callback: (data: LogLine) => void) {
     this.logAppendCallback = callback;
   }
@@ -36,7 +36,7 @@ export class Process {
             message: llSplit[1] + "] " + message,
           };
           if (message.startsWith("http")) {
-            this.url = message;
+            this.url.push(message);
           }
           this.logAppend(log);
         } else {
