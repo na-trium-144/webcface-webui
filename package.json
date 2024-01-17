@@ -19,7 +19,6 @@
     "@iarna/toml": "^2.2.5",
     "@icon-park/react": "^1.4.2",
     "@react-three/fiber": "^8.15.12",
-    "@types/lodash.isequal": "^4.5.8",
     "@types/three": "^0.160.0",
     "date-fns": "^3.0.6",
     "lodash.isequal": "^4.5.0",
@@ -34,6 +33,7 @@
   },
   "devDependencies": {
     "@babel/runtime": "^7.23.6",
+    "@types/lodash.isequal": "^4.5.8",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
