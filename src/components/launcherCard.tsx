@@ -14,7 +14,7 @@ import {
   ArrowDown,
 } from "@icon-park/react";
 import { LauncherCommand } from "../../electron/config";
-import { isEqual } from "lodash";
+import isEqual from "lodash.isequal";
 import "../../renderer.d.ts";
 
 function swapArray<T>(array: T[], index1: number, index2: number): T[] {

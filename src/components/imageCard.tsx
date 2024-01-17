@@ -8,12 +8,41 @@ interface Props {
 }
 export function ImageCard(props: Props) {
   const hasUpdate = useRef<boolean>(true);
+  const imgRef = useRef<HTMLDivElement>(null);
+  const prevImgWidth = useRef<number>(0);
+  const prevImgHeight = useRef<number>(0);
   const update = useForceUpdate();
   useEffect(() => {
     const i = setInterval(() => {
       if (hasUpdate.current) {
         update();
         hasUpdate.current = false;
+      }
+      const ratio = props.image.get().width / props.image.get().height;
+      if (
+        !isNaN(ratio) &&
+        imgRef.current !== null &&
+        (prevImgWidth.current !== imgRef.current.clientWidth ||
+          prevImgHeight.current !== imgRef.current.clientHeight)
+      ) {
+        prevImgWidth.current = imgRef.current.clientWidth;
+        prevImgHeight.current = imgRef.current.clientHeight;
+        const imgRatio = prevImgWidth.current / prevImgHeight.current;
+        let newWidth: number | undefined = undefined,
+          newHeight: number | undefined = undefined;
+        if (ratio > imgRatio) {
+          newWidth = prevImgWidth.current;
+        } else {
+          newHeight = prevImgHeight.current;
+        }
+        console.log(`re-request ${newWidth} x ${newHeight}`);
+        props.image.request({
+          width: newWidth,
+          height: newHeight,
+          compressMode: imageCompressMode.jpeg,
+          quality: 50,
+          frameRate: 10,
+        });
       }
     }, 50);
     return () => clearInterval(i);
@@ -23,15 +52,22 @@ export function ImageCard(props: Props) {
       hasUpdate.current = true;
     };
     props.image.on(update);
-    props.image.request({ compressMode: imageCompressMode.webp, quality: 50 });
+    props.image.request({
+      compressMode: imageCompressMode.jpeg,
+      quality: 50,
+      frameRate: 10,
+    });
     return () => props.image.off(update);
   }, [props.image]);
   return (
     <Card title={`${props.image.member.name}:${props.image.name}`}>
-      <div className="w-full h-full overflow-y-auto overflow-x-auto">
+      <div
+        ref={imgRef}
+        className="w-full h-full overflow-y-auto overflow-x-auto"
+      >
         <img
           className="max-w-full max-h-full m-auto"
-          src={"data:image/webp;base64," + props.image.get().toBase64()}
+          src={"data:image/jpeg;base64," + props.image.get().toBase64()}
         />
       </div>
     </Card>
