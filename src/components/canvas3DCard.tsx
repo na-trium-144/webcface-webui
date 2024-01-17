@@ -9,7 +9,6 @@ import {
   geometryType,
   Canvas3D,
   canvas3DComponentType,
-  robotJointType,
 } from "webcface";
 import { useState, useEffect, useRef, useLayoutEffect, RefObject } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
