@@ -15,7 +15,7 @@ export default function App() {
   useEffect(() => {
     clientDefault.current = new Client(
       "",
-      "10.100.25.172",
+      window.location.hostname || "localhost",
       7530
     );
     clientDefault.current.start();
