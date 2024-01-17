@@ -10,8 +10,8 @@ window.electronAPI = {
     electron: () => process.versions.electron,
     // 関数だけでなく変数も公開できます
   },
-  onLoad: (callback: () => void) => ipcRenderer.on("load", callback),
-  offLoad: (callback: () => void) => ipcRenderer.off("load", callback),
+  onStateChange: (callback: () => void) => ipcRenderer.on("stateChange", callback),
+  offStateChange: (callback: () => void) => ipcRenderer.off("stateChange", callback),
   config: {
     import: () => ipcRenderer.send("configImport"),
     export: () => ipcRenderer.send("configExport"),
