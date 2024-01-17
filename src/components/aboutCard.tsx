@@ -43,7 +43,7 @@ export function AboutCard(/*props: Props*/) {
   }, []);
 
   const [running, setRunning] = useState<boolean | null>(null);
-  const [url, setUrl] = useState<string>("");
+  const [url, setUrl] = useState<string[]>([]);
 
   const [launcherEnabled, setLauncherEnabled] = useState<boolean>(false);
   const [launcherRunning, setLauncherRunning] = useState<boolean | null>(null);
@@ -108,16 +108,20 @@ export function AboutCard(/*props: Props*/) {
               ))}
           <li className="flex items-baseline">
             <span className="text-sm">WebUI URL:</span>
-            {url !== "" && (
-              <a
-                className="pl-1 underline text-blue-500"
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {url}
-              </a>
-            )}
+            <ul className="list-none">
+              {url.map((u, i) => (
+                <li key={i}>
+                  <a
+                    className="pl-1 underline text-blue-500"
+                    href={u}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {u}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </li>
           <li className="flex items-baseline">
             <span className="text-sm">Launcher:</span>

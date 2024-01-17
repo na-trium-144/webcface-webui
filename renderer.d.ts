@@ -15,7 +15,7 @@ export interface IElectronAPI {
   };
   sp: {
     getLogs: () => Promise<LogLine[]>;
-    getUrl: () => Promise<string>;
+    getUrl: () => Promise<string[]>;
     getRunning: () => Promise<boolean>;
     onLogAppend: (callback: (event, data: LogLine) => void) => void;
     offLogAppend: (callback: (event, data: LogLine) => void) => void;
