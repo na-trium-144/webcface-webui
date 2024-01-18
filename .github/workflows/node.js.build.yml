@@ -140,6 +140,7 @@ jobs:
         mkdir .debpkg-armhf/bin
         cp electron/armv7/* .debpkg-armhf/bin/webcface-webui-server
         cp electron/armv7/* ./
+        chmod +x .debpkg-*/bin/webcface-webui-server
     - uses: jiro4989/build-deb-action@v3
       with:
         package: webcface-webui
