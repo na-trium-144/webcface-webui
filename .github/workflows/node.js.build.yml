@@ -39,7 +39,7 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
-    - run: npm ci
+    - run: npm install --prefer-offline --no-audit --maxsockets 1
     - run: npm run ebuild
     - uses: actions/upload-artifact@v3
       with:
@@ -73,7 +73,7 @@ jobs:
           # Produce a binary artifact and place it in the mounted volume
           run: |
             cd /workspace
-            npm ci --maxsockets 1
+            npm install --prefer-offline --no-audit --maxsockets 1
             npm run ebuild
 
       - uses: actions/upload-artifact@v3
@@ -90,7 +90,7 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
-    - run: npm ci
+    - run: npm install --prefer-offline --no-audit --maxsockets 1
     - run: npm run ebuild-win
       shell: cmd
     - uses: actions/upload-artifact@v3
@@ -140,6 +140,7 @@ jobs:
         mkdir .debpkg-armhf/bin
         cp electron/armv7/* .debpkg-armhf/bin/webcface-webui-server
         cp electron/armv7/* ./
+        chmod +x .debpkg-*/bin/webcface-webui-server
     - uses: jiro4989/build-deb-action@v3
       with:
         package: webcface-webui

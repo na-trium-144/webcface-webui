@@ -62,6 +62,8 @@ function ViewComponentRender(props: VCProps) {
               addResult(r);
             }
           }}
+          bgColor={props.vc.bgColor}
+          textColor={props.vc.textColor}
         >
           {props.vc.text}
         </Button>
