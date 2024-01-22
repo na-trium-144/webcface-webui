@@ -18,7 +18,7 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "@icon-park/react": "^1.4.2",
-    "@react-three/fiber": "^8.15.12",
+    "@react-three/fiber": "^8.15.14",
     "@types/three": "^0.160.0",
     "date-fns": "^3.0.6",
     "lodash.isequal": "^4.5.0",
