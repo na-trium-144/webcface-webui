@@ -3,6 +3,7 @@ import { useForceUpdate } from "../libs/forceUpdate";
 import { Canvas2D, geometryType } from "webcface";
 import { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Rect, Text, Circle, Line } from "react-konva";
+import { colorName } from "../libs/color";
 
 interface Props {
   canvas: Canvas2D;
@@ -51,6 +52,8 @@ export function Canvas2DCard(props: Props) {
         <Stage width={divWidth} height={divHeight}>
           <Layer>
             {props.canvas.get().map((c, ci) => {
+              const stroke = c.color ? colorName[c.color] : "black";
+              const fill = c.fill ? colorName[c.fill] : "transparent";
               switch (c.geometry.type) {
                 case geometryType.line:
                   return (
@@ -64,7 +67,8 @@ export function Canvas2DCard(props: Props) {
                         resize(c.geometry.asLine.end.pos[0]),
                         resize(c.geometry.asLine.end.pos[1]),
                       ]}
-                      stroke="black"
+                      stroke={stroke}
+                      strokeWidth={c.strokeWidth}
                     />
                   );
                 case geometryType.plane:
@@ -81,7 +85,20 @@ export function Canvas2DCard(props: Props) {
                       )}
                       width={resize(c.geometry.asRect.width)}
                       height={resize(c.geometry.asRect.height)}
-                      stroke="black"
+                      stroke={stroke}
+                      fill={fill}
+                      strokeWidth={c.strokeWidth}
+                    />
+                  );
+                case geometryType.circle:
+                  return (
+                    <Circle
+                      x={resize(c.geometry.asCircle.origin.pos[0])}
+                      y={c.geometry.asCircle.origin.pos[1]}
+                      radius={c.geometry.asCircle.radius}
+                      stroke={stroke}
+                      fill={fill}
+                      strokeWidth={c.strokeWidth}
                     />
                   );
                 default:
