@@ -7,6 +7,7 @@ import {
   Image,
   RobotModel,
   Canvas3D,
+  Canvas2D,
 } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
@@ -27,6 +28,7 @@ import { LogCard, LogCardServer } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { RobotModelCard } from "./robotModelCard";
 import { Canvas3DCard } from "./canvas3DCard";
+import { Canvas2DCard } from "./canvas2DCard";
 import { ConnectionInfoCard } from "./connectionInfoCard";
 import { AboutCard } from "./aboutCard";
 import { LauncherCard } from "./launcherCard";
@@ -244,6 +246,20 @@ export function LayoutMain(props: Props) {
             return (
               <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
                 <Canvas3DCard canvas3D={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.canvas2DEntries()), [] as Canvas2D[])
+        .map((v) => {
+          const key = cardKey.canvas2D(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 1)}>
+                <Canvas2DCard canvas={v} />
               </div>
             );
           }

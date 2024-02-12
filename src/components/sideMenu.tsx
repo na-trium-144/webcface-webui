@@ -7,6 +7,7 @@ import {
   Image,
   RobotModel,
   Canvas3D,
+  Canvas2D,
 } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
@@ -32,6 +33,7 @@ import {
   SwitchButton,
   RobotTwo,
   CoordinateSystem,
+  GraphicDesign,
 } from "@icon-park/react";
 
 const iconFillColor = ["#333", "#6c6"];
@@ -50,6 +52,7 @@ export function SideMenu(props: Props) {
       m.onImageEntry.on(update);
       m.onRobotModelEntry.on(update);
       m.onCanvas3DEntry.on(update);
+      m.onCanvas2DEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -75,6 +78,7 @@ export function SideMenu(props: Props) {
           images={m.images()}
           robotModels={m.robotModels()}
           canvas3Ds={m.canvas3DEntries()}
+          canvas2Ds={m.canvas2DEntries()}
         />
       ))}
     </>
@@ -84,7 +88,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | 5 | 6 | 7 | null;
+  kind: 0 | 3 | 4 | 5 | 6 | 7 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -136,7 +140,11 @@ function SideMenuValues(props: ValuesProps) {
               ? cardKey.image(props.member.name, v.fullName)
               : v.kind === 6
               ? cardKey.robotModel(props.member.name, v.fullName)
-              : cardKey.canvas3D(props.member.name, v.fullName)
+              : v.kind === 7
+              ? cardKey.canvas3D(props.member.name, v.fullName)
+              : v.kind === 4
+              ? cardKey.canvas2D(props.member.name, v.fullName)
+              : ""
           )}
           onClick={() =>
             props.toggleOpened(
@@ -148,7 +156,11 @@ function SideMenuValues(props: ValuesProps) {
                 ? cardKey.image(props.member.name, v.fullName)
                 : v.kind === 6
                 ? cardKey.robotModel(props.member.name, v.fullName)
-                : cardKey.canvas3D(props.member.name, v.fullName)
+                : v.kind === 7
+                ? cardKey.canvas3D(props.member.name, v.fullName)
+                : v.kind === 4
+                ? cardKey.canvas2D(props.member.name, v.fullName)
+                : ""
             )
           }
           icon={
@@ -160,9 +172,11 @@ function SideMenuValues(props: ValuesProps) {
               <Pic />
             ) : v.kind === 6 ? (
               <RobotTwo />
-            ) : (
+            ) : v.kind === 7 ? (
               <CoordinateSystem />
-            )
+            ) : v.kind === 4 ? (
+              <GraphicDesign />
+            ) : undefined
           }
           iconActive={
             v.kind === 0 ? (
@@ -173,9 +187,11 @@ function SideMenuValues(props: ValuesProps) {
               <Pic theme="two-tone" fill={iconFillColor} />
             ) : v.kind === 6 ? (
               <RobotTwo theme="two-tone" fill={iconFillColor} />
-            ) : (
+            ) : v.kind === 7 ? (
               <CoordinateSystem theme="two-tone" fill={iconFillColor} />
-            )
+            ) : v.kind === 4 ? (
+              <GraphicDesign theme="two-tone" fill={iconFillColor} />
+            ) : undefined
           }
         />
       )}
@@ -190,6 +206,7 @@ interface MemberProps {
   images: Image[];
   robotModels: RobotModel[];
   canvas3Ds: Canvas3D[];
+  canvas2Ds: Canvas2D[];
 }
 function SideMenuMember(props: MemberProps) {
   const logStore = useLogStore();
@@ -215,8 +232,14 @@ function SideMenuMember(props: MemberProps) {
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (
-      values: Value[] | View[] | Image[] | RobotModel[] | Canvas3D[],
-      kind: 0 | 3 | 5 | 6 | 7
+      values:
+        | Value[]
+        | View[]
+        | Image[]
+        | RobotModel[]
+        | Canvas3D[]
+        | Canvas2D[],
+      kind: 0 | 3 | 4 | 5 | 6 | 7
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -248,6 +271,7 @@ function SideMenuMember(props: MemberProps) {
     sortValueNames(props.images, 5);
     sortValueNames(props.robotModels, 6);
     sortValueNames(props.canvas3Ds, 7);
+    sortValueNames(props.canvas2Ds, 4);
     setValueNames(valueNames);
   }, [
     props.values,
@@ -255,6 +279,7 @@ function SideMenuMember(props: MemberProps) {
     props.images,
     props.robotModels,
     props.canvas3Ds,
+    props.canvas2Ds,
   ]);
   return (
     <>
