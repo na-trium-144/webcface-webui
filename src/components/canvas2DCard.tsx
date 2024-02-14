@@ -2,9 +2,9 @@ import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Canvas2D, geometryType, Transform, Point } from "webcface";
 import { useState, useEffect, useRef } from "react";
-import { Stage, Layer, Rect, Text, Circle, Line } from "react-konva";
+import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName } from "../libs/color";
-import { multiply, inv } from "../libs/math";
+import { multiply } from "../libs/math";
 
 interface Props {
   canvas: Canvas2D;
@@ -43,9 +43,12 @@ export function Canvas2DCard(props: Props) {
   }, [props.canvas]);
 
   const resize = (x: number) => {
-    const xRatio = divWidth / props.canvas.width;
-    const yRatio = divHeight / props.canvas.height;
-    return Math.min(xRatio, yRatio) * x;
+    if (props.canvas.width && props.canvas.height) {
+      const xRatio = divWidth / props.canvas.width;
+      const yRatio = divHeight / props.canvas.height;
+      return Math.min(xRatio, yRatio) * x;
+    }
+    return 1; // 適当
   };
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
@@ -54,8 +57,8 @@ export function Canvas2DCard(props: Props) {
           width={divWidth}
           height={divHeight}
           style={{
-            width: resize(props.canvas.width),
-            height: resize(props.canvas.height),
+            width: resize(props.canvas.width || 1),
+            height: resize(props.canvas.height || 1),
           }}
           className="m-auto"
         >
