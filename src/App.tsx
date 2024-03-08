@@ -18,6 +18,7 @@ export default function App() {
       7530
     );
     clientDefault.start();
+
     // locationからポートを取得するクライアント
     let clientLocation: Client | null = null;
     if (window.location.port && parseInt(window.location.port) !== 7530) {
@@ -48,14 +49,6 @@ export default function App() {
       clientLocation?.close();
     };
   }, []);
-
-  useEffect(() => {
-    const i = setInterval(() => {
-      client?.pingStatus;
-      client?.sync();
-    }, 100);
-    return () => clearInterval(i);
-  }, [client]);
 
   useEffect(() => {
     if (window.electronAPI) {
