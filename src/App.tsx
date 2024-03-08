@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Client, LogLine } from "webcface";
 import "./index.css";
 import { LayoutMain } from "./components/layout";
