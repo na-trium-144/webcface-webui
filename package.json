@@ -20,7 +20,7 @@
     "@icon-park/react": "^1.4.2",
     "@react-three/fiber": "^8.15.16",
     "@types/three": "^0.160.0",
-    "date-fns": "^3.0.6",
+    "date-fns": "^3.3.1",
     "konva": "^9.3.3",
     "lodash.isequal": "^4.5.0",
     "mathjs": "^12.2.1",
