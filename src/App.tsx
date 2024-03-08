@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Client, LogLine } from "webcface";
 import "./index.css";
 import { LayoutMain } from "./components/layout";
@@ -10,32 +10,34 @@ import { useLogStore } from "./components/logStoreProvider";
 export default function App() {
   const logStore = useLogStore();
   const [client, setClient] = useState<Client | null>(null);
-  const clientDefault = useRef<Client | null>(null); // 7530ポートに接続するクライアント
-  const clientLocation = useRef<Client | null>(null); // locationからポートを取得するクライアント
   useEffect(() => {
-    clientDefault.current = new Client(
+    // 7530ポートに接続するクライアント
+    const clientDefault = new Client(
       "",
       window.location.hostname || "localhost",
       7530
     );
-    clientDefault.current.start();
+    clientDefault.start();
+
+    // locationからポートを取得するクライアント
+    let clientLocation: Client | null = null;
     if (window.location.port && parseInt(window.location.port) !== 7530) {
-      clientLocation.current = new Client(
+      clientLocation = new Client(
         "",
         window.location.hostname || "localhost",
         parseInt(window.location.port)
       );
-      clientLocation.current.start();
+      clientLocation.start();
     }
 
     // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
     const checkConnection = () => {
-      if (clientLocation.current?.connected) {
-        setClient(clientLocation.current);
-        clientDefault.current?.close();
-      } else if (clientDefault.current?.connected) {
-        setClient(clientDefault.current);
-        clientLocation.current?.close();
+      if (clientLocation?.connected) {
+        setClient(clientLocation);
+        clientDefault.close();
+      } else if (clientDefault.connected) {
+        setClient(clientDefault);
+        clientLocation?.close();
       } else {
         setTimeout(checkConnection, 100);
       }
@@ -43,18 +45,10 @@ export default function App() {
     setTimeout(checkConnection, 100);
 
     return () => {
-      clientDefault.current?.close();
-      clientLocation.current?.close();
+      clientDefault.close();
+      clientLocation?.close();
     };
   }, []);
-
-  useEffect(() => {
-    const i = setInterval(() => {
-      client?.pingStatus;
-      client?.sync();
-    }, 100);
-    return () => clearInterval(i);
-  }, [client]);
 
   useEffect(() => {
     if (window.electronAPI) {
