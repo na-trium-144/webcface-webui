@@ -30,8 +30,11 @@ jobs:
         name: dist
         path: ${{github.workspace}}/dist/*
 
-  build-electron-amd64:
+  build-electron:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64, armv7l]
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js 18.x
@@ -39,47 +42,16 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
-    - run: npm install --prefer-offline --no-audit --maxsockets 1
-    - run: npm run ebuild
+    - run: npm ci --prefer-offline --no-audit --maxsockets 1 --noproxy registry.npmjs.org
+    - name: build
+      run: |
+        npx tsc -p tsconfig.electron.json
+        env ELECTRON=1 npx vite build
+        npx electron-builder --publish never --linux --${{matrix.arch}}
     - uses: actions/upload-artifact@v3
       with:
-        name: electron-amd64
+        name: electron-${{matrix.arch}}
         path: ${{github.workspace}}/release/*.AppImage
-
-  build-electron-multiarch:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        arch: [aarch64, armv7]
-        distro: [ubuntu22.04]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2
-        name: Build artifact
-        id: build
-        with:
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
-          githubToken: ${{ github.token }}
-          dockerRunArgs: |
-            --volume "${{github.workspace}}:/workspace"
-          shell: /bin/sh
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y curl
-            curl -sL https://deb.nodesource.com/setup_18.x | bash -
-            apt-get install -q -y nodejs build-essential
-
-          # Produce a binary artifact and place it in the mounted volume
-          run: |
-            cd /workspace
-            npm install --prefer-offline --no-audit --maxsockets 1
-            npm run ebuild
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: electron-${{matrix.arch}}
-          path: ${{github.workspace}}/release/*.AppImage
 
   build-win64:
     runs-on: windows-latest
@@ -100,7 +72,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [build-dist, build-electron-amd64, build-electron-multiarch, build-win64]
+    needs: [build-dist, build-electron, build-win64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
@@ -112,15 +84,15 @@ jobs:
         name: electron-win64
     - uses: actions/download-artifact@v3
       with:
-        name: electron-amd64
+        name: electron-x64
         path: electron/amd64/
     - uses: actions/download-artifact@v3
       with:
-        name: electron-aarch64
+        name: electron-arm64
         path: electron/aarch64/
     - uses: actions/download-artifact@v3
       with:
-        name: electron-armv7
+        name: electron-armv7l
         path: electron/armv7/
     - name: Create tar.gz archive
       run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
