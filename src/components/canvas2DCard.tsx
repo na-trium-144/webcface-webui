@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName } from "../libs/color";
 import { multiply } from "../libs/math";
+import { useFuncResult } from "./funcResultProvider";
 
 interface Props {
   canvas: Canvas2D;
@@ -15,6 +16,7 @@ export function Canvas2DCard(props: Props) {
   const [divHeight, setDivHeight] = useState<number>(0);
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
+  const { addResult } = useFuncResult();
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -70,6 +72,12 @@ export function Canvas2DCard(props: Props) {
                 new Transform(
                   multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix)
                 );
+              const style = {cursor: c.onClick ? "pointer" : "auto"};
+              const onClick = () => {
+                console.log("onClick");
+                console.log(c)
+                c.onClick && addResult(c.onClick.runAsync());
+              }
               switch (c.geometry.type) {
                 case geometryType.line:
                   return (
@@ -85,6 +93,8 @@ export function Canvas2DCard(props: Props) {
                       ]}
                       stroke={stroke}
                       strokeWidth={resize(c.strokeWidth)}
+                      onClick={onClick}
+                      style={style}
                     />
                   );
                 case geometryType.plane: {
@@ -115,6 +125,8 @@ export function Canvas2DCard(props: Props) {
                       stroke={stroke}
                       fill={fill}
                       strokeWidth={resize(c.strokeWidth)}
+                      onClick={onClick}
+                      style={style}
                     />
                   );
                 }
@@ -136,6 +148,8 @@ export function Canvas2DCard(props: Props) {
                       stroke={stroke}
                       fill={fill}
                       strokeWidth={resize(c.strokeWidth)}
+                      onClick={onClick}
+                      style={style}
                     />
                   );
                 }
@@ -149,6 +163,8 @@ export function Canvas2DCard(props: Props) {
                       stroke={stroke}
                       fill={fill}
                       strokeWidth={resize(c.strokeWidth)}
+                      onClick={onClick}
+                      style={style}
                     />
                   );
                 default:
