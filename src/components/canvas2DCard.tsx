@@ -1,6 +1,12 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { Canvas2D, geometryType, Transform, Point } from "webcface";
+import {
+  Canvas2D,
+  Canvas2DComponent,
+  geometryType,
+  Transform,
+  Point,
+} from "webcface";
 import { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName } from "../libs/color";
@@ -16,7 +22,6 @@ export function Canvas2DCard(props: Props) {
   const [divHeight, setDivHeight] = useState<number>(0);
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
-  const { addResult } = useFuncResult();
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -65,115 +70,100 @@ export function Canvas2DCard(props: Props) {
           className="m-auto"
         >
           <Layer>
-            {props.canvas.get().map((c, ci) => {
-              const stroke = c.color ? colorName[c.color] : "black";
-              const fill = c.fill ? colorName[c.fill] : "transparent";
-              const mv = (pos: Point) =>
-                new Transform(
-                  multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix)
-                );
-              const style = {cursor: c.onClick ? "pointer" : "auto"};
-              const onClick = () => {
-                console.log("onClick");
-                console.log(c)
-                c.onClick && addResult(c.onClick.runAsync());
-              }
-              switch (c.geometry.type) {
-                case geometryType.line:
-                  return (
-                    <Line
-                      key={ci}
-                      x={0}
-                      y={0}
-                      points={[
-                        resize(mv(c.geometry.asLine.begin).pos[0]),
-                        resize(mv(c.geometry.asLine.begin).pos[1]),
-                        resize(mv(c.geometry.asLine.end).pos[0]),
-                        resize(mv(c.geometry.asLine.end).pos[1]),
-                      ]}
-                      stroke={stroke}
-                      strokeWidth={resize(c.strokeWidth)}
-                      onClick={onClick}
-                      style={style}
-                    />
-                  );
-                case geometryType.plane: {
-                  const x = c.geometry.asRect.origin.pos[0];
-                  const y = c.geometry.asRect.origin.pos[1];
-                  const w = c.geometry.asRect.width;
-                  const h = c.geometry.asRect.height;
-                  const p = [
-                    [x - w / 2, y - h / 2],
-                    [x - w / 2, y + h / 2],
-                    [x + w / 2, y + h / 2],
-                    [x + w / 2, y - h / 2],
-                  ];
-                  return (
-                    <Line
-                      key={ci}
-                      x={0}
-                      y={0}
-                      points={p.reduce(
-                        (prev, xy) =>
-                          prev.concat([
-                            resize(mv(new Point(xy)).pos[0]),
-                            resize(mv(new Point(xy)).pos[1]),
-                          ]),
-                        [] as number[]
-                      )}
-                      closed
-                      stroke={stroke}
-                      fill={fill}
-                      strokeWidth={resize(c.strokeWidth)}
-                      onClick={onClick}
-                      style={style}
-                    />
-                  );
-                }
-                case geometryType.polygon: {
-                  return (
-                    <Line
-                      key={ci}
-                      x={0}
-                      y={0}
-                      points={c.geometry.asPolygon.points.reduce(
-                        (prev, xy) =>
-                          prev.concat([
-                            resize(mv(xy).pos[0]),
-                            resize(mv(xy).pos[1]),
-                          ]),
-                        [] as number[]
-                      )}
-                      closed
-                      stroke={stroke}
-                      fill={fill}
-                      strokeWidth={resize(c.strokeWidth)}
-                      onClick={onClick}
-                      style={style}
-                    />
-                  );
-                }
-                case geometryType.circle:
-                  return (
-                    <Circle
-                      key={ci}
-                      x={resize(mv(c.geometry.asCircle.origin).pos[0])}
-                      y={resize(mv(c.geometry.asCircle.origin).pos[1])}
-                      radius={resize(c.geometry.asCircle.radius)}
-                      stroke={stroke}
-                      fill={fill}
-                      strokeWidth={resize(c.strokeWidth)}
-                      onClick={onClick}
-                      style={style}
-                    />
-                  );
-                default:
-                  return null;
-              }
-            })}
+            {props.canvas.get().map((c, ci) => (
+              <Shape key={ci} c={c} resize={resize} />
+            ))}
           </Layer>
         </Stage>
       </div>
     </Card>
   );
+}
+
+interface ShapeProps {
+  c: Canvas2DComponent;
+  resize: (x: number) => number;
+}
+function Shape(props: ShapeProps) {
+  const { c, resize } = props;
+  const { addResult } = useFuncResult();
+  const mv = (pos: Point) =>
+    new Transform(multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix));
+  const konvaProps = {
+    stroke: c.color ? colorName[c.color] : "black",
+    fill: c.fillColor ? colorName[c.fillColor] : undefined,
+    strokeWidth: resize(c.strokeWidth),
+    listening: !!c.onClick,
+    onClick: () => c.onClick && addResult(c.onClick.runAsync()),
+  };
+  switch (c.geometry.type) {
+    case geometryType.line:
+      return (
+        <Line
+          x={0}
+          y={0}
+          points={[
+            resize(mv(c.geometry.asLine.begin).pos[0]),
+            resize(mv(c.geometry.asLine.begin).pos[1]),
+            resize(mv(c.geometry.asLine.end).pos[0]),
+            resize(mv(c.geometry.asLine.end).pos[1]),
+          ]}
+          {...konvaProps}
+        />
+      );
+    case geometryType.plane: {
+      const x = c.geometry.asRect.origin.pos[0];
+      const y = c.geometry.asRect.origin.pos[1];
+      const w = c.geometry.asRect.width;
+      const h = c.geometry.asRect.height;
+      const p = [
+        [x - w / 2, y - h / 2],
+        [x - w / 2, y + h / 2],
+        [x + w / 2, y + h / 2],
+        [x + w / 2, y - h / 2],
+      ];
+      return (
+        <Line
+          x={0}
+          y={0}
+          points={p.reduce(
+            (prev, xy) =>
+              prev.concat([
+                resize(mv(new Point(xy)).pos[0]),
+                resize(mv(new Point(xy)).pos[1]),
+              ]),
+            [] as number[]
+          )}
+          closed
+          {...konvaProps}
+        />
+      );
+    }
+    case geometryType.polygon: {
+      return (
+        <Line
+          x={0}
+          y={0}
+          points={c.geometry.asPolygon.points.reduce(
+            (prev, xy) =>
+              prev.concat([resize(mv(xy).pos[0]), resize(mv(xy).pos[1])]),
+            [] as number[]
+          )}
+          closed
+          {...konvaProps}
+        />
+      );
+    }
+    case geometryType.circle:
+      return (
+        <Circle
+          x={resize(mv(c.geometry.asCircle.origin).pos[0])}
+          y={resize(mv(c.geometry.asCircle.origin).pos[1])}
+          radius={resize(c.geometry.asCircle.radius)}
+          {...konvaProps}
+        />
+      );
+    default:
+      return null;
+  }
 }
