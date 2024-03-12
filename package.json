@@ -7,7 +7,7 @@
   "version": "1.4.1",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "edev": "env ELECTRON=1 vite",
     "build": "tsc -p tsconfig.static.json && vite build",
     "ebuild": "tsc -p tsconfig.electron.json && env ELECTRON=1 vite build && electron-builder --publish never",

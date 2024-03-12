@@ -6,10 +6,11 @@ import {
   geometryType,
   Transform,
   Point,
+  viewColor,
 } from "webcface";
 import { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Circle, Line } from "react-konva";
-import { colorName } from "../libs/color";
+import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
 import { useFuncResult } from "./funcResultProvider";
 
@@ -22,6 +23,7 @@ export function Canvas2DCard(props: Props) {
   const [divHeight, setDivHeight] = useState<number>(0);
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
+  const [cursor, setCursor] = useState<string>("default");
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -66,12 +68,18 @@ export function Canvas2DCard(props: Props) {
           style={{
             width: resize(props.canvas.width || 1),
             height: resize(props.canvas.height || 1),
+            cursor: cursor,
           }}
           className="m-auto"
         >
           <Layer>
             {props.canvas.get().map((c, ci) => (
-              <Shape key={ci} c={c} resize={resize} />
+              <Shape
+                key={ci}
+                c={c}
+                resize={resize}
+                setCursor={(c: string) => setCursor(c)}
+              />
             ))}
           </Layer>
         </Stage>
@@ -83,18 +91,42 @@ export function Canvas2DCard(props: Props) {
 interface ShapeProps {
   c: Canvas2DComponent;
   resize: (x: number) => number;
+  setCursor: (cursor: "default" | "pointer") => void;
 }
 function Shape(props: ShapeProps) {
   const { c, resize } = props;
   const { addResult } = useFuncResult();
   const mv = (pos: Point) =>
     new Transform(multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix));
+  const [hovering, setHovering] = useState<boolean>(false);
+  const onMouseEnter = () => {
+    if (c.onClick) {
+        props.setCursor("pointer");
+        setHovering(true);
+      }
+};
+const onMouseLeave = () => {
+      if (c.onClick) {
+        props.setCursor("default");
+        setHovering(false);
+      }
+    };
+    const onClick = () => c.onClick && addResult(c.onClick.runAsync());
   const konvaProps = {
     stroke: c.color ? colorName[c.color] : "black",
-    fill: c.fillColor ? colorName[c.fillColor] : undefined,
+    fill: hovering
+      ? colorNameHover[c.color || viewColor.white]
+      : c.fillColor
+      ? colorName[c.fillColor]
+      : undefined,
     strokeWidth: resize(c.strokeWidth),
     listening: !!c.onClick,
-    onClick: () => c.onClick && addResult(c.onClick.runAsync()),
+    onClick: onClick,
+    onTap: onClick,
+    onMouseEnter: onMouseEnter,
+    onPointerLeave: onMouseLeave,
+    onTouchStart: onMouseEnter,
+    onTouchEnd: onMouseLeave,
   };
   switch (c.geometry.type) {
     case geometryType.line:
