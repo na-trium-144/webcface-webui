@@ -8,7 +8,7 @@ import {
   Point,
   viewColor,
 } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, PointerEvent } from "react";
 import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
@@ -21,10 +21,15 @@ export function Canvas2DCard(props: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const [divWidth, setDivWidth] = useState<number>(0);
   const [divHeight, setDivHeight] = useState<number>(0);
+  const [ratio, setRatio] = useState<number>(1);
+  const canvas2dWidth = useRef<number>(0);
+  const canvas2dHeight = useRef<number>(0);
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
   const [cursor, setCursor] = useState<string>("default");
-
+  const [pointerPos, setPointerPos] = useState<null | { x: number; y: number }>(
+    null
+  );
   useEffect(() => {
     const i = setInterval(() => {
       if (hasUpdate.current) {
@@ -32,12 +37,22 @@ export function Canvas2DCard(props: Props) {
         hasUpdate.current = false;
       }
       if (
-        divRef.current != null &&
-        (divRef.current.clientWidth !== divWidth ||
-          divRef.current.clientHeight !== divHeight)
+        divRef.current?.clientWidth !== divWidth ||
+        divRef.current?.clientHeight !== divHeight ||
+        canvas2dWidth.current !== props.canvas.width ||
+        canvas2dHeight.current !== props.canvas.height
       ) {
-        setDivWidth(divRef.current.clientWidth);
-        setDivHeight(divRef.current.clientHeight);
+        if (divRef.current) {
+          setDivWidth(divRef.current.clientWidth);
+          setDivHeight(divRef.current.clientHeight);
+        }
+        canvas2dWidth.current = props.canvas.width;
+        canvas2dHeight.current = props.canvas.height;
+        if (props.canvas.width && props.canvas.height) {
+          const xRatio = divRef.current.clientWidth / props.canvas.width;
+          const yRatio = divRef.current.clientHeight / props.canvas.height;
+          setRatio(Math.min(xRatio, yRatio));
+        }
       }
     }, 50);
     return () => clearInterval(i);
@@ -51,40 +66,65 @@ export function Canvas2DCard(props: Props) {
     return () => props.canvas.off(update);
   }, [props.canvas]);
 
-  const resize = (x: number) => {
-    if (props.canvas.width && props.canvas.height) {
-      const xRatio = divWidth / props.canvas.width;
-      const yRatio = divHeight / props.canvas.height;
-      return Math.min(xRatio, yRatio) * x;
-    }
-    return 1; // 適当
+  // canvas2d座標系からdom座標系へ変換 (拡大縮小のみ)
+  const resize = (x: number) => ratio * x;
+  // dom座標系でのcanvasの幅と高さ
+  const canvasWidth = resize(props.canvas.width || 1);
+  const canvasHeight = resize(props.canvas.height || 1);
+
+  const onPointerMove = (e: PointerEvent) => {
+    const divPos = e.currentTarget.getBoundingClientRect();
+    setPointerPos({
+      x: (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) / ratio,
+      y: (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) / ratio,
+    });
   };
+
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
-      <div ref={divRef} className="h-full w-full flex">
-        <Stage
-          width={divWidth}
-          height={divHeight}
-          style={{
-            width: resize(props.canvas.width || 1),
-            height: resize(props.canvas.height || 1),
-            cursor: cursor,
-          }}
-          className="m-auto"
+      <div className="h-full w-full flex flex-col">
+        <div
+          ref={divRef}
+          className="flex-1 max-h-full w-full"
+          onPointerMove={onPointerMove}
+          onPointerEnter={onPointerMove}
         >
-          <Layer>
-            {props.canvas.get().map((c, ci) => (
-              <Shape
-                key={ci}
-                c={c}
-                resize={resize}
-                setCursor={(c: string) => setCursor(c)}
-              />
-            ))}
-          </Layer>
-        </Stage>
+          <Stage
+            width={divWidth}
+            height={divHeight}
+            style={{
+              width: canvasWidth,
+              height: canvasHeight,
+              cursor: cursor,
+            }}
+            className="m-auto"
+          >
+            <Layer>
+              {props.canvas.get().map((c, ci) => (
+                <Shape
+                  key={ci}
+                  c={c}
+                  resize={resize}
+                  setCursor={(c: string) => setCursor(c)}
+                />
+              ))}
+            </Layer>
+          </Stage>
+        </div>
+        <div className="flex-none h-4 text-xs">
+          {pointerPos !== null && <CoordText {...pointerPos} />}
+        </div>
       </div>
     </Card>
+  );
+}
+
+function CoordText(props: { x: number; y: number }) {
+  return (
+    <>
+      (<span>{props.x.toPrecision(4)}</span>,
+      <span className="pl-1">{props.y.toPrecision(4)}</span>)
+    </>
   );
 }
 
@@ -101,17 +141,17 @@ function Shape(props: ShapeProps) {
   const [hovering, setHovering] = useState<boolean>(false);
   const onMouseEnter = () => {
     if (c.onClick) {
-        props.setCursor("pointer");
-        setHovering(true);
-      }
-};
-const onMouseLeave = () => {
-      if (c.onClick) {
-        props.setCursor("default");
-        setHovering(false);
-      }
-    };
-    const onClick = () => c.onClick && addResult(c.onClick.runAsync());
+      props.setCursor("pointer");
+      setHovering(true);
+    }
+  };
+  const onMouseLeave = () => {
+    if (c.onClick) {
+      props.setCursor("default");
+      setHovering(false);
+    }
+  };
+  const onClick = () => c.onClick && addResult(c.onClick.runAsync());
   const konvaProps = {
     stroke: c.color ? colorName[c.color] : "black",
     fill: hovering
