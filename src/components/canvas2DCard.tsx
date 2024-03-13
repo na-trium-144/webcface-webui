@@ -76,7 +76,6 @@ export function Canvas2DCard(props: Props) {
   // const rotateSpeed = 0.01;
   // const scrollSpeed = 0.002 * worldScale;
   const scaleRate = 1.001;
-  const scaleRatePinch = 1.1;
   const pointers = useRef<PointerEvent[]>([]);
   const prevPointerDistance = useRef<number | null>(null);
 
@@ -126,17 +125,18 @@ export function Canvas2DCard(props: Props) {
         });
       }
     } else if (pointers.current.length === 2) {
+      pointers.current = pointers.current.map((p) => p.pointerId === e.pointerId ? e : p);
       const newDiff = {
         x: pointers.current[0].clientX - pointers.current[1].clientX,
         y: pointers.current[0].clientY - pointers.current[1].clientY,
       };
       const newDist = Math.sqrt(newDiff.x * newDiff.x + newDiff.y * newDiff.y);
-      let distChange = 0;
+      let distChange = 1;
       if (prevPointerDistance.current !== null) {
-        distChange = newDist - prevPointerDistance.current;
+        distChange = newDist / prevPointerDistance.current;
       }
       prevPointerDistance.current = newDist;
-      setWorldScale(worldScale * scaleRatePinch ** distChange);
+      setWorldScale(worldScale * distChange ** 1.2);
     }
   };
   const onWheel = (e: PointerEvent) => {
