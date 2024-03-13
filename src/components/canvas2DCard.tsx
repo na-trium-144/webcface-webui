@@ -27,18 +27,6 @@ export function Canvas2DCard(props: Props) {
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
   const [cursor, setCursor] = useState<string>("default");
-  const [pointerPos, setPointerPos] = useState<null | { x: number; y: number }>(
-    null
-  );
-  const [movePos, setMovePos] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const [worldScale, setWorldScale] = useState<number>(1);
-  const moveSpeed = 1 / worldScale / ratio;
-  // const rotateSpeed = 0.01;
-  // const scrollSpeed = 0.002 * worldScale;
-  const scaleRate = 1.001;
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -76,6 +64,22 @@ export function Canvas2DCard(props: Props) {
     return () => props.canvas.off(update);
   }, [props.canvas]);
 
+  const [pointerPos, setPointerPos] = useState<null | { x: number; y: number }>(
+    null
+  );
+  const [movePos, setMovePos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const [worldScale, setWorldScale] = useState<number>(1);
+  const moveSpeed = 1 / worldScale / ratio;
+  // const rotateSpeed = 0.01;
+  // const scrollSpeed = 0.002 * worldScale;
+  const scaleRate = 1.001;
+  const scaleRatePinch = 1.1;
+  const pointers = useRef<PointerEvent[]>([]);
+  const prevPointerDistance = useRef<number | null>(null);
+
   // canvas2d座標系からdom座標系へ変換 (拡大縮小のみ)
   const resize = (x: number) => ratio * worldScale * x;
   // dom座標系でのcanvasの幅と高さ
@@ -87,25 +91,52 @@ export function Canvas2DCard(props: Props) {
   const transformPosY = (y: number) =>
     resize(y + movePos.y) + (divHeight - canvasHeight) / 2;
 
+  const onPointerDown = (e: PointerEvent) => {
+    if (
+      pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
+    ) {
+      pointers.current.push(e);
+    }
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    pointers.current = pointers.current.filter(
+      (p) => p.pointerId !== e.pointerId
+    );
+    prevPointerDistance.current = null;
+  };
   const onPointerMove = (e: PointerEvent) => {
-    const divPos = e.currentTarget.getBoundingClientRect();
-    setPointerPos({
-      x:
-        (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) /
-          ratio /
-          worldScale -
-        movePos.x,
-      y:
-        (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) /
-          ratio /
-          worldScale -
-        movePos.y,
-    });
-    if (e.buttons & 1 || e.buttons & 4) {
-      setMovePos({
-        x: movePos.x + e.movementX * moveSpeed,
-        y: movePos.y + e.movementY * moveSpeed,
+    if (pointers.current.length <= 1) {
+      const divPos = e.currentTarget.getBoundingClientRect();
+      setPointerPos({
+        x:
+          (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) /
+            ratio /
+            worldScale -
+          movePos.x,
+        y:
+          (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) /
+            ratio /
+            worldScale -
+          movePos.y,
       });
+      if (e.buttons & 1 || e.buttons & 4) {
+        setMovePos({
+          x: movePos.x + e.movementX * moveSpeed,
+          y: movePos.y + e.movementY * moveSpeed,
+        });
+      }
+    } else if (pointers.current.length === 2) {
+      const newDiff = {
+        x: pointers.current[0].clientX - pointers.current[1].clientX,
+        y: pointers.current[0].clientY - pointers.current[1].clientY,
+      };
+      const newDist = Math.sqrt(newDiff.x * newDiff.x + newDiff.y * newDiff.y);
+      let distChange = 0;
+      if (prevPointerDistance.current !== null) {
+        distChange = newDist - prevPointerDistance.current;
+      }
+      prevPointerDistance.current = newDist;
+      setWorldScale(worldScale * scaleRatePinch ** distChange);
     }
   };
   const onWheel = (e: PointerEvent) => {
@@ -115,12 +146,18 @@ export function Canvas2DCard(props: Props) {
 
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
-      <div className="h-full w-full flex flex-col">
+      <div
+        className="h-full w-full flex flex-col"
+        style={{ touchAction: "none" }}
+      >
         <div
           ref={divRef}
           className="flex-1 max-h-full w-full"
+          onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerEnter={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
           onWheel={onWheel}
         >
           <Stage
