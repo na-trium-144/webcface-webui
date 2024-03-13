@@ -10,11 +10,15 @@ import {
   Canvas3D,
   canvas3DComponentType,
 } from "webcface";
-import { useState, useEffect, useRef, useLayoutEffect, RefObject } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, RefObject, PointerEvent, MouseEvent } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { multiply, inv } from "../libs/math";
 import { colorName } from "../libs/color";
 import * as THREE from "three";
+import {IconButton} from "./button";
+import {iconFillColor} from "./sideMenu";
+import {Move, Home, Help} from "@icon-park/react";
+import { CaptionBox } from "./caption";
 
 interface Canvas3DProps {
   canvas3D: Canvas3D;
@@ -117,19 +121,73 @@ export function Canvas3DCardImpl(props: Props) {
 
   // デフォルトでは(0, 0, 5)から見下ろしていて、xが右、yが上
   // (1, 1, 1) の方向から見下ろすような図にしたい
-  const worldTf = useRef<Transform>(
-    new Transform(
-      multiply(
-        new Transform([0, 0, 0], [0, 0, -Math.PI / 4]).tfMatrix,
-        new Transform([0, 0, 0], [(Math.PI * 5) / 4, 0, 0]).tfMatrix
-      )
+  const defaultTf = () => new Transform(
+    multiply(
+      new Transform([0, 0, 0], [0, 0, -Math.PI / 4]).tfMatrix,
+      new Transform([0, 0, 0], [(Math.PI * 5) / 4, 0, 0]).tfMatrix
     )
   );
+  const worldTf = useRef<Transform>(defaultTf());
   const [worldScale, setWorldScale] = useState<number>(1);
   const moveSpeed = 0.01 / worldScale;
   const rotateSpeed = 0.01;
   // const scrollSpeed = 0.002 * worldScale;
   const scaleRate = 1.001;
+  const pointers = useRef<PointerEvent[]>([]);
+  const prevPointerDistance = useRef<number | null>(null);
+  const [moveEnabled, setMoveEnabled] = useState<boolean>(false);
+
+  const onPointerDown = (e: PointerEvent) => {
+    if (
+      pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
+    ) {
+      pointers.current.push(e);
+    }
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    pointers.current = pointers.current.filter(
+      (p) => p.pointerId !== e.pointerId
+    );
+    prevPointerDistance.current = null;
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    if (pointers.current.length <= 1){
+      if (moveEnabled && ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4)) {
+        worldTf.current.pos[0] += e.movementX * moveSpeed;
+        worldTf.current.pos[1] += -e.movementY * moveSpeed;
+      } else if (moveEnabled && e.buttons & 1) {
+        worldTf.current.tfMatrix = multiply(
+          new Transform(
+            [0, 0, 0],
+            [0, e.movementX * rotateSpeed, e.movementY * rotateSpeed]
+          ).tfMatrix,
+          worldTf.current.tfMatrix
+        );
+      }
+    } else if (moveEnabled && pointers.current.length === 2) {
+      worldTf.current.pos[0] += e.movementX * moveSpeed / 2;
+      worldTf.current.pos[1] += -e.movementY * moveSpeed / 2;
+
+      pointers.current = pointers.current.map((p) => p.pointerId === e.pointerId ? e : p);
+      const newDiff = {
+        x: pointers.current[0].clientX - pointers.current[1].clientX,
+        y: pointers.current[0].clientY - pointers.current[1].clientY,
+      };
+      const newDist = Math.sqrt(newDiff.x * newDiff.x + newDiff.y * newDiff.y);
+      let distChange = 1;
+      if (prevPointerDistance.current !== null) {
+        distChange = newDist / prevPointerDistance.current;
+      }
+      prevPointerDistance.current = newDist;
+      setWorldScale(worldScale * distChange ** 1.2);
+    }
+  };
+  const onWheel = (e: MouseEvent) => {
+    if(moveEnabled){
+      setWorldScale(worldScale * scaleRate ** -e.deltaY);
+      // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
+    }
+  }
 
   const [pointerPos, setPointerPos] = useState<THREE.Vector3 | null>(null);
   const [pointerLink, setPointerLink] = useState<RobotLink | null>(null);
@@ -155,24 +213,16 @@ export function Canvas3DCardImpl(props: Props) {
       <div className="flex flex-col w-full h-full">
         <Canvas
           className="flex-1 max-h-full"
-          onMouseMove={(e) => {
-            if ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4) {
-              worldTf.current.pos[0] += e.movementX * moveSpeed;
-              worldTf.current.pos[1] += -e.movementY * moveSpeed;
-            } else if (e.buttons & 1) {
-              worldTf.current.tfMatrix = multiply(
-                new Transform(
-                  [0, 0, 0],
-                  [0, e.movementX * rotateSpeed, e.movementY * rotateSpeed]
-                ).tfMatrix,
-                worldTf.current.tfMatrix
-              );
-            }
+          style={{
+            touchAction: moveEnabled ? "none" : "auto",
+            cursor: moveEnabled ? "grab" : "default"
           }}
-          onWheel={(e) => {
-            setWorldScale(worldScale * scaleRate ** -e.deltaY);
-            // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
-          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
+          onWheel={onWheel}
+          camera={{ fov: 30, near: 0.1, far: 1000, position: [0, 0, 5] }}
         >
           <ambientLight intensity={Math.PI / 2} />
           <spotLight
@@ -187,116 +237,68 @@ export function Canvas3DCardImpl(props: Props) {
             decay={0}
             intensity={Math.PI / 4}
           />
-          {props.geometries.map((o, i) => {
-            switch (o.geometry.type) {
-              case geometryType.line:
-                return (
-                  <Line
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    originToBegin={o.geometry.asLine.begin}
-                    originToEnd={o.geometry.asLine.end}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-              case geometryType.plane:
-                return (
-                  <Plane
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    center={o.geometry.asPlane.origin}
-                    width={o.geometry.asPlane.width}
-                    height={o.geometry.asPlane.height}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-              case geometryType.box:
-                return (
-                  <Box
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    vertex1={o.geometry.asBox.vertex1}
-                    vertex2={o.geometry.asBox.vertex2}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-              case geometryType.circle:
-                return (
-                  <Circle
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    center={o.geometry.asCircle.origin}
-                    radius={o.geometry.asCircle.radius}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-              case geometryType.cylinder:
-                return (
-                  <Cylinder
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    centerBottom={o.geometry.asCylinder.origin}
-                    radius={o.geometry.asCylinder.radius}
-                    length={o.geometry.asCylinder.length}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-              case geometryType.sphere:
-                return (
-                  <Sphere
-                    key={i}
-                    worldToBase={worldTf.current}
-                    worldScale={worldScale}
-                    baseToOrigin={o.origin}
-                    center={o.geometry.asSphere.origin}
-                    radius={o.geometry.asSphere.radius}
-                    color={o.color == 0 ? "gray" : colorName[o.color]}
-                    onPointerMove={(e: ThreeEvent<MouseEvent>) =>
-                      onPointerMoveOnMesh(o, e)
-                    }
-                  />
-                );
-            }
-          })}
+          {props.geometries.map((o, i) => (
+            <Link
+              key={i}
+              geometry={o}
+              onPointerMoveOnMesh={onPointerMoveOnMesh}
+              worldTf={worldTf}
+              worldScale={worldScale}
+            />
+          ))}
         </Canvas>
-        <div className="flex-none h-4 text-xs">
-          {pointerPos !== null && <CoordText {...pointerPos} />}
-        </div>
-        <div className="flex-none h-4 text-xs">
-          {pointerLink !== null && (
-            <>
-              <span>{pointerLink.name}</span>
-              <span className="p-1">/</span>
-              <span>{pointerLink.joint.name}</span>
-              <span className="pl-1 pr-0.5">angle=</span>
-              <span>{pointerLink.joint.angle}</span>
-            </>
-          )}
+        <div className="flex-none h-8 text-xs flex items-center ">
+          <div className="flex-1 flex flex-col">
+            <div className="flex-none h-4 text-xs">
+              {pointerPos !== null && <CoordText {...pointerPos} />}
+            </div>
+            <div className="flex-none h-4 text-xs">
+              {pointerLink !== null && (
+                <>
+                  <span>{pointerLink.name}</span>
+                  <span className="p-1">/</span>
+                  <span>{pointerLink.joint.name}</span>
+                  <span className="pl-1 pr-0.5">angle=</span>
+                  <span>{pointerLink.joint.angle}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex-none text-lg relative">
+            <IconButton
+              onClick={() => setMoveEnabled(!moveEnabled)}
+              caption="Canvasの移動・ズーム オン/オフ"
+            >
+              {moveEnabled ? 
+                <Move theme="two-tone" fill={iconFillColor} />
+                :
+                <Move />
+              }
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                worldTf.current = defaultTf();
+                setWorldScale(1);
+              }}
+              caption="初期位置に戻す"
+            >
+              <Home />
+            </IconButton>
+            <IconButton className="mr-4 peer">
+              <Help />
+            </IconButton>
+            <CaptionBox className={
+              "absolute bottom-full right-4 " +
+              "hidden peer-hover:inline-block peer-focus:inline-block "
+            }>
+              <p>移動・ズームがオンのとき、</p>
+              <p>(マウス)ドラッグ / (タッチ)スライド で回転、</p>
+              <p>(マウス)Ctrl+ドラッグ or ホイールクリックしながらドラッグ</p>
+              <p> / (タッチ)2本指スライド で移動、</p>
+              <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
+              <p>拡大縮小できます。</p>
+            </CaptionBox>
+          </div>
         </div>
       </div>
     </Card>
@@ -313,7 +315,7 @@ interface LinkProps {
 
 function transformMesh(
   props: LinkProps,
-  meshRef: RefObject<THREE.Mesh | THREE.Line>
+  meshRef: RefObject<THREE.Mesh | THREE.Line>,
 ) {
   if (meshRef.current != null) {
     const meshPos = new Transform(
@@ -326,6 +328,75 @@ function transformMesh(
     meshRef.current.rotation.z = meshPos.rot[0];
     meshRef.current.rotation.y = meshPos.rot[1];
     meshRef.current.rotation.x = meshPos.rot[2];
+  }
+}
+
+interface linkProps2 {
+  geometry: GeometryObject;
+  onPointerMoveOnMesh: (o: GeometryObject, e: ThreeEvent<MouseEvent>) => void;
+  worldTf: { current: Transform };
+  worldScale: number;
+}
+function Link(props: linkProps2){
+  const linkProps = {
+    worldToBase: props.worldTf.current,
+    worldScale: props.worldScale,
+    baseToOrigin: props.geometry.origin,
+    color: props.geometry.color == 0 ? "gray" : colorName[props.geometry.color],
+    onPointerMove: (e: ThreeEvent<MouseEvent>) =>
+      props.onPointerMoveOnMesh(props.geometry, e),
+  }
+  switch (props.geometry.geometry.type) {
+    case geometryType.line:
+      return (
+        <Line
+          {...linkProps}
+          originToBegin={props.geometry.geometry.asLine.begin}
+          originToEnd={props.geometry.geometry.asLine.end}
+        />
+      );
+    case geometryType.plane:
+      return (
+        <Plane
+          {...linkProps}
+          center={props.geometry.geometry.asPlane.origin}
+          width={props.geometry.geometry.asPlane.width}
+          height={props.geometry.geometry.asPlane.height}
+        />
+      );
+    case geometryType.box:
+      return (
+        <Box
+          {...linkProps}
+          vertex1={props.geometry.geometry.asBox.vertex1}
+          vertex2={props.geometry.geometry.asBox.vertex2}
+        />
+      );
+    case geometryType.circle:
+      return (
+        <Circle
+          {...linkProps}
+          center={props.geometry.geometry.asCircle.origin}
+          radius={props.geometry.geometry.asCircle.radius}
+        />
+      );
+    case geometryType.cylinder:
+      return (
+        <Cylinder
+          {...linkProps}
+          centerBottom={props.geometry.geometry.asCylinder.origin}
+          radius={props.geometry.geometry.asCylinder.radius}
+          length={props.geometry.geometry.asCylinder.length}
+        />
+      );
+    case geometryType.sphere:
+      return (
+        <Sphere
+          {...linkProps}
+          center={props.geometry.geometry.asSphere.origin}
+          radius={props.geometry.geometry.asSphere.radius}
+        />
+      );
   }
 }
 
