@@ -30,6 +30,16 @@ export function Canvas2DCard(props: Props) {
   const [pointerPos, setPointerPos] = useState<null | { x: number; y: number }>(
     null
   );
+  const [movePos, setMovePos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const [worldScale, setWorldScale] = useState<number>(1);
+  const moveSpeed = 1 / worldScale / ratio;
+  // const rotateSpeed = 0.01;
+  // const scrollSpeed = 0.002 * worldScale;
+  const scaleRate = 1.001;
+
   useEffect(() => {
     const i = setInterval(() => {
       if (hasUpdate.current) {
@@ -67,17 +77,40 @@ export function Canvas2DCard(props: Props) {
   }, [props.canvas]);
 
   // canvas2d座標系からdom座標系へ変換 (拡大縮小のみ)
-  const resize = (x: number) => ratio * x;
+  const resize = (x: number) => ratio * worldScale * x;
   // dom座標系でのcanvasの幅と高さ
   const canvasWidth = resize(props.canvas.width || 1);
   const canvasHeight = resize(props.canvas.height || 1);
+  // 座標変換
+  const transformPosX = (x: number) =>
+    resize(x + movePos.x) + (divWidth - canvasWidth) / 2;
+  const transformPosY = (y: number) =>
+    resize(y + movePos.y) + (divHeight - canvasHeight) / 2;
 
   const onPointerMove = (e: PointerEvent) => {
     const divPos = e.currentTarget.getBoundingClientRect();
     setPointerPos({
-      x: (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) / ratio,
-      y: (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) / ratio,
+      x:
+        (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) /
+          ratio /
+          worldScale -
+        movePos.x,
+      y:
+        (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) /
+          ratio /
+          worldScale -
+        movePos.y,
     });
+    if (e.buttons & 1 || e.buttons & 4) {
+      setMovePos({
+        x: movePos.x + e.movementX * moveSpeed,
+        y: movePos.y + e.movementY * moveSpeed,
+      });
+    }
+  };
+  const onWheel = (e: PointerEvent) => {
+    setWorldScale(worldScale * scaleRate ** -e.deltaY);
+    // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
   };
 
   return (
@@ -88,13 +121,14 @@ export function Canvas2DCard(props: Props) {
           className="flex-1 max-h-full w-full"
           onPointerMove={onPointerMove}
           onPointerEnter={onPointerMove}
+          onWheel={onWheel}
         >
           <Stage
             width={divWidth}
             height={divHeight}
             style={{
-              width: canvasWidth,
-              height: canvasHeight,
+              width: divWidth,
+              height: divHeight,
               cursor: cursor,
             }}
             className="m-auto"
@@ -105,6 +139,8 @@ export function Canvas2DCard(props: Props) {
                   key={ci}
                   c={c}
                   resize={resize}
+                  transformPosX={transformPosX}
+                  transformPosY={transformPosY}
                   setCursor={(c: string) => setCursor(c)}
                 />
               ))}
@@ -131,10 +167,12 @@ function CoordText(props: { x: number; y: number }) {
 interface ShapeProps {
   c: Canvas2DComponent;
   resize: (x: number) => number;
+  transformPosX: (x: number) => number;
+  transformPosY: (x: number) => number;
   setCursor: (cursor: "default" | "pointer") => void;
 }
 function Shape(props: ShapeProps) {
-  const { c, resize } = props;
+  const { c, resize, transformPosX, transformPosY } = props;
   const { addResult } = useFuncResult();
   const mv = (pos: Point) =>
     new Transform(multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix));
@@ -175,10 +213,10 @@ function Shape(props: ShapeProps) {
           x={0}
           y={0}
           points={[
-            resize(mv(c.geometry.asLine.begin).pos[0]),
-            resize(mv(c.geometry.asLine.begin).pos[1]),
-            resize(mv(c.geometry.asLine.end).pos[0]),
-            resize(mv(c.geometry.asLine.end).pos[1]),
+            transformPosX(mv(c.geometry.asLine.begin).pos[0]),
+            transformPosY(mv(c.geometry.asLine.begin).pos[1]),
+            transformPosX(mv(c.geometry.asLine.end).pos[0]),
+            transformPosY(mv(c.geometry.asLine.end).pos[1]),
           ]}
           {...konvaProps}
         />
@@ -201,8 +239,8 @@ function Shape(props: ShapeProps) {
           points={p.reduce(
             (prev, xy) =>
               prev.concat([
-                resize(mv(new Point(xy)).pos[0]),
-                resize(mv(new Point(xy)).pos[1]),
+                transformPosX(mv(new Point(xy)).pos[0]),
+                transformPosY(mv(new Point(xy)).pos[1]),
               ]),
             [] as number[]
           )}
@@ -218,7 +256,10 @@ function Shape(props: ShapeProps) {
           y={0}
           points={c.geometry.asPolygon.points.reduce(
             (prev, xy) =>
-              prev.concat([resize(mv(xy).pos[0]), resize(mv(xy).pos[1])]),
+              prev.concat([
+                transformPosX(mv(xy).pos[0]),
+                transformPosY(mv(xy).pos[1]),
+              ]),
             [] as number[]
           )}
           closed
@@ -229,8 +270,8 @@ function Shape(props: ShapeProps) {
     case geometryType.circle:
       return (
         <Circle
-          x={resize(mv(c.geometry.asCircle.origin).pos[0])}
-          y={resize(mv(c.geometry.asCircle.origin).pos[1])}
+          x={transformPosX(mv(c.geometry.asCircle.origin).pos[0])}
+          y={transformPosY(mv(c.geometry.asCircle.origin).pos[1])}
           radius={resize(c.geometry.asCircle.radius)}
           {...konvaProps}
         />
