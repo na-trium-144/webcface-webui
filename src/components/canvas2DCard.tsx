@@ -13,6 +13,10 @@ import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
 import { useFuncResult } from "./funcResultProvider";
+import {IconButton} from "./button";
+import {iconFillColor} from "./sideMenu";
+import {Move, Home, Help} from "@icon-park/react";
+import { CaptionBox } from "./caption";
 
 interface Props {
   canvas: Canvas2D;
@@ -26,7 +30,8 @@ export function Canvas2DCard(props: Props) {
   const canvas2dHeight = useRef<number>(0);
   const hasUpdate = useRef<boolean>(true);
   const update = useForceUpdate();
-  const [cursor, setCursor] = useState<string>("default");
+  const [cursorIsPointer, setCursorIsPointer] = useState<boolean>(false);
+  const [moveEnabled, setMoveEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -72,7 +77,7 @@ export function Canvas2DCard(props: Props) {
     y: 0,
   });
   const [worldScale, setWorldScale] = useState<number>(1);
-  const moveSpeed = 1 / worldScale / ratio;
+  // const moveSpeed = 1 / worldScale / ratio;
   // const rotateSpeed = 0.01;
   // const scrollSpeed = 0.002 * worldScale;
   const scaleRate = 1.001;
@@ -121,19 +126,18 @@ export function Canvas2DCard(props: Props) {
   };
   const onPointerMove = (e: PointerEvent) => {
     const divPos = e.currentTarget.getBoundingClientRect();
-    onPointerDown(e);
     if (pointers.current.length <= 1) {
       setPointerPos({
         x: getPosX(e.clientX - divPos.left),
         y: getPosY(e.clientY - divPos.top),
       });
-      if (e.buttons & 1 || e.buttons & 4) {
+      if (moveEnabled && (e.buttons & 1 || e.buttons & 4)) {
         setMovePos({
           x: movePos.x + e.movementX / ratio / worldScale,
           y: movePos.y + e.movementY / ratio / worldScale,
         });
       }
-    } else if (pointers.current.length === 2) {
+    } else if (moveEnabled && pointers.current.length === 2) {
       pointers.current = pointers.current.map((p) => p.pointerId === e.pointerId ? e : p);
       const newDiff = {
         x: pointers.current[0].clientX - pointers.current[1].clientX,
@@ -153,19 +157,21 @@ export function Canvas2DCard(props: Props) {
     }
   };
   const onWheel = (e: PointerEvent) => {
-    const divPos = e.currentTarget.getBoundingClientRect();
-    zoomAt(
-      e.clientX - divPos.left,
-      e.clientY - divPos.top,
-      worldScale * scaleRate ** -e.deltaY
-    );
+    if(moveEnabled){
+      const divPos = e.currentTarget.getBoundingClientRect();
+      zoomAt(
+        e.clientX - divPos.left,
+        e.clientY - divPos.top,
+        worldScale * scaleRate ** -e.deltaY
+      );
+    }
   };
 
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
       <div
         className="h-full w-full flex flex-col"
-        style={{ touchAction: "none" }}
+        style={{ touchAction: moveEnabled ? "none" : "auto" }}
       >
         <div
           ref={divRef}
@@ -183,7 +189,7 @@ export function Canvas2DCard(props: Props) {
             style={{
               width: divWidth,
               height: divHeight,
-              cursor: cursor,
+              cursor: cursorIsPointer ? "pointer" : moveEnabled ? "grab" : "default",
             }}
             className="m-auto"
           >
@@ -195,14 +201,52 @@ export function Canvas2DCard(props: Props) {
                   resize={resize}
                   transformPosX={transformPosX}
                   transformPosY={transformPosY}
-                  setCursor={(c: string) => setCursor(c)}
+                  setCursorIsPointer={(p: boolean) => setCursorIsPointer(p)}
+                  moveEnabled={moveEnabled}
                 />
               ))}
             </Layer>
           </Stage>
         </div>
-        <div className="flex-none h-4 text-xs">
+        <div className="flex-none h-8 text-xs flex items-center ">
+          <div className="flex-1">
           {pointerPos !== null && <CoordText {...pointerPos} />}
+          </div>
+          <div className="flex-none text-lg relative">
+            <IconButton
+              onClick={() => setMoveEnabled(!moveEnabled)}
+              caption="Canvasの移動・ズーム オン/オフ"
+            >
+              {moveEnabled ? 
+                <Move theme="two-tone" fill={iconFillColor} />
+                :
+                <Move />
+              }
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                setMovePos({x:0, y:0});
+                setWorldScale(1);
+              }}
+              caption="初期位置に戻す"
+            >
+              <Home />
+            </IconButton>
+            <IconButton className="mr-4 peer">
+              <Help />
+            </IconButton>
+            <CaptionBox className={
+              "absolute bottom-full right-4 " +
+              "hidden peer-hover:inline-block peer-focus:inline-block "
+            }>
+              <p>移動・ズームがオンのとき、</p>
+              <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
+              <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
+              <p>拡大縮小できます。</p>
+              <p>要素のクリックは移動・ズームがオフの間のみ</p>
+              <p>反応します。</p>
+            </CaptionBox>
+          </div>
         </div>
       </div>
     </Card>
@@ -223,27 +267,28 @@ interface ShapeProps {
   resize: (x: number) => number;
   transformPosX: (x: number) => number;
   transformPosY: (x: number) => number;
-  setCursor: (cursor: "default" | "pointer") => void;
+  setCursorIsPointer: (isPointer: boolean) => void;
+  moveEnabled: boolean;
 }
 function Shape(props: ShapeProps) {
-  const { c, resize, transformPosX, transformPosY } = props;
+  const { c, resize, transformPosX, transformPosY, moveEnabled } = props;
   const { addResult } = useFuncResult();
   const mv = (pos: Point) =>
     new Transform(multiply(c.origin.tfMatrix, new Transform(pos.pos).tfMatrix));
   const [hovering, setHovering] = useState<boolean>(false);
   const onMouseEnter = () => {
-    if (c.onClick) {
-      props.setCursor("pointer");
+    if (c.onClick && !moveEnabled) {
+      props.setCursorIsPointer(true);
       setHovering(true);
     }
   };
   const onMouseLeave = () => {
-    if (c.onClick) {
-      props.setCursor("default");
+    if (c.onClick && !moveEnabled) {
+      props.setCursorIsPointer(false);
       setHovering(false);
     }
   };
-  const onClick = () => c.onClick && addResult(c.onClick.runAsync());
+  const onClick = () => c.onClick && !moveEnabled && addResult(c.onClick.runAsync());
   const konvaProps = {
     stroke: c.color ? colorName[c.color] : "black",
     fill: hovering
@@ -252,7 +297,7 @@ function Shape(props: ShapeProps) {
       ? colorName[c.fillColor]
       : undefined,
     strokeWidth: resize(c.strokeWidth),
-    listening: !!c.onClick,
+    listening: !!c.onClick && !moveEnabled,
     onClick: onClick,
     onTap: onClick,
     onMouseEnter: onMouseEnter,
