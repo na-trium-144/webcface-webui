@@ -80,16 +80,32 @@ export function Canvas2DCard(props: Props) {
   const prevPointerDistance = useRef<number | null>(null);
 
   // canvas2d座標系からdom座標系へ変換 (拡大縮小のみ)
-  const resize = (x: number) => ratio * worldScale * x;
+  const resize = (x: number, scale = worldScale) => ratio * scale * x;
   // dom座標系でのcanvasの幅と高さ
-  const canvasWidth = resize(props.canvas.width || 1);
-  const canvasHeight = resize(props.canvas.height || 1);
-  // 座標変換
+  const canvasWidth = ratio * (props.canvas.width || 1);
+  const canvasHeight = ratio * (props.canvas.height || 1);
+  // 座標変換 (canvas->dom)
   const transformPosX = (x: number) =>
     resize(x + movePos.x) + (divWidth - canvasWidth) / 2;
   const transformPosY = (y: number) =>
     resize(y + movePos.y) + (divHeight - canvasHeight) / 2;
+  // dom->canvas
+  const getPosX = (x: number, scale = worldScale) => 
+    (x - (divWidth - canvasWidth) / 2) / ratio / scale - movePos.x;
+  const getPosY = (y: number, scale = worldScale) => 
+    (y - (divHeight - canvasHeight) / 2) / ratio / scale - movePos.y;
 
+  const zoomAt = (domX: number, domY: number, newScale: number) => {
+    const currentX = getPosX(domX);
+    const currentY = getPosY(domY);
+    const afterX = getPosX(domX, newScale);
+    const afterY = getPosY(domY, newScale);
+    setMovePos({
+      x: movePos.x + (afterX - currentX),
+      y: movePos.y + (afterY - currentY),
+    });
+    setWorldScale(newScale);
+  }
   const onPointerDown = (e: PointerEvent) => {
     if (
       pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
@@ -104,24 +120,17 @@ export function Canvas2DCard(props: Props) {
     prevPointerDistance.current = null;
   };
   const onPointerMove = (e: PointerEvent) => {
+    const divPos = e.currentTarget.getBoundingClientRect();
+    onPointerDown(e);
     if (pointers.current.length <= 1) {
-      const divPos = e.currentTarget.getBoundingClientRect();
       setPointerPos({
-        x:
-          (e.clientX - divPos.left - (divWidth - canvasWidth) / 2) /
-            ratio /
-            worldScale -
-          movePos.x,
-        y:
-          (e.clientY - divPos.top - (divHeight - canvasHeight) / 2) /
-            ratio /
-            worldScale -
-          movePos.y,
+        x: getPosX(e.clientX - divPos.left),
+        y: getPosY(e.clientY - divPos.top),
       });
       if (e.buttons & 1 || e.buttons & 4) {
         setMovePos({
-          x: movePos.x + e.movementX * moveSpeed,
-          y: movePos.y + e.movementY * moveSpeed,
+          x: movePos.x + e.movementX / ratio / worldScale,
+          y: movePos.y + e.movementY / ratio / worldScale,
         });
       }
     } else if (pointers.current.length === 2) {
@@ -136,12 +145,20 @@ export function Canvas2DCard(props: Props) {
         distChange = newDist / prevPointerDistance.current;
       }
       prevPointerDistance.current = newDist;
-      setWorldScale(worldScale * distChange ** 1.2);
+      zoomAt(
+        (pointers.current[0].clientX + pointers.current[1].clientX) / 2 - divPos.left,
+        (pointers.current[0].clientY + pointers.current[1].clientY) / 2 - divPos.top,
+        worldScale * distChange ** 1.2
+      );
     }
   };
   const onWheel = (e: PointerEvent) => {
-    setWorldScale(worldScale * scaleRate ** -e.deltaY);
-    // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
+    const divPos = e.currentTarget.getBoundingClientRect();
+    zoomAt(
+      e.clientX - divPos.left,
+      e.clientY - divPos.top,
+      worldScale * scaleRate ** -e.deltaY
+    );
   };
 
   return (
