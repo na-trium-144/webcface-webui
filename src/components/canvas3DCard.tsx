@@ -10,14 +10,22 @@ import {
   Canvas3D,
   canvas3DComponentType,
 } from "webcface";
-import { useState, useEffect, useRef, useLayoutEffect, RefObject, PointerEvent, MouseEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  RefObject,
+  PointerEvent as ReactPointerEvent,
+  WheelEvent as ReactWheelEvent,
+} from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { multiply, inv } from "../libs/math";
 import { colorName } from "../libs/color";
 import * as THREE from "three";
-import {IconButton} from "./button";
-import {iconFillColor} from "./sideMenu";
-import {Move, Home, Help} from "@icon-park/react";
+import { IconButton } from "./button";
+import { iconFillColor } from "./sideMenu";
+import { Move, Home, Help } from "@icon-park/react";
 import { CaptionBox } from "./caption";
 
 interface Canvas3DProps {
@@ -121,37 +129,38 @@ export function Canvas3DCardImpl(props: Props) {
 
   // デフォルトでは(0, 0, 5)から見下ろしていて、xが右、yが上
   // (1, 1, 1) の方向から見下ろすような図にしたい
-  const defaultTf = () => new Transform(
-    multiply(
-      new Transform([0, 0, 0], [0, 0, -Math.PI / 4]).tfMatrix,
-      new Transform([0, 0, 0], [(Math.PI * 5) / 4, 0, 0]).tfMatrix
-    )
-  );
+  const defaultTf = () =>
+    new Transform(
+      multiply(
+        new Transform([0, 0, 0], [0, 0, -Math.PI / 4]).tfMatrix,
+        new Transform([0, 0, 0], [(Math.PI * 5) / 4, 0, 0]).tfMatrix
+      )
+    );
   const worldTf = useRef<Transform>(defaultTf());
   const [worldScale, setWorldScale] = useState<number>(1);
   const moveSpeed = 0.01 / worldScale;
   const rotateSpeed = 0.01;
   // const scrollSpeed = 0.002 * worldScale;
   const scaleRate = 1.001;
-  const pointers = useRef<PointerEvent[]>([]);
+  const pointers = useRef<ReactPointerEvent[]>([]);
   const prevPointerDistance = useRef<number | null>(null);
   const [moveEnabled, setMoveEnabled] = useState<boolean>(false);
 
-  const onPointerDown = (e: PointerEvent) => {
+  const onPointerDown = (e: ReactPointerEvent) => {
     if (
       pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
     ) {
       pointers.current.push(e);
     }
   };
-  const onPointerUp = (e: PointerEvent) => {
+  const onPointerUp = (e: ReactPointerEvent) => {
     pointers.current = pointers.current.filter(
       (p) => p.pointerId !== e.pointerId
     );
     prevPointerDistance.current = null;
   };
-  const onPointerMove = (e: PointerEvent) => {
-    if (pointers.current.length <= 1){
+  const onPointerMove = (e: ReactPointerEvent) => {
+    if (pointers.current.length <= 1) {
       if (moveEnabled && ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4)) {
         worldTf.current.pos[0] += e.movementX * moveSpeed;
         worldTf.current.pos[1] += -e.movementY * moveSpeed;
@@ -165,10 +174,12 @@ export function Canvas3DCardImpl(props: Props) {
         );
       }
     } else if (moveEnabled && pointers.current.length === 2) {
-      worldTf.current.pos[0] += e.movementX * moveSpeed / 2;
-      worldTf.current.pos[1] += -e.movementY * moveSpeed / 2;
+      worldTf.current.pos[0] += (e.movementX * moveSpeed) / 2;
+      worldTf.current.pos[1] += (-e.movementY * moveSpeed) / 2;
 
-      pointers.current = pointers.current.map((p) => p.pointerId === e.pointerId ? e : p);
+      pointers.current = pointers.current.map((p) =>
+        p.pointerId === e.pointerId ? e : p
+      );
       const newDiff = {
         x: pointers.current[0].clientX - pointers.current[1].clientX,
         y: pointers.current[0].clientY - pointers.current[1].clientY,
@@ -182,18 +193,18 @@ export function Canvas3DCardImpl(props: Props) {
       setWorldScale(worldScale * distChange ** 1.2);
     }
   };
-  const onWheel = (e: MouseEvent) => {
-    if(moveEnabled){
+  const onWheel = (e: ReactWheelEvent) => {
+    if (moveEnabled) {
       setWorldScale(worldScale * scaleRate ** -e.deltaY);
       // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
     }
-  }
+  };
 
   const [pointerPos, setPointerPos] = useState<THREE.Vector3 | null>(null);
   const [pointerLink, setPointerLink] = useState<RobotLink | null>(null);
   const onPointerMoveOnMesh = (
     o: GeometryObject,
-    e: ThreeEvent<MouseEvent>
+    e: ThreeEvent<PointerEvent>
   ) => {
     const pointerPos = e.intersections[0].point;
     const pointerPosTf = new Transform([
@@ -215,7 +226,7 @@ export function Canvas3DCardImpl(props: Props) {
           className="flex-1 max-h-full"
           style={{
             touchAction: moveEnabled ? "none" : "auto",
-            cursor: moveEnabled ? "grab" : "default"
+            cursor: moveEnabled ? "grab" : "default",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -269,11 +280,11 @@ export function Canvas3DCardImpl(props: Props) {
               onClick={() => setMoveEnabled(!moveEnabled)}
               caption="Canvasの移動・ズーム オン/オフ"
             >
-              {moveEnabled ? 
+              {moveEnabled ? (
                 <Move theme="two-tone" fill={iconFillColor} />
-                :
+              ) : (
                 <Move />
-              }
+              )}
             </IconButton>
             <IconButton
               onClick={() => {
@@ -284,13 +295,15 @@ export function Canvas3DCardImpl(props: Props) {
             >
               <Home />
             </IconButton>
-            <IconButton className="mr-4 peer">
+            <IconButton className="mr-4 peer" onClick={() => undefined}>
               <Help />
             </IconButton>
-            <CaptionBox className={
-              "absolute bottom-full right-4 " +
-              "hidden peer-hover:inline-block peer-focus:inline-block "
-            }>
+            <CaptionBox
+              className={
+                "absolute bottom-full right-4 " +
+                "hidden peer-hover:inline-block peer-focus:inline-block "
+              }
+            >
               <p>移動・ズームがオンのとき、</p>
               <p>(マウス)ドラッグ / (タッチ)スライド で回転、</p>
               <p>(マウス)Ctrl+ドラッグ or ホイールクリックしながらドラッグ</p>
@@ -310,12 +323,12 @@ interface LinkProps {
   baseToOrigin: Transform;
   worldScale: number;
   color: string;
-  onPointerMove: (e: ThreeEvent<MouseEvent>) => void;
+  onPointerMove: (e: ThreeEvent<PointerEvent>) => void;
 }
 
 function transformMesh(
   props: LinkProps,
-  meshRef: RefObject<THREE.Mesh | THREE.Line>,
+  meshRef: RefObject<THREE.Mesh | THREE.Line>
 ) {
   if (meshRef.current != null) {
     const meshPos = new Transform(
@@ -333,19 +346,19 @@ function transformMesh(
 
 interface linkProps2 {
   geometry: GeometryObject;
-  onPointerMoveOnMesh: (o: GeometryObject, e: ThreeEvent<MouseEvent>) => void;
+  onPointerMoveOnMesh: (o: GeometryObject, e: ThreeEvent<PointerEvent>) => void;
   worldTf: { current: Transform };
   worldScale: number;
 }
-function Link(props: linkProps2){
+function Link(props: linkProps2) {
   const linkProps = {
     worldToBase: props.worldTf.current,
     worldScale: props.worldScale,
     baseToOrigin: props.geometry.origin,
     color: props.geometry.color == 0 ? "gray" : colorName[props.geometry.color],
-    onPointerMove: (e: ThreeEvent<MouseEvent>) =>
+    onPointerMove: (e: ThreeEvent<PointerEvent>) =>
       props.onPointerMoveOnMesh(props.geometry, e),
-  }
+  };
   switch (props.geometry.geometry.type) {
     case geometryType.line:
       return (

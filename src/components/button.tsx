@@ -44,6 +44,7 @@ interface IconProps{
   disabled?: boolean;
   children?: ReactNode;
   caption?: ReactNode;
+  className?: string;
 }
 export function IconButton(props: IconProps) {
   return (

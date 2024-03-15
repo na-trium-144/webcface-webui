@@ -8,14 +8,14 @@ import {
   Point,
   viewColor,
 } from "webcface";
-import { useState, useEffect, useRef, PointerEvent } from "react";
+import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
 import { Stage, Layer, Circle, Line } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
 import { useFuncResult } from "./funcResultProvider";
-import {IconButton} from "./button";
-import {iconFillColor} from "./sideMenu";
-import {Move, Home, Help} from "@icon-park/react";
+import { IconButton } from "./button";
+import { iconFillColor } from "./sideMenu";
+import { Move, Home, Help } from "@icon-park/react";
 import { CaptionBox } from "./caption";
 
 interface Props {
@@ -49,11 +49,13 @@ export function Canvas2DCard(props: Props) {
           setDivWidth(divRef.current.clientWidth);
           setDivHeight(divRef.current.clientHeight);
         }
-        canvas2dWidth.current = props.canvas.width;
-        canvas2dHeight.current = props.canvas.height;
         if (props.canvas.width && props.canvas.height) {
-          const xRatio = divRef.current.clientWidth / props.canvas.width;
-          const yRatio = divRef.current.clientHeight / props.canvas.height;
+          canvas2dWidth.current = props.canvas.width;
+          canvas2dHeight.current = props.canvas.height;
+          const xRatio =
+            (divRef.current?.clientWidth || 0) / props.canvas.width;
+          const yRatio =
+            (divRef.current?.clientHeight || 0) / props.canvas.height;
           setRatio(Math.min(xRatio, yRatio));
         }
       }
@@ -95,9 +97,9 @@ export function Canvas2DCard(props: Props) {
   const transformPosY = (y: number) =>
     resize(y + movePos.y) + (divHeight - canvasHeight) / 2;
   // dom->canvas
-  const getPosX = (x: number, scale = worldScale) => 
+  const getPosX = (x: number, scale = worldScale) =>
     (x - (divWidth - canvasWidth) / 2) / ratio / scale - movePos.x;
-  const getPosY = (y: number, scale = worldScale) => 
+  const getPosY = (y: number, scale = worldScale) =>
     (y - (divHeight - canvasHeight) / 2) / ratio / scale - movePos.y;
 
   const zoomAt = (domX: number, domY: number, newScale: number) => {
@@ -110,7 +112,7 @@ export function Canvas2DCard(props: Props) {
       y: movePos.y + (afterY - currentY),
     });
     setWorldScale(newScale);
-  }
+  };
   const onPointerDown = (e: PointerEvent) => {
     if (
       pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
@@ -138,7 +140,9 @@ export function Canvas2DCard(props: Props) {
         });
       }
     } else if (moveEnabled && pointers.current.length === 2) {
-      pointers.current = pointers.current.map((p) => p.pointerId === e.pointerId ? e : p);
+      pointers.current = pointers.current.map((p) =>
+        p.pointerId === e.pointerId ? e : p
+      );
       const newDiff = {
         x: pointers.current[0].clientX - pointers.current[1].clientX,
         y: pointers.current[0].clientY - pointers.current[1].clientY,
@@ -150,14 +154,16 @@ export function Canvas2DCard(props: Props) {
       }
       prevPointerDistance.current = newDist;
       zoomAt(
-        (pointers.current[0].clientX + pointers.current[1].clientX) / 2 - divPos.left,
-        (pointers.current[0].clientY + pointers.current[1].clientY) / 2 - divPos.top,
+        (pointers.current[0].clientX + pointers.current[1].clientX) / 2 -
+          divPos.left,
+        (pointers.current[0].clientY + pointers.current[1].clientY) / 2 -
+          divPos.top,
         worldScale * distChange ** 1.2
       );
     }
   };
-  const onWheel = (e: PointerEvent) => {
-    if(moveEnabled){
+  const onWheel = (e: WheelEvent) => {
+    if (moveEnabled) {
       const divPos = e.currentTarget.getBoundingClientRect();
       zoomAt(
         e.clientX - divPos.left,
@@ -189,7 +195,11 @@ export function Canvas2DCard(props: Props) {
             style={{
               width: divWidth,
               height: divHeight,
-              cursor: cursorIsPointer ? "pointer" : moveEnabled ? "grab" : "default",
+              cursor: cursorIsPointer
+                ? "pointer"
+                : moveEnabled
+                ? "grab"
+                : "default",
             }}
             className="m-auto"
           >
@@ -210,35 +220,37 @@ export function Canvas2DCard(props: Props) {
         </div>
         <div className="flex-none h-8 text-xs flex items-center ">
           <div className="flex-1">
-          {pointerPos !== null && <CoordText {...pointerPos} />}
+            {pointerPos !== null && <CoordText {...pointerPos} />}
           </div>
           <div className="flex-none text-lg relative">
             <IconButton
               onClick={() => setMoveEnabled(!moveEnabled)}
               caption="Canvasの移動・ズーム オン/オフ"
             >
-              {moveEnabled ? 
+              {moveEnabled ? (
                 <Move theme="two-tone" fill={iconFillColor} />
-                :
+              ) : (
                 <Move />
-              }
+              )}
             </IconButton>
             <IconButton
               onClick={() => {
-                setMovePos({x:0, y:0});
+                setMovePos({ x: 0, y: 0 });
                 setWorldScale(1);
               }}
               caption="初期位置に戻す"
             >
               <Home />
             </IconButton>
-            <IconButton className="mr-4 peer">
+            <IconButton className="mr-4 peer" onClick={() => undefined}>
               <Help />
             </IconButton>
-            <CaptionBox className={
-              "absolute bottom-full right-4 " +
-              "hidden peer-hover:inline-block peer-focus:inline-block "
-            }>
+            <CaptionBox
+              className={
+                "absolute bottom-full right-4 " +
+                "hidden peer-hover:inline-block peer-focus:inline-block "
+              }
+            >
               <p>移動・ズームがオンのとき、</p>
               <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
               <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
@@ -288,7 +300,8 @@ function Shape(props: ShapeProps) {
       setHovering(false);
     }
   };
-  const onClick = () => c.onClick && !moveEnabled && addResult(c.onClick.runAsync());
+  const onClick = () =>
+    c.onClick && !moveEnabled && addResult(c.onClick.runAsync());
   const konvaProps = {
     stroke: c.color ? colorName[c.color] : "black",
     fill: hovering
