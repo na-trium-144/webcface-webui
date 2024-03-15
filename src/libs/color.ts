@@ -1,3 +1,4 @@
+// todo: tailwindcssの色名、htmlのではない
 export const colorName = [
   "inherit",
   "black",
@@ -24,6 +25,35 @@ export const colorName = [
   "fuchsia",
   "pink",
   "rose",
+];
+
+// todo: 色がてきとう
+export const colorNameHover = [
+  "inherit",
+  "dimgray",
+  "whitesmoke",
+  "darkgray", // grayより明るい
+  "darkgray", // todo: slate, gray, zinc, neutral, stone の違い is 何
+  "darkgray",
+  "darkgray",
+  "darkgray",
+  "#f44", // <- red #ff0000
+  "#fc4", // <- orange #ffa500
+  "", // <- amber 
+  "#ff4", // <- yellow #ffff00
+  "#4f4", // <- lime #00ff00
+  "#484", // <- green #008000
+  "", // emerald
+  "#488", // <- teal #008080
+  "#4ff", // <- cyan #00ffff
+  "#cff", // sky skyblue#87ceeb
+  "#44f", // blue #0000ff
+  "#94c", // <- indigo #4b0082
+  "#fcf", // <- #ee82ee
+  "#848", // <- purple #800080
+  "#f4f", // <- #ff00ff
+  "#fde", // <- #ffc0cb
+  "", // <- rose
 ];
 const buttonColorClass = [
   [

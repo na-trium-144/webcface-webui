@@ -36,7 +36,7 @@ import {
   GraphicDesign,
 } from "@icon-park/react";
 
-const iconFillColor = ["#333", "#6c6"];
+export const iconFillColor = ["#333", "#6c6"];
 
 interface Props {
   client: Client | null;
