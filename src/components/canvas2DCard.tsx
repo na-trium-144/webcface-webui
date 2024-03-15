@@ -3,13 +3,14 @@ import { useForceUpdate } from "../libs/forceUpdate";
 import {
   Canvas2D,
   Canvas2DComponent,
+  canvas2DComponentType,
   geometryType,
   Transform,
   Point,
   viewColor,
 } from "webcface";
 import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
-import { Stage, Layer, Circle, Line } from "react-konva";
+import { Stage, Layer, Circle, Line, Text } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
 import { useFuncResult } from "./funcResultProvider";
@@ -302,14 +303,13 @@ function Shape(props: ShapeProps) {
   };
   const onClick = () =>
     c.onClick && !moveEnabled && addResult(c.onClick.runAsync());
-  const konvaProps = {
-    stroke: c.color ? colorName[c.color] : "black",
-    fill: hovering
-      ? colorNameHover[c.color || viewColor.white]
-      : c.fillColor
-      ? colorName[c.fillColor]
-      : undefined,
-    strokeWidth: resize(c.strokeWidth),
+  const stroke = c.color ? colorName[c.color] : "black";
+  const fill = hovering
+    ? colorNameHover[c.color || viewColor.white]
+    : c.fillColor
+    ? colorName[c.fillColor]
+    : undefined;
+  const eventProps = {
     listening: !!c.onClick && !moveEnabled,
     onClick: onClick,
     onTap: onClick,
@@ -318,77 +318,99 @@ function Shape(props: ShapeProps) {
     onTouchStart: onMouseEnter,
     onTouchEnd: onMouseLeave,
   };
-  switch (c.geometry.type) {
-    case geometryType.line:
+  switch (c.type) {
+    case canvas2DComponentType.geometry: {
+      const konvaProps = {
+        stroke,
+        fill,
+        strokeWidth: c.strokeWidth > 0 ? resize(c.strokeWidth) : 1,
+        ...eventProps,
+      };
+      switch (c.geometry.type) {
+        case geometryType.line:
+          return (
+            <Line
+              x={0}
+              y={0}
+              points={[
+                transformPosX(mv(c.geometry.asLine.begin).pos[0]),
+                transformPosY(mv(c.geometry.asLine.begin).pos[1]),
+                transformPosX(mv(c.geometry.asLine.end).pos[0]),
+                transformPosY(mv(c.geometry.asLine.end).pos[1]),
+              ]}
+              {...konvaProps}
+            />
+          );
+        case geometryType.plane: {
+          const x = c.geometry.asRect.origin.pos[0];
+          const y = c.geometry.asRect.origin.pos[1];
+          const w = c.geometry.asRect.width;
+          const h = c.geometry.asRect.height;
+          const p = [
+            [x - w / 2, y - h / 2],
+            [x - w / 2, y + h / 2],
+            [x + w / 2, y + h / 2],
+            [x + w / 2, y - h / 2],
+          ];
+          return (
+            <Line
+              x={0}
+              y={0}
+              points={p.reduce(
+                (prev, xy) =>
+                  prev.concat([
+                    transformPosX(mv(new Point(xy)).pos[0]),
+                    transformPosY(mv(new Point(xy)).pos[1]),
+                  ]),
+                [] as number[]
+              )}
+              closed
+              {...konvaProps}
+            />
+          );
+        }
+        case geometryType.polygon: {
+          return (
+            <Line
+              x={0}
+              y={0}
+              points={c.geometry.asPolygon.points.reduce(
+                (prev, xy) =>
+                  prev.concat([
+                    transformPosX(mv(xy).pos[0]),
+                    transformPosY(mv(xy).pos[1]),
+                  ]),
+                [] as number[]
+              )}
+              closed
+              {...konvaProps}
+            />
+          );
+        }
+        case geometryType.circle:
+          return (
+            <Circle
+              x={transformPosX(mv(c.geometry.asCircle.origin).pos[0])}
+              y={transformPosY(mv(c.geometry.asCircle.origin).pos[1])}
+              radius={resize(c.geometry.asCircle.radius)}
+              {...konvaProps}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+    case canvas2DComponentType.text: {
       return (
-        <Line
-          x={0}
-          y={0}
-          points={[
-            transformPosX(mv(c.geometry.asLine.begin).pos[0]),
-            transformPosY(mv(c.geometry.asLine.begin).pos[1]),
-            transformPosX(mv(c.geometry.asLine.end).pos[0]),
-            transformPosY(mv(c.geometry.asLine.end).pos[1]),
-          ]}
-          {...konvaProps}
-        />
-      );
-    case geometryType.plane: {
-      const x = c.geometry.asRect.origin.pos[0];
-      const y = c.geometry.asRect.origin.pos[1];
-      const w = c.geometry.asRect.width;
-      const h = c.geometry.asRect.height;
-      const p = [
-        [x - w / 2, y - h / 2],
-        [x - w / 2, y + h / 2],
-        [x + w / 2, y + h / 2],
-        [x + w / 2, y - h / 2],
-      ];
-      return (
-        <Line
-          x={0}
-          y={0}
-          points={p.reduce(
-            (prev, xy) =>
-              prev.concat([
-                transformPosX(mv(new Point(xy)).pos[0]),
-                transformPosY(mv(new Point(xy)).pos[1]),
-              ]),
-            [] as number[]
-          )}
-          closed
-          {...konvaProps}
+        <Text
+          x={transformPosX(c.origin.pos[0])}
+          y={transformPosY(c.origin.pos[1])}
+          text={c.text}
+          fill={fill}
+          fontSize={resize(c.textSize > 0 ? c.textSize : 1)}
+          {...eventProps}
         />
       );
     }
-    case geometryType.polygon: {
-      return (
-        <Line
-          x={0}
-          y={0}
-          points={c.geometry.asPolygon.points.reduce(
-            (prev, xy) =>
-              prev.concat([
-                transformPosX(mv(xy).pos[0]),
-                transformPosY(mv(xy).pos[1]),
-              ]),
-            [] as number[]
-          )}
-          closed
-          {...konvaProps}
-        />
-      );
-    }
-    case geometryType.circle:
-      return (
-        <Circle
-          x={transformPosX(mv(c.geometry.asCircle.origin).pos[0])}
-          y={transformPosY(mv(c.geometry.asCircle.origin).pos[1])}
-          radius={resize(c.geometry.asCircle.radius)}
-          {...konvaProps}
-        />
-      );
-    default:
-      return null;
   }
 }
