@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { View, ViewComponent, viewComponentTypes } from "webcface";
+import { Text, View, ViewComponent, viewComponentTypes } from "webcface";
 import { useState, useEffect, useRef } from "react";
 import { useFuncResult } from "./funcResultProvider";
 import { textColorClass } from "../libs/color";
@@ -45,20 +45,29 @@ interface VCProps {
 }
 function ViewComponentRender(props: VCProps) {
   const { addResult } = useFuncResult();
-  const [tempValue, setTempValue] = useState<string>("");
+  const [tempValue, setTempValue] = useState<string | number | boolean | null>(
+    null
+  );
   const [isError, setIsError] = useState<boolean>(false);
   const [focused, setFocused] = useState<boolean>(false);
   useEffect(() => {
-    if (props.vc.onChange !== null) {
-      if (!focused) {
-        const i = setInterval(() => {
-          const newValue = props.vc.getBindValue();
-          if (tempValue !== newValue) {
-            setTempValue(newValue);
+    switch (props.vc.type) {
+      case viewComponentTypes.textInput:
+        if (!focused) {
+          const bind = props.vc.bind;
+          if (tempValue !== bind.getAny()) {
+            setTempValue(bind.getAny());
+          } else {
+            const onChange = () => {
+              setTempValue(bind.getAny());
+            };
+            bind.on(onChange);
+            return () => bind.off(onChange);
           }
-        }, 50);
-        return () => clearInterval(i);
-      }
+        }
+        break;
+      default:
+        break;
     }
   }, [props.vc, tempValue, focused]);
 
@@ -87,29 +96,37 @@ function ViewComponentRender(props: VCProps) {
         </Button>
       );
     case viewComponentTypes.textInput:
-      if (props.vc.options?.length) {
-        return null;
-      } else {
-        return (
-          <Input
-            isError={isError}
-            setIsError={setIsError}
-            name={props.vc.text}
-            type="string"
-            value={tempValue}
-            setValue={(val) => setTempValue(val == null ? "" : String(val))}
-            min={props.vc.min}
-            max={props.vc.max}
-            onFocus={() => setFocused(true)}
-            onBlur={() => {
-              setFocused(false);
+    case viewComponentTypes.numInput:
+    case viewComponentTypes.intInput:
+      return (
+        <Input
+          isError={isError}
+          setIsError={setIsError}
+          name={props.vc.text}
+          type={
+            props.vc.type === viewComponentTypes.textInput
+              ? "string"
+              : props.vc.type === viewComponentTypes.numInput
+              ? "float"
+              : props.vc.type === viewComponentTypes.intInput
+              ? "number"
+              : "string"
+          }
+          value={tempValue != null ? tempValue : ""}
+          setValue={(val) => setTempValue(val)}
+          min={props.vc.min}
+          max={props.vc.max}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            if (!isError) {
               const r = props.vc.onChange?.runAsync(tempValue);
               if (r != null) {
                 addResult(r);
               }
-            }}
-          />
-        );
-      }
+            }
+          }}
+        />
+      );
   }
 }
