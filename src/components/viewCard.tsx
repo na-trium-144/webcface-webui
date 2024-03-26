@@ -1,10 +1,11 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { View, ViewComponent, viewComponentTypes } from "webcface";
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFuncResult } from "./funcResultProvider";
 import { textColorClass } from "../libs/color";
 import { Button } from "./button";
+import { Input } from "./input";
 
 interface Props {
   view: View;
@@ -44,6 +45,23 @@ interface VCProps {
 }
 function ViewComponentRender(props: VCProps) {
   const { addResult } = useFuncResult();
+  const [tempValue, setTempValue] = useState<string>("");
+  const [isError, setIsError] = useState<boolean>(false);
+  const [focused, setFocused] = useState<boolean>(false);
+  useEffect(() => {
+    if (props.vc.onChange !== null) {
+      if (!focused) {
+        const i = setInterval(() => {
+          const newValue = props.vc.getBindValue();
+          if (tempValue !== newValue) {
+            setTempValue(newValue);
+          }
+        }, 50);
+        return () => clearInterval(i);
+      }
+    }
+  }, [props.vc, tempValue, focused]);
+
   switch (props.vc.type) {
     case viewComponentTypes.text:
       return (
@@ -68,5 +86,30 @@ function ViewComponentRender(props: VCProps) {
           {props.vc.text}
         </Button>
       );
+    case viewComponentTypes.textInput:
+      if (props.vc.options?.length) {
+        return null;
+      } else {
+        return (
+          <Input
+            isError={isError}
+            setIsError={setIsError}
+            name={props.vc.text}
+            type="string"
+            value={tempValue}
+            setValue={(val) => setTempValue(val == null ? "" : String(val))}
+            min={props.vc.min}
+            max={props.vc.max}
+            onFocus={() => setFocused(true)}
+            onBlur={() => {
+              setFocused(false);
+              const r = props.vc.onChange?.runAsync(tempValue);
+              if (r != null) {
+                addResult(r);
+              }
+            }}
+          />
+        );
+      }
   }
 }

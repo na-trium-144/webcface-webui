@@ -16,6 +16,8 @@ interface Props {
   min?: number | null;
   max?: number | null;
   caption?: ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 export function Input(props: Props) {
   return (
@@ -69,6 +71,8 @@ function SelectInput(props: Props) {
       }
       value={String(props.value)}
       onChange={(e) => props.setValue(e.target.value)}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     >
       {props.option?.map((o, oi) => (
         <option key={oi} value={String(o)}>
@@ -94,6 +98,8 @@ function NumberInput(props: Props) {
         props.setIsError && props.setIsError(!e.target.checkValidity());
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     />
   );
 }
@@ -109,6 +115,8 @@ function BooleanInput(props: Props) {
         "hover:text-green-700 active:text-green-700 " +
         (props.widthClass != undefined ? props.widthClass : "w-12 ")
       }
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     >
       {props.value ? "true" : "false"}
     </button>
@@ -136,6 +144,8 @@ function FloatInput(props: Props) {
       onChange={(e) => {
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     />
   );
 }
@@ -159,6 +169,8 @@ function StringInput(props: Props) {
       onChange={(e) => {
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     />
   );
 }
