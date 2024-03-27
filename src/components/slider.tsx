@@ -5,7 +5,8 @@ interface Props {
   min: number;
   max: number;
   value: number;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
+  onAfterChange?: (value: number) => void;
   disabled?: boolean;
 }
 export function Slider(props: Props) {

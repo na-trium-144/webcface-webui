@@ -7,6 +7,7 @@ import { textColorClass } from "../libs/color";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Slider } from "./slider";
+import { ArgDescription } from "./funcCard";
 
 interface Props {
   view: View;
@@ -34,7 +35,11 @@ export function ViewCard(props: Props) {
     <Card title={`${props.view.member.name}:${props.view.name}`}>
       <div className="w-full h-full overflow-y-auto overflow-x-auto">
         {props.view.get().map((vc, i) => (
-          <ViewComponentRender key={i} vc={vc} id={`${props.view.member.name}:${props.view.name}:${i}`}/>
+          <ViewComponentRender
+            key={i}
+            vc={vc}
+            id={`${props.view.member.name}:${props.view.name}:${i}`}
+          />
         ))}
       </div>
     </Card>
@@ -154,6 +159,17 @@ function ViewComponentRender(props: VCProps) {
               }
             }
           }}
+          caption={
+            props.vc.min != null ||
+            props.vc.max != null ||
+            props.vc.option?.length ? (
+              <ArgDescription
+                min={props.vc.min}
+                max={props.vc.max}
+                hasOption={Boolean(props.vc.option?.length)}
+              />
+            ) : null
+          }
         />
       );
     case viewComponentTypes.sliderInput:
@@ -161,7 +177,7 @@ function ViewComponentRender(props: VCProps) {
         <Slider
           className="w-32 align-text-bottom mb-0.5"
           value={typeof tempValue === "number" ? tempValue : 0}
-          onChange={(val) => {
+          onAfterChange={(val) => {
             setTempValue(val);
             sendValue(val);
           }}
@@ -181,9 +197,7 @@ function ViewComponentRender(props: VCProps) {
               sendValue(e.target.checked);
             }}
           />
-          <label for={props.id}>
-            {props.vc.text}
-          </label>
+          <label for={props.id}>{props.vc.text}</label>
         </>
       );
   }
