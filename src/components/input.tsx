@@ -18,6 +18,7 @@ interface Props {
   caption?: ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
+  onKeyUp?: (e: KeyboardEvent) => void;
 }
 export function Input(props: Props) {
   return (
@@ -100,6 +101,7 @@ function NumberInput(props: Props) {
       }}
       onFocus={() => props.onFocus && props.onFocus()}
       onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }
@@ -153,6 +155,7 @@ function FloatInput(props: Props) {
       }}
       onFocus={() => props.onFocus && props.onFocus()}
       onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }
@@ -178,6 +181,7 @@ function StringInput(props: Props) {
       }}
       onFocus={() => props.onFocus && props.onFocus()}
       onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }

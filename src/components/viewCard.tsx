@@ -141,7 +141,10 @@ function ViewComponentRender(props: VCProps) {
           value={tempValue != null ? tempValue : ""}
           setValue={(val) => {
             setTempValue(val);
-            if (props.vc.type === viewComponentTypes.toggleInput) {
+            if (
+              props.vc.type === viewComponentTypes.toggleInput ||
+              props.vc.type === viewComponentTypes.selectInput
+            ) {
               sendValue(val);
             }
           }}
@@ -149,11 +152,23 @@ function ViewComponentRender(props: VCProps) {
           max={props.vc.max}
           option={props.vc.option}
           onFocus={() =>
-            props.vc.type !== viewComponentTypes.toggleInput && setFocused(true)
+            props.vc.type !== viewComponentTypes.toggleInput &&
+            props.vc.type !== viewComponentTypes.selectInput &&
+            setFocused(true)
           }
           onBlur={() => {
-            if (props.vc.type !== viewComponentTypes.toggleInput) {
+            if (
+              props.vc.type !== viewComponentTypes.toggleInput &&
+              props.vc.type !== viewComponentTypes.selectInput
+            ) {
               setFocused(false);
+              if (!isError) {
+                sendValue(tempValue);
+              }
+            }
+          }}
+          onKeyUp={(e: KeyboardEvent) => {
+            if (e.key === "Enter") {
               if (!isError) {
                 sendValue(tempValue);
               }
