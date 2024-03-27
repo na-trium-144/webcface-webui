@@ -73,6 +73,8 @@ function ViewComponentRender(props: VCProps) {
       case viewComponentTypes.intInput:
       case viewComponentTypes.selectInput:
       case viewComponentTypes.toggleInput:
+      case viewComponentTypes.sliderInput:
+      case viewComponentTypes.checkInput:
         if (!focused) {
           bind.current = props.vc.bind;
           if (tempValue !== bind.current.getAny()) {
