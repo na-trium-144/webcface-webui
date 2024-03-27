@@ -6,6 +6,7 @@ import { useFuncResult } from "./funcResultProvider";
 import { textColorClass } from "../libs/color";
 import { Button } from "./button";
 import { Input } from "./input";
+import { Slider } from "./slider";
 
 interface Props {
   view: View;
@@ -33,7 +34,7 @@ export function ViewCard(props: Props) {
     <Card title={`${props.view.member.name}:${props.view.name}`}>
       <div className="w-full h-full overflow-y-auto overflow-x-auto">
         {props.view.get().map((vc, i) => (
-          <ViewComponentRender key={i} vc={vc} />
+          <ViewComponentRender key={i} vc={vc} id={`${props.view.member.name}:${props.view.name}:${i}`}/>
         ))}
       </div>
     </Card>
@@ -42,6 +43,7 @@ export function ViewCard(props: Props) {
 
 interface VCProps {
   vc: ViewComponent;
+  id: string;
 }
 function ViewComponentRender(props: VCProps) {
   const { addResult } = useFuncResult();
@@ -153,6 +155,36 @@ function ViewComponentRender(props: VCProps) {
             }
           }}
         />
+      );
+    case viewComponentTypes.sliderInput:
+      return (
+        <Slider
+          className="w-32 align-text-bottom mb-0.5"
+          value={typeof tempValue === "number" ? tempValue : 0}
+          onChange={(val) => {
+            setTempValue(val);
+            sendValue(val);
+          }}
+          min={props.vc.min}
+          max={props.vc.max}
+        />
+      );
+    case viewComponentTypes.checkInput:
+      return (
+        <>
+          <input
+            type="checkbox"
+            id={props.id}
+            checked={!!tempValue}
+            onChange={(e) => {
+              setTempValue(e.target.checked);
+              sendValue(e.target.checked);
+            }}
+          />
+          <label for={props.id}>
+            {props.vc.text}
+          </label>
+        </>
       );
   }
 }
