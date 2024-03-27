@@ -45,24 +45,37 @@ interface VCProps {
 }
 function ViewComponentRender(props: VCProps) {
   const { addResult } = useFuncResult();
+  const bind = useRef<Text | null>(null);
   const [tempValue, setTempValue] = useState<string | number | boolean | null>(
     null
   );
   const [isError, setIsError] = useState<boolean>(false);
   const [focused, setFocused] = useState<boolean>(false);
+  const sendValue = (val: string | number | boolean | null) => {
+    if (bind.current?.getAny() !== val) {
+      const r = props.vc.onChange?.runAsync(val);
+      if (r != null) {
+        addResult(r);
+      }
+    }
+  };
   useEffect(() => {
     switch (props.vc.type) {
       case viewComponentTypes.textInput:
+      case viewComponentTypes.numInput:
+      case viewComponentTypes.intInput:
+      case viewComponentTypes.selectInput:
+      case viewComponentTypes.toggleInput:
         if (!focused) {
-          const bind = props.vc.bind;
-          if (tempValue !== bind.getAny()) {
-            setTempValue(bind.getAny());
+          bind.current = props.vc.bind;
+          if (tempValue !== bind.current.getAny()) {
+            setTempValue(bind.current.getAny());
           } else {
             const onChange = () => {
-              setTempValue(bind.getAny());
+              setTempValue(bind.current?.getAny());
             };
-            bind.on(onChange);
-            return () => bind.off(onChange);
+            bind.current.on(onChange);
+            return () => bind.current?.off(onChange);
           }
         }
         break;
@@ -98,6 +111,8 @@ function ViewComponentRender(props: VCProps) {
     case viewComponentTypes.textInput:
     case viewComponentTypes.numInput:
     case viewComponentTypes.intInput:
+    case viewComponentTypes.toggleInput:
+    case viewComponentTypes.selectInput:
       return (
         <Input
           isError={isError}
@@ -110,19 +125,30 @@ function ViewComponentRender(props: VCProps) {
               ? "float"
               : props.vc.type === viewComponentTypes.intInput
               ? "number"
+              : props.vc.type === viewComponentTypes.selectInput
+              ? "select"
+              : props.vc.type === viewComponentTypes.toggleInput
+              ? "boolean"
               : "string"
           }
           value={tempValue != null ? tempValue : ""}
-          setValue={(val) => setTempValue(val)}
+          setValue={(val) => {
+            setTempValue(val);
+            if (props.vc.type === viewComponentTypes.toggleInput) {
+              sendValue(val);
+            }
+          }}
           min={props.vc.min}
           max={props.vc.max}
-          onFocus={() => setFocused(true)}
+          option={props.vc.option}
+          onFocus={() =>
+            props.vc.type !== viewComponentTypes.toggleInput && setFocused(true)
+          }
           onBlur={() => {
-            setFocused(false);
-            if (!isError) {
-              const r = props.vc.onChange?.runAsync(tempValue);
-              if (r != null) {
-                addResult(r);
+            if (props.vc.type !== viewComponentTypes.toggleInput) {
+              setFocused(false);
+              if (!isError) {
+                sendValue(tempValue);
               }
             }
           }}
