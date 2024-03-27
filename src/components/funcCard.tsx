@@ -130,7 +130,15 @@ function FuncLine(props: { func: Func }) {
               option={ac.option}
               min={ac.min}
               max={ac.max}
-              caption={<ArgDescription argConfig={ac} />}
+              caption={
+                <ArgDescription
+                  type={ac.type}
+                  min={ac.min}
+                  max={ac.max}
+                  hasOption={Boolean(ac.option?.length)}
+                  init={ac.init}
+                />
+              }
             />
             {ac.type === valType.string_ && <span>"</span>}
           </Fragment>
@@ -149,9 +157,16 @@ function FuncLine(props: { func: Func }) {
   );
 }
 
-function ArgDescription(props: { argConfig: Arg }) {
+interface ArgProps {
+  type?: number;
+  min?: number | null;
+  max?: number | null;
+  hasOption?: boolean;
+  init?: number | boolean | string | null;
+}
+export function ArgDescription(props: ArgProps) {
   const valTypeText = () => {
-    switch (props.argConfig.type) {
+    switch (props.type) {
       case valType.int_:
         return "整数型";
       case valType.float_:
@@ -168,25 +183,20 @@ function ArgDescription(props: { argConfig: Arg }) {
     <>
       <div>
         {valTypeText()}
-        {props.argConfig.option &&
-          props.argConfig.option.length > 0 &&
-          " (選択式)"}
+        {props.hasOption && " (選択式)"}
       </div>
       <div>
-        {props.argConfig.min != null &&
-          (props.argConfig.type === valType.string_
-            ? `最小長さ ${props.argConfig.min}`
-            : `最小値 ${props.argConfig.min}`)}
-        {props.argConfig.min != null && props.argConfig.max != null && ", "}
-        {props.argConfig.max != null &&
-          (props.argConfig.type === valType.string_
-            ? `最大長さ ${props.argConfig.max}`
-            : `最大値 ${props.argConfig.max}`)}
+        {props.min != null &&
+          (props.type === valType.string_
+            ? `最小長さ ${props.min}`
+            : `最小値 ${props.min}`)}
+        {props.min != null && props.max != null && ", "}
+        {props.max != null &&
+          (props.type === valType.string_
+            ? `最大長さ ${props.max}`
+            : `最大値 ${props.max}`)}
       </div>
-      <div>
-        {props.argConfig.init != null &&
-          `初期値 ${String(props.argConfig.init)}`}
-      </div>
+      <div>{props.init != null && `初期値 ${String(props.init)}`}</div>
     </>
   );
 }
