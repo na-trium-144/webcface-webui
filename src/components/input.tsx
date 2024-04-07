@@ -1,4 +1,4 @@
-import { useEffect, ReactNode } from "react";
+import { useEffect, ReactNode, KeyboardEvent } from "react";
 import { Caption } from "./caption";
 
 const inputClass = "border-0 outline-0 px-1 peer ";
@@ -15,7 +15,11 @@ interface Props {
   option?: (string | number)[];
   min?: number | null;
   max?: number | null;
+  step?: number | null;
   caption?: ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onKeyUp?: (e: KeyboardEvent) => void;
 }
 export function Input(props: Props) {
   return (
@@ -69,6 +73,8 @@ function SelectInput(props: Props) {
       }
       value={String(props.value)}
       onChange={(e) => props.setValue(e.target.value)}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     >
       {props.option?.map((o, oi) => (
         <option key={oi} value={String(o)}>
@@ -90,27 +96,41 @@ function NumberInput(props: Props) {
       value={(props.value as number) || 0}
       min={props.min != null ? props.min : undefined}
       max={props.max != null ? props.max : undefined}
+      step={props.step != null ? props.step : 1}
       onChange={(e) => {
         props.setIsError && props.setIsError(!e.target.checkValidity());
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }
 
 function BooleanInput(props: Props) {
+  const option: (string | number | boolean)[] =
+    props.option && props.option.length > 0 ? props.option : [false, true];
   return (
     <button
       type="button"
-      onClick={() => props.setValue(!props.value)}
+      onClick={() =>
+        props.setValue(
+          option[(option.indexOf(Number(props.value)) + 1) % option.length]
+        )
+      }
       className={
         inputClass +
-        "cursor-pointer inline-block pl-1 " +
+        "cursor-pointer inline-block pl-1 relative " +
         "hover:text-green-700 active:text-green-700 " +
         (props.widthClass != undefined ? props.widthClass : "w-12 ")
       }
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
     >
-      {props.value ? "true" : "false"}
+      {/*props.valueが空でもbaselineが揃うようにダミーのテキストを入れる*/}
+      <span className="text-transparent select-none">a</span>
+      <span className="absolute inset-x-0 ">{String(props.value)}</span>
     </button>
   );
 }
@@ -136,6 +156,9 @@ function FloatInput(props: Props) {
       onChange={(e) => {
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }
@@ -159,6 +182,9 @@ function StringInput(props: Props) {
       onChange={(e) => {
         props.setValue(e.target.value);
       }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
     />
   );
 }
