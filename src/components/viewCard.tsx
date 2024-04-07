@@ -36,9 +36,9 @@ export function ViewCard(props: Props) {
       <div className="w-full h-full overflow-y-auto overflow-x-auto">
         {props.view.get().map((vc, i) => (
           <ViewComponentRender
-            key={i}
+            key={vc.id}
             vc={vc}
-            id={`${props.view.member.name}:${props.view.name}:${i}`}
+            id={`${props.view.member.name}:${props.view.name}:${vc.id}`}
           />
         ))}
       </div>
@@ -69,8 +69,8 @@ function ViewComponentRender(props: VCProps) {
   useEffect(() => {
     switch (props.vc.type) {
       case viewComponentTypes.textInput:
-      case viewComponentTypes.numInput:
-      case viewComponentTypes.intInput:
+      case viewComponentTypes.decimalInput:
+      case viewComponentTypes.numberInput:
       case viewComponentTypes.selectInput:
       case viewComponentTypes.toggleInput:
       case viewComponentTypes.sliderInput:
@@ -118,8 +118,8 @@ function ViewComponentRender(props: VCProps) {
         </Button>
       );
     case viewComponentTypes.textInput:
-    case viewComponentTypes.numInput:
-    case viewComponentTypes.intInput:
+    case viewComponentTypes.decimalInput:
+    case viewComponentTypes.numberInput:
     case viewComponentTypes.toggleInput:
     case viewComponentTypes.selectInput:
       return (
@@ -130,9 +130,9 @@ function ViewComponentRender(props: VCProps) {
           type={
             props.vc.type === viewComponentTypes.textInput
               ? "string"
-              : props.vc.type === viewComponentTypes.numInput
+              : props.vc.type === viewComponentTypes.decimalInput
               ? "float"
-              : props.vc.type === viewComponentTypes.intInput
+              : props.vc.type === viewComponentTypes.numberInput
               ? "number"
               : props.vc.type === viewComponentTypes.selectInput
               ? "select"
@@ -152,6 +152,7 @@ function ViewComponentRender(props: VCProps) {
           }}
           min={props.vc.min}
           max={props.vc.max}
+          step={props.vc.step}
           option={props.vc.option}
           onFocus={() =>
             props.vc.type !== viewComponentTypes.toggleInput &&
@@ -200,6 +201,7 @@ function ViewComponentRender(props: VCProps) {
           }}
           min={props.vc.min}
           max={props.vc.max}
+          step={props.vc.step || 1}
         />
       );
     case viewComponentTypes.checkInput:

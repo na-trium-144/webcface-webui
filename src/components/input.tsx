@@ -15,6 +15,7 @@ interface Props {
   option?: (string | number)[];
   min?: number | null;
   max?: number | null;
+  step?: number | null;
   caption?: ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -95,6 +96,7 @@ function NumberInput(props: Props) {
       value={(props.value as number) || 0}
       min={props.min != null ? props.min : undefined}
       max={props.max != null ? props.max : undefined}
+      step={props.step != null ? props.step : 1}
       onChange={(e) => {
         props.setIsError && props.setIsError(!e.target.checkValidity());
         props.setValue(e.target.value);
