@@ -1,4 +1,4 @@
-import { useEffect, ReactNode } from "react";
+import { useEffect, ReactNode, KeyboardEvent } from "react";
 import { Caption } from "./caption";
 
 const inputClass = "border-0 outline-0 px-1 peer ";
@@ -109,13 +109,14 @@ function NumberInput(props: Props) {
 }
 
 function BooleanInput(props: Props) {
-  const option = props.option?.length ? props.option : [false, true];
+  const option: (string | number | boolean)[] =
+    props.option && props.option.length > 0 ? props.option : [false, true];
   return (
     <button
       type="button"
       onClick={() =>
         props.setValue(
-          option[(option.indexOf(props.value) + 1) % option.length]
+          option[(option.indexOf(Number(props.value)) + 1) % option.length]
         )
       }
       className={

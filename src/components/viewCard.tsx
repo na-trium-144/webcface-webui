@@ -1,7 +1,7 @@
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Text, View, ViewComponent, viewComponentTypes } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { useFuncResult } from "./funcResultProvider";
 import { textColorClass } from "../libs/color";
 import { Button } from "./button";
@@ -34,7 +34,7 @@ export function ViewCard(props: Props) {
   return (
     <Card title={`${props.view.member.name}:${props.view.name}`}>
       <div className="w-full h-full overflow-y-auto overflow-x-auto">
-        {props.view.get().map((vc, i) => (
+        {props.view.get().map((vc) => (
           <ViewComponentRender
             key={vc.id}
             vc={vc}
@@ -59,7 +59,7 @@ function ViewComponentRender(props: VCProps) {
   const [isError, setIsError] = useState<boolean>(false);
   const [focused, setFocused] = useState<boolean>(false);
   const sendValue = (val: string | number | boolean | null) => {
-    if (bind.current?.getAny() !== val) {
+    if (bind.current?.getAny() !== val && val !== null) {
       const r = props.vc.onChange?.runAsync(val);
       if (r != null) {
         addResult(r);
@@ -77,14 +77,17 @@ function ViewComponentRender(props: VCProps) {
       case viewComponentTypes.checkInput:
         if (!focused) {
           bind.current = props.vc.bind;
-          if (tempValue !== bind.current.getAny()) {
-            setTempValue(bind.current.getAny());
-          } else {
-            const onChange = () => {
-              setTempValue(bind.current?.getAny());
-            };
-            bind.current.on(onChange);
-            return () => bind.current?.off(onChange);
+          const bindCurrent = bind.current;
+          if (bindCurrent) {
+            if (tempValue !== bindCurrent.getAny()) {
+              setTempValue(bindCurrent.getAny());
+            } else {
+              const onChange = () => {
+                setTempValue(bindCurrent.getAny());
+              };
+              bindCurrent.on(onChange);
+              return () => bindCurrent.off(onChange);
+            }
           }
         }
         break;
@@ -199,8 +202,8 @@ function ViewComponentRender(props: VCProps) {
             setTempValue(val);
             sendValue(val);
           }}
-          min={props.vc.min}
-          max={props.vc.max}
+          min={props.vc.min || 0}
+          max={props.vc.max != null ? props.vc.max : 100}
           step={props.vc.step || 1}
         />
       );
@@ -216,7 +219,7 @@ function ViewComponentRender(props: VCProps) {
               sendValue(e.target.checked);
             }}
           />
-          <label for={props.id}>{props.vc.text}</label>
+          <label htmlFor={props.id}>{props.vc.text}</label>
         </>
       );
   }
