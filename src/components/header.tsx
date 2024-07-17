@@ -15,8 +15,9 @@ export function Header(props: Props) {
       : "WebCFace-WebUI";
   }, []);
   return (
-    <div className="flex h-full items-center space-x-4">
-      <div className="flex-1 flex items-baseline space-x-2">
+    <div className="flex h-full items-center space-x-2">
+      <img className="h-5/6" src="/icon.svg" />
+      <div className="flex-1 flex items-baseline">
         <h1 className="text-2xl">{title}</h1>
       </div>
       <button

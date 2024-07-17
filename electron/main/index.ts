@@ -79,7 +79,7 @@ const indexHtml = join(process.env.DIST, "index.html");
 function createWindow() {
   win = new BrowserWindow({
     title: "WebCFace-WebUI",
-    icon: join(process.env.VITE_PUBLIC, "favicon.ico"),
+    icon: join(process.env.VITE_PUBLIC, "icon-128t.png"),
     webPreferences: {
       preload,
       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
