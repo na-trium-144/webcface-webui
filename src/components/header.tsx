@@ -8,15 +8,16 @@ interface Props {
   setMenuOpen: (menuOpen: boolean) => void;
 }
 export function Header(props: Props) {
-  const title = window.electronAPI ? "WebCFace Server" : "WebCFace";
+  const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
   useEffect(() => {
     document.title = window.electronAPI
-      ? "WebCFace-WebUI (Server)"
-      : "WebCFace-WebUI";
+      ? "WebCFace Desktop"
+      : "WebCFace WebUI";
   }, []);
   return (
-    <div className="flex h-full items-center space-x-4">
-      <div className="flex-1 flex items-baseline space-x-2">
+    <div className="flex h-full items-center space-x-2">
+      <img className="h-5/6" src="icon.svg" />
+      <div className="flex-1 flex items-baseline">
         <h1 className="text-2xl">{title}</h1>
       </div>
       <button
