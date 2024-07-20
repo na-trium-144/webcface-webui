@@ -176,10 +176,7 @@ export function Canvas2DCard(props: Props) {
 
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
-      <div
-        className="h-full w-full flex flex-col"
-        style={{ touchAction: moveEnabled ? "none" : "auto" }}
-      >
+      <div className="h-full w-full flex flex-col">
         <div
           ref={divRef}
           className="flex-1 max-h-full w-full"
@@ -201,6 +198,7 @@ export function Canvas2DCard(props: Props) {
                 : moveEnabled
                 ? "grab"
                 : "default",
+              touchAction: moveEnabled ? "none" : "auto",
             }}
             className="m-auto"
           >
