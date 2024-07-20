@@ -1,6 +1,13 @@
 import { Card } from "./card";
 import { Value } from "webcface";
-import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  PointerEvent,
+  WheelEvent,
+  HTMLProps,
+} from "react";
 import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
 import ReactSlider from "react-slider";
 import { format, addMilliseconds, setMilliseconds } from "date-fns";
@@ -74,10 +81,10 @@ export function ValueCard(props: Props) {
           }
           for (let t = 0; t < timeDiff; t++) {
             data.current.push(val);
-            if(dataMinY.current === null || dataMinY.current > val){
+            if (dataMinY.current === null || dataMinY.current > val) {
               dataMinY.current = val;
             }
-            if(dataMaxY.current === null || dataMaxY.current < val){
+            if (dataMaxY.current === null || dataMaxY.current < val) {
               dataMaxY.current = val;
             }
           }
@@ -132,11 +139,15 @@ export function ValueCard(props: Props) {
             line.setY(i, val);
           }
         }
-        if (isLatest.current && dataMaxY.current != null && dataMinY.current != null) {
+        if (
+          isLatest.current &&
+          dataMaxY.current != null &&
+          dataMinY.current != null
+        ) {
           let maxY = dataMaxY.current;
           let minY = dataMinY.current;
           const midY = (maxY + minY) / 2;
-          if(maxY - minY < 1){
+          if (maxY - minY < 1) {
             maxY = midY + 0.5;
             minY = midY - 0.5;
           }
@@ -383,7 +394,7 @@ export function ValueCard(props: Props) {
             )}
           </span>
         </div>
-{/*        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
+        {/*        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
           <input
             type="checkbox"
             id={`follow-${props.value.member.name}:${props.value.name}-value`}
@@ -409,8 +420,7 @@ export function ValueCard(props: Props) {
           </label>
         </div>*/}
         <div className="flex-none h-8 text-xs flex items-center ">
-          <div className="flex-1">
-          </div>
+          <div className="flex-1"></div>
           <div className="flex-none text-lg relative">
             <IconButton
               onClick={() => {
@@ -459,7 +469,10 @@ export function ValueCard(props: Props) {
   );
 }
 
-function SliderTrack(props, state) {
+function SliderTrack(
+  props: HTMLProps<HTMLDivElement>
+  /*state: { index: number; value: number }*/
+) {
   return (
     <div
       {...props}
@@ -469,7 +482,10 @@ function SliderTrack(props, state) {
     />
   );
 }
-function SliderThumb(props, state) {
+function SliderThumb(
+  props: HTMLProps<HTMLDivElement>
+  /*state: { index: number; value: number; valueNow: number }*/
+) {
   return (
     <div
       {...props}
