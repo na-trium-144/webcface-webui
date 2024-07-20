@@ -1,4 +1,4 @@
-# webcface-webui
+# webcface-webui / webcface-desktop
 [![release](https://img.shields.io/github/v/release/na-trium-144/webcface-webui)](https://github.com/na-trium-144/webcface-webui/releases)
 
 UI Application for [WebCFace](https://github.com/na-trium-144/webcface).
@@ -24,12 +24,11 @@ and open http://localhost:5173/
 npm run build
 ```
 
-## Server Mode
+## Desktop
 
 * Electronでビルドし、アプリケーションとして起動して使います。
 * WebUIの機能に加え、webcface-serverを自動で起動し、またwebcface-launcherなどの設定と起動ができます。
-* こちらもWebCFaceのインストール時、またcmake時に自動でインストールされます。
-	* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)のzipファイル(windows)、amd64,arm64,armhfのdebパッケージ(Ubuntu,Debian)、またはAppImage(linux)でダウンロードできます。
+* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)のzipファイル(windows)、amd64,arm64,armhfのdebパッケージ(Ubuntu,Debian)、またはAppImage(linux)でダウンロードできます。
 
 ### Development
 
