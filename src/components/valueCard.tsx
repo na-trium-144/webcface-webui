@@ -1,9 +1,13 @@
 import { Card } from "./card";
 import { Value } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
 import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
 import ReactSlider from "react-slider";
 import { format, addMilliseconds, setMilliseconds } from "date-fns";
+import { IconButton } from "./button";
+import { Help, Home, Move } from "@icon-park/react";
+import { iconFillColor } from "./sideMenu";
+import { CaptionBox } from "./caption";
 
 interface Props {
   value: Value;
@@ -19,10 +23,16 @@ export function ValueCard(props: Props) {
   // 表示する時刻
   const currentPos = useRef<number>(0);
   // 最新のデータに追従するかどうか
+  // isLatestのときcurrentXだけでなくMinY,MaxYも自動更新される
   const isLatest = useRef<boolean>(true);
+  const currentMinY = useRef<number>(-1);
+  const currentMaxY = useRef<number>(1);
+  // 全データのmin,max
+  const dataMinY = useRef<number | null>(null);
+  const dataMaxY = useRef<number | null>(null);
   // 表示用
-  const [displayMinY, setDisplayMinY] = useState<number>(0);
-  const [displayMaxY, setDisplayMaxY] = useState<number>(0);
+  const [displayMinY, setDisplayMinY] = useState<number>(-1);
+  const [displayMaxY, setDisplayMaxY] = useState<number>(1);
   const [displayPos, setDisplayPos] = useState<number>(0); // currentPosと同じ値
   // データ数 (renderPlot内でセットされる)
   const [maxPos, setMaxPos] = useState<number>(0);
@@ -30,6 +40,24 @@ export function ValueCard(props: Props) {
   const lastUpdate = useRef<Date>(new Date());
   // 最初のデータの時刻
   const [startTime, setStartTime] = useState<Date>(new Date());
+
+  // currentPos,displayPosをセット
+  const setCurrentXPos = (x: number, max?: number) => {
+    if (max) {
+      setMaxPos(max);
+    } else {
+      max = maxPos;
+    }
+    x = Math.max(0, Math.min(max, Math.round(x)));
+    currentPos.current = x;
+    setDisplayPos(x);
+  };
+  const setRangeY = (minY: number, maxY: number) => {
+    currentMaxY.current = maxY;
+    currentMinY.current = minY;
+    setDisplayMaxY(maxY);
+    setDisplayMinY(minY);
+  };
 
   useEffect(() => {
     const onValueChange = () => {
@@ -46,6 +74,12 @@ export function ValueCard(props: Props) {
           }
           for (let t = 0; t < timeDiff; t++) {
             data.current.push(val);
+            if(dataMinY.current === null || dataMinY.current > val){
+              dataMinY.current = val;
+            }
+            if(dataMaxY.current === null || dataMaxY.current < val){
+              dataMaxY.current = val;
+            }
           }
         }
       }
@@ -81,9 +115,6 @@ export function ValueCard(props: Props) {
           webglp.addLine(line);
         }
 
-        let maxY: number | null = null;
-        let minY: number | null = null;
-        let midY = 0;
         let pos = currentPos.current;
         if (line.numPoints > data.current.length) {
           pos = data.current.length - line.numPoints;
@@ -92,35 +123,28 @@ export function ValueCard(props: Props) {
           setMaxPos(max);
           if (isLatest.current) {
             pos = max;
-            currentPos.current = max;
-            setDisplayPos(max);
+            setCurrentXPos(max, max);
           }
         }
         for (let i = 0; i < line.numPoints; i++) {
           if (pos + i >= 0) {
             const val = data.current[pos + i];
-            if (maxY == null || maxY < val) {
-              maxY = val;
-            }
-            if (minY == null || minY > val) {
-              minY = val;
-            }
-            if (maxY != null && minY != null) {
-              midY = (maxY + minY) / 2;
-              if (maxY === minY) {
-                maxY += 1;
-                minY -= 1;
-              }
-            }
             line.setY(i, val);
           }
         }
-        if (maxY != null && minY != null) {
-          line.offsetY = -midY / (maxY - midY);
-          line.scaleY = 1 / (maxY - midY);
-          setDisplayMinY(minY);
-          setDisplayMaxY(maxY);
+        if (isLatest.current && dataMaxY.current != null && dataMinY.current != null) {
+          let maxY = dataMaxY.current;
+          let minY = dataMinY.current;
+          const midY = (maxY + minY) / 2;
+          if(maxY - minY < 1){
+            maxY = midY + 0.5;
+            minY = midY - 0.5;
+          }
+          setRangeY(minY, maxY);
         }
+        const midY = (currentMaxY.current + currentMinY.current) / 2;
+        line.offsetY = -midY / (currentMaxY.current - midY);
+        line.scaleY = 1 / (currentMaxY.current - midY);
 
         id = requestAnimationFrame(renderPlot);
         webglp.update();
@@ -134,22 +158,7 @@ export function ValueCard(props: Props) {
     }
   }, []);
 
-  const followValue = (f: boolean) => {
-    if (f) {
-      setDisplayPos(maxPos);
-      currentPos.current = maxPos;
-      isLatest.current = true;
-    } else {
-      if (maxPos === currentPos.current && maxPos > 0) {
-        currentPos.current = maxPos - 1;
-        setDisplayPos(maxPos - 1);
-      }
-      if (currentPos.current < maxPos) {
-        isLatest.current = false;
-      }
-    }
-  };
-
+  // カーソルを乗せた位置の値を表示する用
   const [cursorX, setCursorX] = useState<number | null>(null);
   const [cursorY, setCursorY] = useState<number | null>(null);
   const [cursorValue, setCursorValue] = useState<number | null>(null);
@@ -171,7 +180,11 @@ export function ValueCard(props: Props) {
     }
   }, [cursorX, displayPos, displayMinY, displayMaxY]);
 
-  let yTick = Math.pow(10, Math.floor(Math.log10(Math.max(1, displayMaxY - displayMinY))));
+  // グリッド
+  let yTick = Math.pow(
+    10,
+    Math.floor(Math.log10(Math.max(1, displayMaxY - displayMinY)))
+  );
   if ((displayMaxY - displayMinY) / yTick <= 2) {
     yTick /= 5;
   } else if ((displayMaxY - displayMinY) / yTick <= 5) {
@@ -181,11 +194,82 @@ export function ValueCard(props: Props) {
     startTime,
     maxPos === 0 ? data.current.length : displayPos + numPoints
   );
+
+  const scaleRate = 1.001;
+  const pointers = useRef<PointerEvent[]>([]);
+  const prevPointerDistance = useRef<number | null>(null);
+
+  const zoomAt = (domY: number, scaleDiff: number) => {
+    isLatest.current = false;
+    const valY =
+      currentMaxY.current -
+      (domY / (canvasMain.current?.height || 1)) *
+        (currentMaxY.current - currentMinY.current);
+    setRangeY(
+      currentMinY.current - (valY - currentMinY.current) * (scaleDiff - 1),
+      currentMaxY.current + (currentMaxY.current - valY) * (scaleDiff - 1)
+    );
+  };
+  const onPointerDown = (e: PointerEvent) => {
+    if (
+      pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
+    ) {
+      pointers.current.push(e);
+    }
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    pointers.current = pointers.current.filter(
+      (p) => p.pointerId !== e.pointerId
+    );
+    prevPointerDistance.current = null;
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    const divPos = e.currentTarget.getBoundingClientRect();
+    if (pointers.current.length <= 1) {
+      if (!isLatest.current && (e.buttons & 1 || e.buttons & 4)) {
+        const yDiff =
+          (e.movementY / (canvasMain.current?.height || 1)) *
+          (displayMaxY - displayMinY);
+        isLatest.current = false;
+        setRangeY(currentMinY.current + yDiff, currentMaxY.current + yDiff);
+        setCurrentXPos(
+          currentPos.current -
+            (e.movementX / (canvasMain.current?.width || 1)) * numPoints
+        );
+      }
+    } else if (!isLatest.current && pointers.current.length === 2) {
+      pointers.current = pointers.current.map((p) =>
+        p.pointerId === e.pointerId ? e : p
+      );
+      const newDiff = {
+        x: pointers.current[0].clientX - pointers.current[1].clientX,
+        y: pointers.current[0].clientY - pointers.current[1].clientY,
+      };
+      const newDist = Math.sqrt(newDiff.x * newDiff.x + newDiff.y * newDiff.y);
+      let distChange = 1;
+      if (prevPointerDistance.current !== null) {
+        distChange = newDist / prevPointerDistance.current;
+      }
+      prevPointerDistance.current = newDist;
+      zoomAt(
+        (pointers.current[0].clientY + pointers.current[1].clientY) / 2 -
+          divPos.top,
+        distChange ** 1.2
+      );
+    }
+  };
+  const onWheel = (e: WheelEvent) => {
+    if (!isLatest.current) {
+      const divPos = e.currentTarget.getBoundingClientRect();
+      zoomAt(e.clientY - divPos.top, scaleRate ** -e.deltaY);
+    }
+  };
+
   return (
     <Card title={`${props.value.member.name}:${props.value.name}`}>
       <div className="flex flex-col h-full">
         <div className="flex-1 w-full min-h-0 flex flex-row text-xs">
-          <div className="flex-1 h-full min-w-0 pt-2 relative">
+          <div className="flex-1 h-full min-w-0 pt-2 relative select-none">
             {/*
             <span className="absolute top-2 left-0">{displayMaxY}</span>
             <span className="absolute left-0">{displayMinY}</span>
@@ -224,11 +308,13 @@ export function ValueCard(props: Props) {
                   className="absolute w-auto h-full bottom-0 border-r border-gray-300 text-gray-500"
                   style={{
                     right:
-                      (displayMaxX.getTime() - x) / numPoints *
+                      ((displayMaxX.getTime() - x) / numPoints) *
                       (canvasMain.current?.width || 0),
                   }}
                 >
-                  <span className="absolute bottom-0 right-0">{format(x, ":ss")}</span>
+                  <span className="absolute bottom-0 right-0">
+                    {format(x, ":ss")}
+                  </span>
                 </div>
               ))}
             <div className="w-full h-full relative" ref={canvasDiv}>
@@ -239,8 +325,16 @@ export function ValueCard(props: Props) {
                     const targetRect = e.currentTarget.getBoundingClientRect();
                     setCursorX(e.clientX - targetRect.left);
                   }
+                  onPointerMove(e);
                 }}
-                onPointerLeave={() => setCursorX(null)}
+                onPointerLeave={(e) => {
+                  setCursorX(null);
+                  onPointerUp(e);
+                }}
+                onPointerDown={onPointerDown}
+                onPointerEnter={onPointerMove}
+                onPointerUp={onPointerUp}
+                onWheel={onWheel}
                 ref={canvasMain}
               />
               <GraphValue
@@ -274,8 +368,7 @@ export function ValueCard(props: Props) {
             onChange={(value) => {
               // maxPos=0のときスクロール不可、minを-1にすることで右端にする
               if (maxPos > 0) {
-                setDisplayPos(value);
-                currentPos.current = value;
+                setCurrentXPos(value);
                 isLatest.current = maxPos === value;
               }
             }}
@@ -290,18 +383,76 @@ export function ValueCard(props: Props) {
             )}
           </span>
         </div>
-        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
+{/*        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
           <input
             type="checkbox"
             id={`follow-${props.value.member.name}:${props.value.name}-value`}
             checked={isLatest.current}
-            onChange={(e) => followValue(e.target.checked)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setCurrentXPos(maxPos);
+                isLatest.current = true;
+              } else {
+                if (maxPos === currentPos.current && maxPos > 0) {
+                  setCurrentXPos(maxPos - 1);
+                }
+                if (currentPos.current < maxPos) {
+                  isLatest.current = false;
+                }
+              }
+            }}
           />
           <label
             htmlFor={`follow-${props.value.member.name}:${props.value.name}-value`}
           >
             Follow Latest Data
           </label>
+        </div>*/}
+        <div className="flex-none h-8 text-xs flex items-center ">
+          <div className="flex-1">
+          </div>
+          <div className="flex-none text-lg relative">
+            <IconButton
+              onClick={() => {
+                if (maxPos === currentPos.current && maxPos > 0) {
+                  setCurrentXPos(maxPos - 1);
+                }
+                if (currentPos.current < maxPos) {
+                  isLatest.current = false;
+                }
+              }}
+              caption="グラフの移動・ズーム オン/オフ"
+            >
+              {!isLatest.current ? (
+                <Move theme="two-tone" fill={iconFillColor} />
+              ) : (
+                <Move />
+              )}
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                setCurrentXPos(maxPos);
+                isLatest.current = true;
+              }}
+              caption="初期位置に戻す"
+            >
+              <Home />
+            </IconButton>
+            <IconButton className="mr-4 peer" onClick={() => undefined}>
+              <Help />
+            </IconButton>
+            <CaptionBox
+              className={
+                "absolute bottom-full right-4 " +
+                "hidden peer-hover:inline-block peer-focus:inline-block "
+              }
+            >
+              <p>移動・ズームがオンのとき、</p>
+              <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
+              <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
+              <p>拡大縮小できます。</p>
+            </CaptionBox>
+          </div>
         </div>
       </div>
     </Card>
