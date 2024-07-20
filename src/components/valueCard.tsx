@@ -14,25 +14,32 @@ const numPoints = 5000;
 export function ValueCard(props: Props) {
   const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
+  // 過去の全データ
   const data = useRef<number[]>([]);
+  // 表示する時刻
   const currentPos = useRef<number>(0);
+  // 最新のデータに追従するかどうか
   const isLatest = useRef<boolean>(true);
+  // 表示用
   const [displayMinY, setDisplayMinY] = useState<number>(0);
   const [displayMaxY, setDisplayMaxY] = useState<number>(0);
-  const [displayPos, setDisplayPos] = useState<number>(0);
+  const [displayPos, setDisplayPos] = useState<number>(0); // currentPosと同じ値
+  // データ数 (renderPlot内でセットされる)
   const [maxPos, setMaxPos] = useState<number>(0);
+  // valueChange時に更新される
   const lastUpdate = useRef<Date>(new Date());
+  // 最初のデータの時刻
   const [startTime, setStartTime] = useState<Date>(new Date());
 
   useEffect(() => {
-    const onValueChange = (v: Value) => {
-      const val = v.tryGet();
+    const onValueChange = () => {
+      const val = props.value.tryGet();
       if (val != null) {
-        const now = v.time();
-        const timeDiff = now.getTime() - lastUpdate.current.getTime();
-        if (timeDiff < 0) {
-          console.error(`invalid timeDiff ${timeDiff}`);
+        const now = props.value.time();
+        if (now.getTime() < lastUpdate.current.getTime()) {
+          console.error(`invalid time ${now.toLocaleString()}`);
         } else {
+          const timeDiff = now.getTime() - lastUpdate.current.getTime();
           lastUpdate.current = now;
           if (data.current.length === 0) {
             setStartTime(now);
@@ -43,9 +50,9 @@ export function ValueCard(props: Props) {
         }
       }
     };
-    onValueChange(props.value);
-    props.value.on(onValueChange);
-    return () => props.value.off(onValueChange);
+    props.value.tryGet();
+    props.value.member.onSync.on(onValueChange);
+    return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
 
   useEffect(() => {
@@ -127,6 +134,22 @@ export function ValueCard(props: Props) {
     }
   }, []);
 
+  const followValue = (f: boolean) => {
+    if(f){
+      setDisplayPos(maxPos);
+      currentPos.current = maxPos;
+      isLatest.current = true;
+    }else{
+      if(maxPos === currentPos.current && maxPos > 0){
+        currentPos.current = maxPos - 1;
+        setDisplayPos(maxPos - 1);
+      }
+      if(currentPos.current < maxPos){
+        isLatest.current = false;
+      }
+    }
+  };
+
   const [cursorX, setCursorX] = useState<number | null>(null);
   const [cursorY, setCursorY] = useState<number | null>(null);
   const [cursorValue, setCursorValue] = useState<number | null>(null);
@@ -152,21 +175,12 @@ export function ValueCard(props: Props) {
     <Card title={`${props.value.member.name}:${props.value.name}`}>
       <div className="flex flex-col h-full">
         <div className="flex-1 w-full min-h-0 flex flex-row text-xs">
-          <div className="flex-none h-full pb-4 pr-1 relative">
-            <div className="text-transparent select-none">
-              {/* 0を桁数分並べたものを入れることで幅を固定する */}
-              {"0".repeat(displayMaxY.toString().length)}
-            </div>
-            <div className="text-transparent select-none">
-              {"0".repeat(displayMinY.toString().length)}
-            </div>
-            <span className="absolute top-0 right-1">{displayMaxY}</span>
-            <span className="absolute bottom-4 right-1">{displayMinY}</span>
-          </div>
           <div className="flex-1 h-full min-w-0 pt-2 pb-6 relative">
+            <span className="absolute top-2 left-0">{displayMaxY}</span>
+            <span className="absolute bottom-6 left-0">{displayMinY}</span>
             <div className="w-full h-full relative" ref={canvasDiv}>
               <canvas
-                className="border border-black"
+                className=""
                 onPointerMove={(e) => {
                   if (e.currentTarget) {
                     const targetRect = e.currentTarget.getBoundingClientRect();
@@ -208,7 +222,8 @@ export function ValueCard(props: Props) {
             </span>
           </div>
         </div>
-        <div className="flex-none">
+        <div className="flex-none flex items-center space-x-1">
+          <span className="text-sm">Time:</span>
           <ReactSlider
             className="w-full h-4"
             renderTrack={SliderTrack}
@@ -226,10 +241,15 @@ export function ValueCard(props: Props) {
               }
             }}
           />
-          <div className="h-5 relative text-xs">
-            <span className="">最古</span>
-            <span className="absolute right-0">最新</span>
-          </div>
+        </div>
+        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
+          <input
+            type="checkbox"
+            id={`follow-${props.value.member.name}:${props.value.name}-value`}
+            checked={isLatest.current}
+            onChange={(e) => followValue(e.target.checked)}
+          />
+          <label htmlFor={`follow-${props.value.member.name}:${props.value.name}-value`}>Follow Latest Data</label>
         </div>
       </div>
     </Card>
