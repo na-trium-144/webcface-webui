@@ -16,7 +16,7 @@ export function Header(props: Props) {
   }, []);
   return (
     <div className="flex h-full items-center space-x-2">
-      <img className="h-5/6" src="/icon.svg" />
+      <img className="h-5/6" src="icon.svg" />
       <div className="flex-1 flex items-baseline">
         <h1 className="text-2xl">{title}</h1>
       </div>

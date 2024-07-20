@@ -11,14 +11,17 @@
   "files": ["dist-electron", "dist"],
   "mac": {
     "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "icon": "icons/Icon-512.png",
     "target": []
   },
   "win": {
     "target": "zip",
-    "artifactName": "${productName}_${version}_${arch}.${ext}"
+    "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "icon": "public/icon-256t.png"
   },
   "linux": {
     "target": ["AppImage"],
-    "artifactName": "${productName}_${version}_${arch}.${ext}"
+    "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "icon": "public/icon-256t.png"
   },
 }
