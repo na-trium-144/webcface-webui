@@ -8,11 +8,11 @@ interface Props {
   setMenuOpen: (menuOpen: boolean) => void;
 }
 export function Header(props: Props) {
-  const title = window.electronAPI ? "WebCFace Server" : "WebCFace";
+  const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
   useEffect(() => {
     document.title = window.electronAPI
-      ? "WebCFace-WebUI (Server)"
-      : "WebCFace-WebUI";
+      ? "WebCFace Desktop"
+      : "WebCFace WebUI";
   }, []);
   return (
     <div className="flex h-full items-center space-x-2">

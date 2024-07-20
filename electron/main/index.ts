@@ -78,7 +78,7 @@ const indexHtml = join(process.env.DIST, "index.html");
 
 function createWindow() {
   win = new BrowserWindow({
-    title: "WebCFace-WebUI",
+    title: "WebCFace Desktop",
     icon: join(process.env.VITE_PUBLIC, "icon-256t.png"),
     webPreferences: {
       preload,

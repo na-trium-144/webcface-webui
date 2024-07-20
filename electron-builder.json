@@ -2,8 +2,8 @@
  * @see https://www.electron.build/configuration/configuration
  */
 {
-  "appId": "com.github.na-trium-144.webcface-webui-server",
-  "productName": "webcface-webui-server",
+  "appId": "com.github.na-trium-144.webcface-webui-desktop",
+  "productName": "webcface-desktop",
   "asar": true,
   "directories": {
     "output": "release"
