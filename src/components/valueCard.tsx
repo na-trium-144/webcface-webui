@@ -109,7 +109,11 @@ export function ValueCard(props: Props) {
       const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
       if (val != null && now.getTime() !== 0) {
         if (data.current.length && now.getTime() < dataMaxX()!) {
-          console.error(`invalid time ${now.toLocaleString()}`);
+          console.error(`Invalid time ${now.toLocaleString()}`);
+        } else if (data.current.length && now.getTime() == dataMaxX()!) {
+          // todo: 1ms以下の間隔でデータが来たら描画できない (ので今は弾いている)
+          // というか時刻の分解能が1msしかない
+          console.error(`Ignoring more than 1 data point per 1ms.`);
         } else {
           data.current.push({ x: now, y: val });
           if (dataMinY.current === null || dataMinY.current > val) {
@@ -131,7 +135,7 @@ export function ValueCard(props: Props) {
     let webglp: WebglPlot | null = null;
     const line: WebglLine = new WebglLine(
       new ColorRGBA(0, 0.6, 0, 1),
-      maxXRange
+      maxXRange * 2 // 階段状に描画するために2倍
     );
     line.arrangeX();
 
@@ -165,9 +169,9 @@ export function ValueCard(props: Props) {
             data.current.findIndex(({ x }) => x.getTime() > minX.current!) - 1;
           let x = 0;
           let y = 0;
+          let prevY: number | null = null;
           for (let i = 0; i < line.numPoints; i++) {
             // 最大numPoints個の点しか描画できない
-            // todo: 1ms以下の間隔でデータが来たらバグるのでは?
             if (minI + i >= 0 && minI + i < data.current.length) {
               // x: -1 ~ 1
               x =
@@ -177,8 +181,14 @@ export function ValueCard(props: Props) {
                   2;
               y = data.current[minI + i].y;
             }
-            line.setX(i, x);
-            line.setY(i, y);
+            if (!prevY) {
+              prevY = y;
+            }
+            line.setX(i * 2, x);
+            line.setY(i * 2, prevY);
+            line.setX(i * 2 + 1, x);
+            line.setY(i * 2 + 1, y);
+            prevY = y;
           }
           if (
             isLatest.current &&
