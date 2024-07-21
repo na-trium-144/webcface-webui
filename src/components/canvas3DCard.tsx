@@ -17,7 +17,6 @@ import {
   useLayoutEffect,
   RefObject,
   PointerEvent as ReactPointerEvent,
-  WheelEvent as ReactWheelEvent,
 } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { multiply, inv } from "../libs/math";
@@ -115,6 +114,7 @@ interface Props {
   geometries: GeometryObject[];
 }
 export function Canvas3DCardImpl(props: Props) {
+  const canvasMain = useRef<HTMLCanvasElement>(null);
   const hasUpdate = props.hasUpdate;
   const update = useForceUpdate();
   useEffect(() => {
@@ -161,7 +161,7 @@ export function Canvas3DCardImpl(props: Props) {
   };
   const onPointerMove = (e: ReactPointerEvent) => {
     if (pointers.current.length <= 1) {
-      if (moveEnabled && ((e.buttons & 1 && e.ctrlKey) || e.buttons & 4)) {
+      if (moveEnabled && ((e.buttons & 1 && (e.ctrlKey || e.metaKey)) || e.buttons & 4)) {
         worldTf.current.pos[0] += e.movementX * moveSpeed;
         worldTf.current.pos[1] += -e.movementY * moveSpeed;
       } else if (moveEnabled && e.buttons & 1) {
@@ -193,12 +193,22 @@ export function Canvas3DCardImpl(props: Props) {
       setWorldScale(worldScale * distChange ** 1.2);
     }
   };
-  const onWheel = (e: ReactWheelEvent) => {
+  const onWheel = (e: WheelEvent) => {
     if (moveEnabled) {
       setWorldScale(worldScale * scaleRate ** -e.deltaY);
       // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
+      e.preventDefault();
     }
   };
+  useEffect(() => {
+    const canvasMainCurrent = canvasMain.current;
+    if (canvasMainCurrent) {
+      canvasMainCurrent.addEventListener("wheel", onWheel, {
+        passive: false,
+      });
+      return () => canvasMainCurrent.removeEventListener("wheel", onWheel);
+    }
+  });
 
   const [pointerPos, setPointerPos] = useState<THREE.Vector3 | null>(null);
   const [pointerLink, setPointerLink] = useState<RobotLink | null>(null);
@@ -232,7 +242,7 @@ export function Canvas3DCardImpl(props: Props) {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
-          onWheel={onWheel}
+          ref={canvasMain}
           camera={{ fov: 30, near: 0.1, far: 1000, position: [0, 0, 5] }}
         >
           <ambientLight intensity={Math.PI / 2} />
@@ -306,7 +316,8 @@ export function Canvas3DCardImpl(props: Props) {
             >
               <p>移動・ズームがオンのとき、</p>
               <p>(マウス)ドラッグ / (タッチ)スライド で回転、</p>
-              <p>(マウス)Ctrl+ドラッグ or ホイールクリックしながらドラッグ</p>
+              <p>(マウス)Ctrl(Command⌘)+ドラッグ or</p>
+              <p>ホイールクリックしながらドラッグ</p>
               <p> / (タッチ)2本指スライド で移動、</p>
               <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
               <p>拡大縮小できます。</p>

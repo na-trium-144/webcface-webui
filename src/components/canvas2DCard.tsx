@@ -9,7 +9,7 @@ import {
   Point,
   viewColor,
 } from "webcface";
-import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
+import { useState, useEffect, useRef, PointerEvent } from "react";
 import { Stage, Layer, Circle, Line, Text } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
@@ -164,22 +164,29 @@ export function Canvas2DCard(props: Props) {
     }
   };
   const onWheel = (e: WheelEvent) => {
-    if (moveEnabled) {
-      const divPos = e.currentTarget.getBoundingClientRect();
+    if (moveEnabled && divRef.current) {
+      const divPos = divRef.current.getBoundingClientRect();
       zoomAt(
         e.clientX - divPos.left,
         e.clientY - divPos.top,
         worldScale * scaleRate ** -e.deltaY
       );
+      e.preventDefault();
     }
   };
+  useEffect(() => {
+    const divRefCurrent = divRef.current;
+    if (divRefCurrent) {
+      divRefCurrent.addEventListener("wheel", onWheel, {
+        passive: false,
+      });
+      return () => divRefCurrent.removeEventListener("wheel", onWheel);
+    }
+  });
 
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
-      <div
-        className="h-full w-full flex flex-col"
-        style={{ touchAction: moveEnabled ? "none" : "auto" }}
-      >
+      <div className="h-full w-full flex flex-col">
         <div
           ref={divRef}
           className="flex-1 max-h-full w-full"
@@ -188,7 +195,6 @@ export function Canvas2DCard(props: Props) {
           onPointerEnter={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
-          onWheel={onWheel}
         >
           <Stage
             width={divWidth}
@@ -201,6 +207,7 @@ export function Canvas2DCard(props: Props) {
                 : moveEnabled
                 ? "grab"
                 : "default",
+              touchAction: moveEnabled ? "none" : "auto",
             }}
             className="m-auto"
           >
