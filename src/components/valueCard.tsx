@@ -4,95 +4,121 @@ import {
   useState,
   useEffect,
   useRef,
-  PointerEvent,
-  WheelEvent,
   HTMLProps,
+  PointerEvent as ReactPointerEvent,
 } from "react";
 import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
 import ReactSlider from "react-slider";
-import { format, addMilliseconds } from "date-fns";
+import { format } from "date-fns";
 import { IconButton } from "./button";
 import { Help, Home, Move } from "@icon-park/react";
 import { iconFillColor } from "./sideMenu";
 import { CaptionBox } from "./caption";
+import { useForceUpdate } from "../libs/forceUpdate";
 
 interface Props {
   value: Value;
 }
 
-const numPoints = 5000;
+const maxXRange = 5000; // ms
 
 export function ValueCard(props: Props) {
   const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
+  const hasUpdate = useRef<boolean>(true);
+  const update = useForceUpdate();
   // 過去の全データ
-  const data = useRef<number[]>([]);
+  const data = useRef<{ x: Date; y: number }[]>([]);
   // 表示する時刻 (グラフの左端の時刻)
-  const currentPos = useRef<number>(0);
+  const minX = useRef<number | null>(null);
+  const maxX = useRef<number | null>(null);
   // 最新のデータに追従するかどうか
   // isLatestのときcurrentXだけでなくMinY,MaxYも自動更新される
   const isLatest = useRef<boolean>(true);
-  const currentMinY = useRef<number>(-1);
-  const currentMaxY = useRef<number>(1);
-  // X方向拡大率
-  // (Yはminとmaxで管理しているので統一感がない)
-  const scaleX = useRef<number>(1);
+  const minY = useRef<number>(-1);
+  const maxY = useRef<number>(1);
   // 全データのmin,max
+  const dataMinX = () =>
+    data.current.length > 0 ? data.current[0].x.getTime() : null;
+  const dataMaxX = () =>
+    data.current.length > 0
+      ? data.current[data.current.length - 1].x.getTime()
+      : null;
   const dataMinY = useRef<number | null>(null);
   const dataMaxY = useRef<number | null>(null);
-  // 表示用
-  const [displayMinY, setDisplayMinY] = useState<number>(-1);
-  const [displayMaxY, setDisplayMaxY] = useState<number>(1);
-  const [displayPos, setDisplayPos] = useState<number>(0); // currentPosと同じ値
-  // データ数 (renderPlot内でセットされる)
-  const [maxPos, setMaxPos] = useState<number>(0);
-  // valueChange時に更新される
-  const lastUpdate = useRef<Date>(new Date());
-  // 最初のデータの時刻
-  const [startTime, setStartTime] = useState<Date>(new Date());
+  const hasSufficientData = () =>
+    data.current.length && dataMaxX()! - dataMinX()! >= maxXRange;
 
-  // currentPos,displayPosをセット
-  const setCurrentXPos = (x: number) => {
-    const max = data.current.length - numPoints / scaleX.current;
-    setMaxPos(max);
-    x = Math.max(0, Math.min(max, Math.round(x)));
-    currentPos.current = x;
-    setDisplayPos(x);
-  };
-  const setRangeY = (minY: number, maxY: number) => {
-    if (maxY - minY < 1) {
-      const midY = (maxY + minY) / 2;
-      maxY = midY + 0.5;
-      minY = midY - 0.5;
+  // 値→DOM
+  const getPosX = (x: number) =>
+    minX.current && maxX.current && canvasMain.current
+      ? ((x - minX.current) / (maxX.current - minX.current)) *
+        canvasMain.current.width
+      : 0;
+  const getPosY = (y: number) =>
+    canvasMain.current
+      ? ((y - minY.current) / (maxY.current - minY.current)) *
+        canvasMain.current.height
+      : 0;
+  // DOM→値
+  const getValX = (x: number) =>
+    minX.current && maxX.current && canvasMain.current
+      ? minX.current +
+        (x / canvasMain.current.width) * (maxX.current - minX.current)
+      : null;
+  const getValY = (y: number) =>
+    canvasMain.current
+      ? maxY.current -
+        (y / canvasMain.current.height) * (maxY.current - minY.current)
+      : minY.current;
+
+  const setRangeX = (newMinX: number, newMaxX: number) => {
+    if (minX.current !== newMinX || maxX.current !== newMaxX) {
+      hasUpdate.current = true;
     }
-    currentMaxY.current = maxY;
-    currentMinY.current = minY;
-    setDisplayMaxY(maxY);
-    setDisplayMinY(minY);
+    minX.current = newMinX;
+    maxX.current = newMaxX;
+  };
+  const setRangeY = (newMinY: number, newMaxY: number) => {
+    if (newMaxY - newMinY < 1) {
+      const midY = (newMaxY + newMinY) / 2;
+      newMaxY = midY + 0.5;
+      newMinY = midY - 0.5;
+    }
+    if (minY.current !== newMinY || maxY.current !== newMaxY) {
+      hasUpdate.current = true;
+    }
+    maxY.current = newMaxY;
+    minY.current = newMinY;
   };
 
   useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+
+  // dataの追加
+  useEffect(() => {
     const onValueChange = () => {
       const val = props.value.tryGet();
-      if (val != null) {
-        const now = props.value.time();
-        if (now.getTime() < lastUpdate.current.getTime()) {
+      const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
+      if (val != null && now.getTime() !== 0) {
+        if (data.current.length && now.getTime() < dataMaxX()!) {
           console.error(`invalid time ${now.toLocaleString()}`);
         } else {
-          const timeDiff = now.getTime() - lastUpdate.current.getTime();
-          lastUpdate.current = now;
-          if (data.current.length === 0) {
-            setStartTime(now);
+          data.current.push({ x: now, y: val });
+          if (dataMinY.current === null || dataMinY.current > val) {
+            dataMinY.current = val;
           }
-          for (let t = 0; t < timeDiff; t++) {
-            data.current.push(val);
-            if (dataMinY.current === null || dataMinY.current > val) {
-              dataMinY.current = val;
-            }
-            if (dataMaxY.current === null || dataMaxY.current < val) {
-              dataMaxY.current = val;
-            }
+          if (dataMaxY.current === null || dataMaxY.current < val) {
+            dataMaxY.current = val;
           }
+          hasUpdate.current = true; // 右下の時刻表示のため
         }
       }
     };
@@ -105,7 +131,7 @@ export function ValueCard(props: Props) {
     let webglp: WebglPlot | null = null;
     const line: WebglLine = new WebglLine(
       new ColorRGBA(0, 0.6, 0, 1),
-      numPoints
+      maxXRange
     );
     line.arrangeX();
 
@@ -127,47 +153,51 @@ export function ValueCard(props: Props) {
           webglp.addLine(line);
         }
 
-        let pos = currentPos.current;
-        if (line.numPoints / scaleX.current > data.current.length) {
-          pos = data.current.length - line.numPoints / scaleX.current;
-        } else {
-          if (isLatest.current) {
-            scaleX.current = 1;
-            const max = data.current.length - line.numPoints / scaleX.current;
-            pos = max;
-            setCurrentXPos(max);
+        if (data.current.length) {
+          if (dataMaxX()! - dataMinX()! < maxXRange) {
+            setRangeX(dataMaxX()! - maxXRange, dataMaxX()!);
+          } else {
+            if (isLatest.current) {
+              setRangeX(dataMaxX()! - maxXRange, dataMaxX()!);
+            }
           }
-        }
-        let x = 0;
-        let y = 0;
-        for (let i = 0; i < line.numPoints; i++) {
-          // scaleX < 1 は想定していない (最大numPoints個の点しか描画できない)
-          if (pos + i >= 0 && pos + i < data.current.length) {
-            // x: -1 ~ 1
-            x = -1 + (i / line.numPoints) * 2 * scaleX.current;
-            y = data.current[pos + i];
+          const minI =
+            data.current.findIndex(({ x }) => x.getTime() > minX.current!) - 1;
+          let x = 0;
+          let y = 0;
+          for (let i = 0; i < line.numPoints; i++) {
+            // 最大numPoints個の点しか描画できない
+            // todo: 1ms以下の間隔でデータが来たらバグるのでは?
+            if (minI + i >= 0 && minI + i < data.current.length) {
+              // x: -1 ~ 1
+              x =
+                -1 +
+                ((data.current[minI + i].x.getTime() - minX.current!) /
+                  (maxX.current! - minX.current!)) *
+                  2;
+              y = data.current[minI + i].y;
+            }
+            line.setX(i, x);
+            line.setY(i, y);
           }
-          line.setX(i, x);
-          line.setY(i, y);
-        }
-        if (
-          isLatest.current &&
-          dataMaxY.current != null &&
-          dataMinY.current != null
-        ) {
-          let maxY = dataMaxY.current;
-          let minY = dataMinY.current;
-          const midY = (maxY + minY) / 2;
-          if (maxY - minY < 1) {
-            maxY = midY + 0.5;
-            minY = midY - 0.5;
+          if (
+            isLatest.current &&
+            dataMaxY.current != null &&
+            dataMinY.current != null
+          ) {
+            let maxY = dataMaxY.current;
+            let minY = dataMinY.current;
+            const midY = (maxY + minY) / 2;
+            if (maxY - minY < 1) {
+              maxY = midY + 0.5;
+              minY = midY - 0.5;
+            }
+            setRangeY(minY, maxY);
           }
-          setRangeY(minY, maxY);
+          const midY = (maxY.current + minY.current) / 2;
+          line.offsetY = -midY / (maxY.current - midY);
+          line.scaleY = 1 / (maxY.current - midY);
         }
-        const midY = (currentMaxY.current + currentMinY.current) / 2;
-        line.offsetY = -midY / (currentMaxY.current - midY);
-        line.scaleY = 1 / (currentMaxY.current - midY);
-
         id = requestAnimationFrame(renderPlot);
         webglp.update();
       };
@@ -181,109 +211,111 @@ export function ValueCard(props: Props) {
   }, []);
 
   // カーソルを乗せた位置の値を表示する用
+  const [cursorPosXRaw, setCursorPosXRaw] = useState<number | null>(null);
   const [cursorX, setCursorX] = useState<number | null>(null);
   const [cursorY, setCursorY] = useState<number | null>(null);
-  const [cursorValue, setCursorValue] = useState<number | null>(null);
+  const [cursorI, setCursorI] = useState<number | null>(null);
   useEffect(() => {
-    if (cursorX != null && canvasMain.current != null) {
-      let pos = currentPos.current;
-      if (numPoints / scaleX.current > data.current.length) {
-        pos = data.current.length - numPoints / scaleX.current;
-      }
-      const cursorPos =
-        pos +
-        ((cursorX / canvasMain.current.width) * numPoints) / scaleX.current;
-      if (cursorPos >= 0) {
-        const val = data.current[Math.round(cursorPos)];
-        setCursorValue(val);
-        const y =
-          ((val - displayMinY) / (displayMaxY - displayMinY)) *
-          canvasMain.current.height;
-        setCursorY(y);
-      }
+    if (
+      cursorPosXRaw != null &&
+      canvasMain.current != null &&
+      data.current.length > 0
+    ) {
+      const cursorXRaw = getValX(cursorPosXRaw);
+      const nearestI = data.current.reduce(
+        (prevI: number, { x }, i) =>
+          Math.abs(x.getTime() - cursorXRaw!) <
+          Math.abs(data.current[prevI].x.getTime() - cursorXRaw!)
+            ? i
+            : prevI,
+        0
+      );
+      setCursorX(getPosX(data.current[nearestI].x.getTime()));
+      setCursorY(getPosY(data.current[nearestI].y));
+      setCursorI(nearestI);
+    } else {
+      setCursorX(null);
+      setCursorY(null);
+      setCursorI(null);
     }
-  }, [cursorX, displayPos, displayMinY, displayMaxY]);
+  }, [cursorPosXRaw]);
 
   // グリッド
-  let yTick = Math.pow(
-    10,
-    Math.floor(Math.log10(Math.max(1, displayMaxY - displayMinY)))
-  );
-  if ((displayMaxY - displayMinY) / yTick <= 2) {
+  let yTick = Math.pow(10, Math.floor(Math.log10(maxY.current - minY.current)));
+  if ((maxY.current - minY.current) / yTick <= 2) {
     yTick /= 5;
-  } else if ((displayMaxY - displayMinY) / yTick <= 5) {
+  } else if ((maxY.current - minY.current) / yTick <= 5) {
     yTick /= 2;
   }
-  let xTick = Math.pow(10, Math.floor(Math.log10(numPoints / scaleX.current)));
-  if ((numPoints / scaleX.current / xTick) * 2 <= 2) {
-    xTick /= 5;
-  } else if ((numPoints / scaleX.current / xTick) * 2 <= 5) {
-    xTick /= 2;
+  let xTick = 1000;
+  if (maxX.current && minX.current) {
+    xTick = Math.pow(10, Math.floor(Math.log10(maxX.current - minX.current)));
+    if ((maxX.current - minX.current) / xTick <= 1) {
+      xTick /= 5;
+    } else if ((maxX.current - minX.current) / xTick <= 2.5) {
+      xTick /= 2;
+    }
   }
-  const displayMaxX = addMilliseconds(
-    startTime,
-    maxPos === 0 ? data.current.length : displayPos + numPoints / scaleX.current
-  );
 
   const scaleRate = 1.001;
-  const pointers = useRef<PointerEvent[]>([]);
+  const pointers = useRef<ReactPointerEvent[]>([]);
   const prevPointerDistanceX = useRef<number | null>(null);
   const prevPointerDistanceY = useRef<number | null>(null);
 
   const zoomXAt = (domX: number, scaleDiff: number) => {
-    if (scaleX.current * scaleDiff < 1) {
-      scaleDiff = 1 / scaleX.current;
+    if (maxX.current && minX.current && canvasMain.current) {
+      isLatest.current = false;
+      if ((maxX.current - minX.current) / scaleDiff > maxXRange) {
+        scaleDiff = (maxX.current - minX.current) / maxXRange;
+      }
+      if ((maxX.current - minX.current) / scaleDiff <= 3) {
+        scaleDiff = (maxX.current - minX.current) / 3;
+      }
+      setRangeX(
+        minX.current + (getValX(domX)! - minX.current) * (scaleDiff - 1),
+        maxX.current - (maxX.current - getValX(domX)!) * (scaleDiff - 1)
+      );
     }
-    if (scaleX.current * scaleDiff > numPoints / 5) {
-      scaleDiff = numPoints / 5 / scaleX.current;
-    }
-    setCurrentXPos(
-      currentPos.current +
-        (((domX / (canvasMain.current?.width || 1)) * numPoints) /
-          scaleX.current) *
-          (scaleDiff - 1)
-    );
-    scaleX.current *= scaleDiff;
   };
   const zoomYAt = (domY: number, scaleDiff: number) => {
     isLatest.current = false;
-    const valY =
-      currentMaxY.current -
-      (domY / (canvasMain.current?.height || 1)) *
-        (currentMaxY.current - currentMinY.current);
     setRangeY(
-      currentMinY.current + (valY - currentMinY.current) * (scaleDiff - 1),
-      currentMaxY.current - (currentMaxY.current - valY) * (scaleDiff - 1)
+      minY.current + (getValY(domY) - minY.current) * (scaleDiff - 1),
+      maxY.current - (maxY.current - getValY(domY)) * (scaleDiff - 1)
     );
   };
-  const onPointerDown = (e: PointerEvent) => {
+  const onPointerDown = (e: ReactPointerEvent) => {
     if (
       pointers.current.filter((p) => p.pointerId === e.pointerId).length === 0
     ) {
       pointers.current.push(e);
     }
   };
-  const onPointerUp = (e: PointerEvent) => {
+  const onPointerUp = (e: ReactPointerEvent) => {
     pointers.current = pointers.current.filter(
       (p) => p.pointerId !== e.pointerId
     );
     prevPointerDistanceX.current = null;
     prevPointerDistanceY.current = null;
   };
-  const onPointerMove = (e: PointerEvent) => {
+  const onPointerMove = (e: ReactPointerEvent) => {
     const divPos = e.currentTarget.getBoundingClientRect();
-    if (pointers.current.length <= 1) {
+    if (
+      pointers.current.length <= 1 &&
+      canvasMain.current &&
+      maxX.current &&
+      minX.current
+    ) {
       if (!isLatest.current && (e.buttons & 1 || e.buttons & 4)) {
         const yDiff =
-          (e.movementY / (canvasMain.current?.height || 1)) *
-          (displayMaxY - displayMinY);
+          (e.movementY / (canvasMain.current.height || 1)) *
+          (maxY.current - minY.current);
+        const xDiff =
+          (e.movementX / (canvasMain.current.width || 1)) *
+          (maxX.current - minX.current);
         isLatest.current = false;
-        setRangeY(currentMinY.current + yDiff, currentMaxY.current + yDiff);
-        setCurrentXPos(
-          currentPos.current -
-            ((e.movementX / (canvasMain.current?.width || 1)) * numPoints) /
-              scaleX.current
-        );
+        setRangeY(minY.current + yDiff, maxY.current + yDiff);
+        setRangeX(minX.current - xDiff, maxX.current - xDiff);
       }
     } else if (!isLatest.current && pointers.current.length === 2) {
       pointers.current = pointers.current.map((p) =>
@@ -316,8 +348,8 @@ export function ValueCard(props: Props) {
     }
   };
   const onWheel = (e: WheelEvent) => {
-    if (!isLatest.current) {
-      const divPos = e.currentTarget.getBoundingClientRect();
+    if (!isLatest.current && canvasMain.current) {
+      const divPos = canvasMain.current.getBoundingClientRect();
       if (e.ctrlKey || e.metaKey) {
         zoomXAt(e.clientX - divPos.left, scaleRate ** e.deltaY);
       } else {
@@ -327,13 +359,12 @@ export function ValueCard(props: Props) {
     }
   };
   useEffect(() => {
-    const onWheelEv = onWheel as unknown as (e: Event) => void;
     const canvasMainCurrent = canvasMain.current;
     if (canvasMainCurrent) {
-      canvasMainCurrent.addEventListener("wheel", onWheelEv, {
+      canvasMainCurrent.addEventListener("wheel", onWheel, {
         passive: false,
       });
-      return () => canvasMainCurrent.removeEventListener("wheel", onWheelEv);
+      return () => canvasMainCurrent.removeEventListener("wheel", onWheel);
     }
   });
 
@@ -349,70 +380,66 @@ export function ValueCard(props: Props) {
             {[
               ...new Array(
                 Math.max(
-                  Math.floor(displayMaxY / yTick) -
-                    Math.ceil(displayMinY / yTick) +
+                  Math.floor(maxY.current / yTick) -
+                    Math.ceil(minY.current / yTick) +
                     1,
                   0
                 )
               ).keys(),
             ]
-              .map((_, i) => (Math.ceil(displayMinY / yTick) + i) * yTick)
+              .map((_, i) => (Math.ceil(minY.current / yTick) + i) * yTick)
               .map((y, i) => (
                 <div
                   key={i}
                   className="absolute w-full h-auto left-0 border-b border-gray-300 text-gray-500"
-                  style={{
-                    bottom:
-                      ((y - displayMinY) / (displayMaxY - displayMinY)) *
-                      (canvasMain.current?.height || 0),
-                  }}
+                  style={{ bottom: getPosY(y) }}
                 >
                   {y}
                 </div>
               ))}
-            {[
-              ...new Array(
-                Math.max(0, Math.ceil(numPoints / scaleX.current / xTick - 1))
-              ).keys(),
-            ]
-              .map(
-                (_, i) =>
-                  (Math.floor(displayMaxX.getTime() / xTick) - i) * xTick
-              )
-              .map((x, i) => (
-                <div
-                  key={i}
-                  className="absolute w-auto h-full bottom-0 border-r border-gray-300 text-gray-500"
-                  style={{
-                    right:
-                      ((displayMaxX.getTime() - x) / numPoints) *
-                      scaleX.current *
-                      (canvasMain.current?.width || 0),
-                  }}
-                >
-                  <span className="absolute bottom-0 right-0">
-                    {xTick >= 1000
-                      ? format(x, ":ss")
-                      : xTick >= 100
-                      ? format(x, ":ss.S")
-                      : xTick >= 10
-                      ? format(x, ":ss.SS")
-                      : format(x, ":ss.SSS")}
-                  </span>
-                </div>
-              ))}
+            {maxX.current &&
+              minX.current &&
+              [
+                ...new Array(
+                  Math.max(
+                    Math.floor(maxX.current / xTick) -
+                      Math.ceil(minX.current / xTick),
+                    0
+                  )
+                ).keys(),
+              ]
+                .map((_, i) => (Math.floor(maxX.current! / xTick) - i) * xTick)
+                .map((x, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-auto h-full bottom-0 border-r border-gray-300 text-gray-500"
+                    style={{
+                      right: canvasMain.current!.width - getPosX(x),
+                    }}
+                  >
+                    <span className="absolute bottom-0 right-0">
+                      {xTick >= 1000
+                        ? format(x, ":ss")
+                        : xTick >= 100
+                        ? format(x, ":ss.S")
+                        : xTick >= 10
+                        ? format(x, ":ss.SS")
+                        : format(x, ":ss.SSS")}
+                    </span>
+                  </div>
+                ))}
             <div className="w-full h-full relative" ref={canvasDiv}>
               <canvas
                 className=""
                 onPointerMove={(e) => {
                   if (e.currentTarget) {
                     const targetRect = e.currentTarget.getBoundingClientRect();
-                    setCursorX(e.clientX - targetRect.left);
+                    setCursorPosXRaw(e.clientX - targetRect.left);
                   }
                   onPointerMove(e);
                 }}
                 onPointerLeave={(e) => {
-                  setCursorX(null);
+                  setCursorPosXRaw(null);
                   onPointerUp(e);
                 }}
                 onPointerDown={onPointerDown}
@@ -427,18 +454,8 @@ export function ValueCard(props: Props) {
               <GraphValue
                 x={cursorX}
                 y={cursorY}
-                value={cursorValue}
-                time={
-                  cursorX != null
-                    ? addMilliseconds(
-                        displayMaxX,
-                        -numPoints / scaleX.current +
-                          ((cursorX / (canvasMain.current?.width || 1)) *
-                            numPoints) /
-                            scaleX.current
-                      )
-                    : null
-                }
+                value={cursorI !== null ? data.current[cursorI].y : null}
+                time={cursorI !== null ? data.current[cursorI].x : null}
               />
             </div>
           </div>
@@ -449,58 +466,38 @@ export function ValueCard(props: Props) {
             className="w-full h-4"
             renderTrack={SliderTrack}
             renderThumb={SliderThumb}
-            min={maxPos === 0 ? -1 : 0}
-            max={maxPos}
-            value={displayPos}
-            disabled={maxPos === 0}
+            min={!hasSufficientData() ? -1 : 0}
+            max={
+              !hasSufficientData() || !maxX.current || !minX.current
+                ? 0
+                : dataMaxX()! - dataMinX()! - (maxX.current - minX.current)
+            }
+            value={
+              !hasSufficientData() || !minX.current
+                ? 0
+                : minX.current - dataMinX()!
+            }
+            disabled={!hasSufficientData()}
             onChange={(value) => {
               // maxPos=0のときスクロール不可、minを-1にすることで右端にする
-              if (maxPos > 0) {
-                setCurrentXPos(value);
-                isLatest.current = maxPos === value;
+              if (hasSufficientData() && maxX.current && minX.current) {
+                const currentRange = maxX.current - minX.current;
+                setRangeX(
+                  dataMinX()! + value,
+                  dataMinX()! + value + currentRange
+                );
+                isLatest.current = value === dataMaxX()! - currentRange;
               }
             }}
           />
-          <span>
-            {format(addMilliseconds(startTime, data.current.length), "H:mm:ss")}
-          </span>
+          <span>{data.current.length && format(dataMaxX()!, "H:mm:ss")}</span>
         </div>
-        {/*        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
-          <input
-            type="checkbox"
-            id={`follow-${props.value.member.name}:${props.value.name}-value`}
-            checked={isLatest.current}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setCurrentXPos(maxPos);
-                isLatest.current = true;
-              } else {
-                if (maxPos === currentPos.current && maxPos > 0) {
-                  setCurrentXPos(maxPos - 1);
-                }
-                if (currentPos.current < maxPos) {
-                  isLatest.current = false;
-                }
-              }
-            }}
-          />
-          <label
-            htmlFor={`follow-${props.value.member.name}:${props.value.name}-value`}
-          >
-            Follow Latest Data
-          </label>
-        </div>*/}
         <div className="flex-none h-8 text-xs flex items-center ">
           <div className="flex-1"></div>
           <div className="flex-none text-lg relative">
             <IconButton
               onClick={() => {
-                if (maxPos === currentPos.current && maxPos > 0) {
-                  setCurrentXPos(maxPos - 1);
-                }
-                if (currentPos.current < maxPos) {
-                  isLatest.current = false;
-                }
+                isLatest.current = false;
               }}
               caption="グラフの移動・ズーム オン"
             >
@@ -512,7 +509,6 @@ export function ValueCard(props: Props) {
             </IconButton>
             <IconButton
               onClick={() => {
-                setCurrentXPos(maxPos);
                 isLatest.current = true;
               }}
               caption="初期位置に戻す(最新のデータを表示)"

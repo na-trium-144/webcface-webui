@@ -17,7 +17,6 @@ import {
   useLayoutEffect,
   RefObject,
   PointerEvent as ReactPointerEvent,
-  WheelEvent as ReactWheelEvent,
 } from "react";
 import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
 import { multiply, inv } from "../libs/math";
@@ -194,7 +193,7 @@ export function Canvas3DCardImpl(props: Props) {
       setWorldScale(worldScale * distChange ** 1.2);
     }
   };
-  const onWheel = (e: ReactWheelEvent) => {
+  const onWheel = (e: WheelEvent) => {
     if (moveEnabled) {
       setWorldScale(worldScale * scaleRate ** -e.deltaY);
       // worldTf.current.pos[0] += -e.deltaY * scrollSpeed;
@@ -202,13 +201,12 @@ export function Canvas3DCardImpl(props: Props) {
     }
   };
   useEffect(() => {
-    const onWheelEv = onWheel as unknown as (e: Event) => void;
     const canvasMainCurrent = canvasMain.current;
     if (canvasMainCurrent) {
-      canvasMainCurrent.addEventListener("wheel", onWheelEv, {
+      canvasMainCurrent.addEventListener("wheel", onWheel, {
         passive: false,
       });
-      return () => canvasMainCurrent.removeEventListener("wheel", onWheelEv);
+      return () => canvasMainCurrent.removeEventListener("wheel", onWheel);
     }
   });
 

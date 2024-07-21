@@ -9,7 +9,7 @@ import {
   Point,
   viewColor,
 } from "webcface";
-import { useState, useEffect, useRef, PointerEvent, WheelEvent } from "react";
+import { useState, useEffect, useRef, PointerEvent } from "react";
 import { Stage, Layer, Circle, Line, Text } from "react-konva";
 import { colorName, colorNameHover } from "../libs/color";
 import { multiply } from "../libs/math";
@@ -164,8 +164,8 @@ export function Canvas2DCard(props: Props) {
     }
   };
   const onWheel = (e: WheelEvent) => {
-    if (moveEnabled) {
-      const divPos = e.currentTarget.getBoundingClientRect();
+    if (moveEnabled && divRef.current) {
+      const divPos = divRef.current.getBoundingClientRect();
       zoomAt(
         e.clientX - divPos.left,
         e.clientY - divPos.top,
@@ -175,13 +175,12 @@ export function Canvas2DCard(props: Props) {
     }
   };
   useEffect(() => {
-    const onWheelEv = onWheel as unknown as (e: Event) => void;
     const divRefCurrent = divRef.current;
     if (divRefCurrent) {
-      divRefCurrent.addEventListener("wheel", onWheelEv, {
+      divRefCurrent.addEventListener("wheel", onWheel, {
         passive: false,
       });
-      return () => divRefCurrent.removeEventListener("wheel", onWheelEv);
+      return () => divRefCurrent.removeEventListener("wheel", onWheel);
     }
   });
 
