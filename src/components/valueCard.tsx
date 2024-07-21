@@ -318,7 +318,7 @@ export function ValueCard(props: Props) {
   const onWheel = (e: WheelEvent) => {
     if (!isLatest.current) {
       const divPos = e.currentTarget.getBoundingClientRect();
-      if (e.ctrlKey) {
+      if (e.ctrlKey || e.metaKey) {
         zoomXAt(e.clientX - divPos.left, scaleRate ** e.deltaY);
       } else {
         zoomYAt(e.clientY - divPos.top, scaleRate ** e.deltaY);
@@ -328,11 +328,14 @@ export function ValueCard(props: Props) {
   };
   useEffect(() => {
     const onWheelEv = onWheel as unknown as (e: Event) => void;
-    canvasMain.current?.addEventListener("wheel", onWheelEv, {
-      passive: false,
-    });
-    return () => canvasMain.current?.removeEventListener("wheel", onWheelEv);
-  }, []);
+    const canvasMainCurrent = canvasMain.current;
+    if (canvasMainCurrent) {
+      canvasMainCurrent.addEventListener("wheel", onWheelEv, {
+        passive: false,
+      });
+      return () => canvasMainCurrent.removeEventListener("wheel", onWheelEv);
+    }
+  });
 
   return (
     <Card title={`${props.value.member.name}:${props.value.name}`}>
@@ -499,7 +502,7 @@ export function ValueCard(props: Props) {
                   isLatest.current = false;
                 }
               }}
-              caption="グラフの移動・ズーム オン/オフ"
+              caption="グラフの移動・ズーム オン"
             >
               {!isLatest.current ? (
                 <Move theme="two-tone" fill={iconFillColor} />
@@ -512,7 +515,7 @@ export function ValueCard(props: Props) {
                 setCurrentXPos(maxPos);
                 isLatest.current = true;
               }}
-              caption="初期位置に戻す"
+              caption="初期位置に戻す(最新のデータを表示)"
             >
               <Home />
             </IconButton>
@@ -527,8 +530,9 @@ export function ValueCard(props: Props) {
             >
               <p>移動・ズームがオンのとき、</p>
               <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
-              <p>(マウス)スクロール / (タッチ)2本指操作 で</p>
-              <p>拡大縮小できます。</p>
+              <p>(マウス)スクロール で Y 方向拡大縮小、</p>
+              <p>Ctrl(Command⌘)+スクロール で X 方向拡大縮小、</p>
+              <p>(タッチ)2本指操作 で拡大縮小できます。</p>
             </CaptionBox>
           </div>
         </div>

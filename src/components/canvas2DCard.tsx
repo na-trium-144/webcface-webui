@@ -171,8 +171,19 @@ export function Canvas2DCard(props: Props) {
         e.clientY - divPos.top,
         worldScale * scaleRate ** -e.deltaY
       );
+      e.preventDefault();
     }
   };
+  useEffect(() => {
+    const onWheelEv = onWheel as unknown as (e: Event) => void;
+    const divRefCurrent = divRef.current;
+    if (divRefCurrent) {
+      divRefCurrent.addEventListener("wheel", onWheelEv, {
+        passive: false,
+      });
+      return () => divRefCurrent.removeEventListener("wheel", onWheelEv);
+    }
+  });
 
   return (
     <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
@@ -185,7 +196,6 @@ export function Canvas2DCard(props: Props) {
           onPointerEnter={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
-          onWheel={onWheel}
         >
           <Stage
             width={divWidth}
