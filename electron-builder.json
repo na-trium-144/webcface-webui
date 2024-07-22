@@ -13,7 +13,7 @@
   "files": ["dist-electron", "dist"],
   "mac": {
     "icon": "icons/Icon-512.png",
-    "target": [{ "target": "zip", "arch": ["x64"] }]
+    "target": [{ "target": "zip", "arch": ["universal"] }]
   },
   "win": {
     "target": [{ "target": "zip", "arch": ["ia32"] }],
