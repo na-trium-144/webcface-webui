@@ -39,13 +39,8 @@ npm run edev
 
 ### Build
 
-* ubuntu, mac
 ```bash
 npm run ebuild
 ```
 
-* windows
-	* cannot create symbolic link エラーになる場合はwindowsの設定から開発者モードをon
-```bash
-npm run ebuild-win
-```
+Windows (x86), Linux (x64, arm64, armv7l), MacOS (x64) 用にビルドされます
