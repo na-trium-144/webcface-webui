@@ -116,7 +116,7 @@ function BooleanInput(props: Props) {
       type="button"
       onClick={() =>
         props.setValue(
-          option[(option.indexOf(Number(props.value)) + 1) % option.length]
+          option[(option.indexOf(props.value) + 1) % option.length]
         )
       }
       className={
