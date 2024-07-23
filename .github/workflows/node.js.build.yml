@@ -44,7 +44,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: electron
-        path: ${{github.workspace}}/release/*
+        path: ${{github.workspace}}/release/*.*
 
   release:
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: electron
-        path: electron/
+        path: release/
     - name: Create dist tar.gz archive
       run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
     - name: Prepare deb package files
