@@ -1,6 +1,6 @@
 import { Card } from "./card";
 import { Member, LogLine } from "webcface";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { useLogStore } from "./logStoreProvider";
 
@@ -18,16 +18,19 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const logStore = useLogStore();
-  const logsRaw = useRef<LogLine[]>([]);
+  const logsRef = useRef<LogLine[]>([]); // 内容はlogStoreと同期される
   const hasUpdate = useRef<boolean>(false);
   const maxLine = 1000;
   useEffect(() => {
+    // onScroll();
     const update = () => {
-      logsRaw.current = logsRaw.current
-        .concat(props.member.log().get())
+      const logs = logStore
+        .getDataRef(props.member.name)
+        .log.concat(props.member.log().get())
         .slice(-maxLine);
+      logStore.getDataRef(props.member.name).log = logs;
+      logsRef.current = logs;
       props.member.log().clear();
-      logStore.setData(props.member.name, logsRaw.current);
       hasUpdate.current = true;
     };
     update();
@@ -35,18 +38,11 @@ export function LogCard(props: Props) {
     return () => {
       props.member.log().off(update);
     };
-  }, [props.member]);
-  useEffect(() => {
-    logsRaw.current =
-      logStore.data.current.find((ld) => ld.name === props.member.name)?.log ||
-      [];
-    // onScroll();
-    hasUpdate.current = true;
   }, [props.member, logStore]);
 
   return (
     <LogCardImpl
-      logsRaw={logsRaw}
+      logsRef={logsRef}
       hasUpdate={hasUpdate}
       name={props.member.name}
     />
@@ -56,21 +52,22 @@ export function LogCardServer() {
   const logStore = useLogStore();
   return (
     <LogCardImpl
-      logsRaw={logStore.serverData}
+      logsRef={logStore.serverData}
       hasUpdate={logStore.serverHasUpdate}
       name={"webcface server"}
     />
   );
 }
 
-
 interface Props2 {
-  logsRaw: { current: LogLine[] };
+  logsRef: { current: LogLine[] };
   hasUpdate: { current: boolean };
   name: string;
 }
+const lineHeight = 24;
 function LogCardImpl(props: Props2) {
-  const { logsRaw, hasUpdate, name } = props;
+  const { logsRef, hasUpdate, name } = props;
+  // 引数のlogsRefは高頻度で更新されるが、以下のstateは50msに1回更新される
   const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [visibleLogBegin, setVisibleLogBegin] = useState<number>(0);
@@ -80,8 +77,7 @@ function LogCardImpl(props: Props2) {
   const [followRealTime, setFollowRealTime] = useState<boolean>(true);
   const followRealTimeRef = useRef<boolean>(true);
 
-  const lineHeight = 24;
-  const onScroll = () => {
+  const onScroll = useCallback(() => {
     if (logsDiv.current !== null) {
       const newBegin = Math.floor(logsDiv.current.scrollTop / lineHeight);
       const newEnd =
@@ -96,7 +92,7 @@ function LogCardImpl(props: Props2) {
         followRealTimeRef.current = false;
       }
     }
-  };
+  }, [logsCurrent]);
   const followLog = (f: boolean) => {
     if (logsDiv.current !== null && f) {
       logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
@@ -110,12 +106,12 @@ function LogCardImpl(props: Props2) {
       observer.observe(logsDiv.current);
       return () => observer.disconnect();
     }
-  }, [followRealTime]);
+  }, [followRealTime, onScroll]);
 
   useEffect(() => {
     const updateLogsCurrent = () => {
-      setLogLine(logsRaw.current.length);
-      const logsCurrent = logsRaw.current.filter((l) => l.level >= minLevel);
+      setLogLine(logsRef.current.length);
+      const logsCurrent = logsRef.current.filter((l) => l.level >= minLevel);
       setLogsCurrent(logsCurrent);
       setTimeout(() => {
         if (logsDiv.current !== null && followRealTimeRef.current) {
@@ -129,9 +125,8 @@ function LogCardImpl(props: Props2) {
         updateLogsCurrent();
       }
     }, 50);
-    updateLogsCurrent();
     return () => clearInterval(i);
-  }, [setLogLine, setLogsCurrent, minLevel]);
+  }, [setLogLine, setLogsCurrent, minLevel, hasUpdate, logsRef]);
 
   return (
     <Card title={`${name} Logs`}>
