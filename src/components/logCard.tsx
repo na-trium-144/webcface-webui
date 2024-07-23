@@ -75,7 +75,6 @@ function LogCardImpl(props: Props2) {
   const logsDiv = useRef<HTMLDivElement>(null);
   const [minLevel, setMinLevel] = useState<number>(2);
   const [followRealTime, setFollowRealTime] = useState<boolean>(true);
-  const followRealTimeRef = useRef<boolean>(true);
 
   const onScroll = useCallback(() => {
     if (logsDiv.current !== null) {
@@ -89,7 +88,6 @@ function LogCardImpl(props: Props2) {
       setVisibleLogEnd(newEnd);
       if (newEnd < logsCurrent.length) {
         setFollowRealTime(false);
-        followRealTimeRef.current = false;
       }
     }
   }, [logsCurrent]);
@@ -98,7 +96,6 @@ function LogCardImpl(props: Props2) {
       logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
     }
     setFollowRealTime(f);
-    followRealTimeRef.current = f;
   };
   useEffect(() => {
     if (logsDiv.current !== null) {
@@ -106,7 +103,7 @@ function LogCardImpl(props: Props2) {
       observer.observe(logsDiv.current);
       return () => observer.disconnect();
     }
-  }, [followRealTime, onScroll]);
+  }, [onScroll]);
 
   useEffect(() => {
     const updateLogsCurrent = () => {
@@ -114,19 +111,24 @@ function LogCardImpl(props: Props2) {
       const logsCurrent = logsRef.current.filter((l) => l.level >= minLevel);
       setLogsCurrent(logsCurrent);
       setTimeout(() => {
-        if (logsDiv.current !== null && followRealTimeRef.current) {
+        if (logsDiv.current !== null) {
           logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
         }
       });
       hasUpdate.current = false;
     };
     const i = setInterval(() => {
-      if (hasUpdate.current) {
+      if (hasUpdate.current && followRealTime) {
         updateLogsCurrent();
       }
     }, 50);
     return () => clearInterval(i);
-  }, [setLogLine, setLogsCurrent, minLevel, hasUpdate, logsRef]);
+  }, [
+    minLevel,
+    hasUpdate,
+    logsRef,
+    followRealTime,
+  ]);
 
   return (
     <Card title={`${name} Logs`}>
