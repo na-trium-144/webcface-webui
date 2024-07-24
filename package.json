@@ -4,14 +4,13 @@
   "license": "MIT",
   "description": "UI Application for WebCFace",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.7.0",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "vite --host",
     "edev": "env ELECTRON=1 vite",
     "build": "tsc -p tsconfig.static.json && vite build",
-    "ebuild": "tsc -p tsconfig.electron.json && env ELECTRON=1 vite build && electron-builder --publish never",
-    "ebuild-win": "tsc -p tsconfig.electron.json && set ELECTRON=1&& vite build && electron-builder --publish never --win",
+    "ebuild": "tsc -p tsconfig.electron.json && env ELECTRON=1 vite build && electron-builder --publish never --linux --mac --win",
     "lint": "eslint src electron --ext ts,tsx --report-unused-disable-directives",
     "preview": "vite preview"
   },

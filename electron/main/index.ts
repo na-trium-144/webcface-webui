@@ -211,6 +211,14 @@ void app.whenReady().then(() => {
   ipcMain.handle("launcherGetRunning", () => launcher.running);
   ipcMain.handle("launcherGetEnabled", () => config.launcher.enabled);
   createWindow();
+  app.on("activate", () => {
+    const allWindows = BrowserWindow.getAllWindows();
+    if (allWindows.length) {
+      allWindows[0].focus();
+    } else {
+      createWindow();
+    }
+  });
 });
 
 app.on("window-all-closed", () => {
@@ -225,15 +233,6 @@ app.on("second-instance", () => {
     // Focus on the main window if the user tried to open another
     if (win.isMinimized()) win.restore();
     win.focus();
-  }
-});
-
-app.on("activate", () => {
-  const allWindows = BrowserWindow.getAllWindows();
-  if (allWindows.length) {
-    allWindows[0].focus();
-  } else {
-    createWindow();
   }
 });
 
