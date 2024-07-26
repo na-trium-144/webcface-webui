@@ -35,17 +35,33 @@ export function ConnectionInfoCard(props: Props) {
             <span className="">Server:</span>
             <span className="pl-1">{props.client?.serverName}</span>
             <span className="pl-1">{props.client?.serverVersion}</span>
-            <span className="pl-2">
-              <WifiStrength level={props.client?.connected ? 3 : 0} />
-            </span>
           </p>
-          <p className="text-sm">
+          <p className="text-sm flex items-center">
             <span className="">WebUI:</span>
             <span className="pl-1">{webuiVersion}</span>
             <span className="text-xs pl-2">(</span>
             <span className="text-xs">Client:</span>
             <span className="text-xs pl-1">{webcfaceVersion}</span>
             <span className="text-xs">)</span>
+            <div className="pl-2">
+              <WifiStrength
+                level={
+                  props.client == null || props.client?.pingStatus === null
+                    ? 0
+                    : props.client?.pingStatus < 50
+                    ? 3
+                    : props.client?.pingStatus < 100
+                    ? 2
+                    : 1
+                }
+              />
+            </div>
+            <span className="pl-1">
+              {props.client != null && props.client?.pingStatus !== null
+                ? props.client?.pingStatus
+                : "?"}
+            </span>
+            <span className="pl-1">ms</span>
           </p>
           <p className="text-sm">
             <span className="">Members:</span>
@@ -64,7 +80,7 @@ export function ConnectionInfoCard(props: Props) {
                     level={
                       m.pingStatus === null
                         ? 0
-                        : m.pingStatus < 10
+                        : m.pingStatus < 50
                         ? 3
                         : m.pingStatus < 100
                         ? 2

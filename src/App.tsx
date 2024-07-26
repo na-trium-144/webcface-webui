@@ -10,6 +10,8 @@ import { useLogStore } from "./components/logStoreProvider";
 export default function App() {
   const logStore = useLogStore();
   const [client, setClient] = useState<Client | null>(null);
+  const [clientHost, setClientHost] = useState<string>("");
+  const [clientPort, setClientPort] = useState<number | null>(null);
   useEffect(() => {
     // 7530ポートに接続するクライアント
     const clientDefault = new Client(
@@ -30,13 +32,17 @@ export default function App() {
       clientLocation.start();
     }
 
+    setClientHost(window.location.hostname || "localhost");
+
     // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
     const checkConnection = () => {
       if (clientLocation?.connected) {
         setClient(clientLocation);
+        setClientPort(parseInt(window.location.port));
         clientDefault.close();
       } else if (clientDefault.connected) {
         setClient(clientDefault);
+        setClientPort(7530);
         clientLocation?.close();
       } else {
         setTimeout(checkConnection, 100);
@@ -80,7 +86,13 @@ export default function App() {
     <div className="absolute w-full min-w-min min-h-screen h-max bg-neutral-100 -z-50">
       <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
         <div className="min-w-[288px] h-full">
-          <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+          <Header
+            menuOpen={menuOpen}
+            setMenuOpen={setMenuOpen}
+            client={client}
+            clientHost={clientHost}
+            clientPort={clientPort}
+          />
         </div>
       </nav>
       <nav
