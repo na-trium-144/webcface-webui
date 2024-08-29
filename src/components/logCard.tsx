@@ -65,7 +65,7 @@ const lineHeight = 24;
 function LogCardImpl(props: Props2) {
   const { logsRef, hasUpdate, name } = props;
   // 引数のlogsRefは高頻度で更新されるが、以下のstateは50msに1回更新される
-  const [logLine, setLogLine] = useState<number>(0);
+  // const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
   const [visibleLogBegin, setVisibleLogBegin] = useState<number>(0);
   const [visibleLogEnd, setVisibleLogEnd] = useState<number>(0);
@@ -104,7 +104,7 @@ function LogCardImpl(props: Props2) {
 
   useEffect(() => {
     const updateLogsCurrent = () => {
-      setLogLine(logsRef.current.length);
+      // setLogLine(logsRef.current.length);
       const logsCurrent = logsRef.current.get(minLevel);
       setLogsCurrent(logsCurrent);
       setTimeout(() => {

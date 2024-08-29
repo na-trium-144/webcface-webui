@@ -52,9 +52,6 @@ export interface LogStoreData {
   data: { current: { name: string; log: LogDataWithLevels }[] };
   getDataRef: (name: string) => { name: string; log: LogDataWithLevels };
 }
-function emptyLogData() {
-  return {};
-}
 const LogStoreContext = createContext<LogStoreData>({
   serverData: { current: new LogDataWithLevels() },
   resetServerData: () => undefined,
