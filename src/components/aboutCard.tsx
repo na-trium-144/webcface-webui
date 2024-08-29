@@ -102,7 +102,7 @@ export function AboutCard(/*props: Props*/) {
             logStore.serverData.current
               .filter((ll) => ll.level >= 5)
               .map((ll, i) => (
-                <li className="pl-8 text-sm font-mono" key={i}>
+                <li className="pl-8 text-sm font-noto-mono" key={i}>
                   {ll.message}
                 </li>
               ))}
@@ -142,7 +142,7 @@ export function AboutCard(/*props: Props*/) {
             launcherLogs
               .filter((ll) => ll.level >= 5)
               .map((ll, i) => (
-                <li className="pl-8 text-sm font-mono" key={i}>
+                <li className="pl-8 text-sm font-noto-mono" key={i}>
                   {ll.message}
                 </li>
               ))}

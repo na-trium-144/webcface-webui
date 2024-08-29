@@ -109,12 +109,12 @@ export function FuncResultList() {
                     <span className="text-sm text-green-500 ">Running...</span>,
                     <>
                       <span className="text-sm pr-1">ok</span>
-                      <span className="text-sm font-mono break-all">
+                      <span className="text-sm font-noto-mono break-all">
                         {d.result}
                       </span>
                     </>,
                     <>
-                      <span className="text-red-500 text-sm font-mono break-all">
+                      <span className="text-red-500 text-sm font-noto-mono break-all">
                         {d.result}
                       </span>
                     </>,

@@ -189,13 +189,13 @@ function LogCardImpl(props: Props2) {
                           : ""}
                       </span>
                     </td>
-                    <td className="px-1 font-mono w-full">{l.message}</td>
+                    <td className="px-1 font-noto-mono w-full">{l.message}</td>
                   </tr>
                 ))}
               <tr className="text-transparent select-none">
                 <td className="px-1 text-center">0:00:00.000</td>
                 <td className="px-1.5 text-center">5(Critical)</td>
-                <td className="px-1 font-mono w-full"></td>
+                <td className="px-1 font-noto-mono w-full"></td>
               </tr>
             </tbody>
           </table>
