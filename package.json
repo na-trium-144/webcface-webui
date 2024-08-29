@@ -30,7 +30,7 @@
     "react-konva": "^18.2.10",
     "react-slider": "^2.0.6",
     "react-switch": "^7.0.0",
-    "three": "^0.162.0",
+    "three": "^0.167.1",
     "webcface": "^1.7.0",
     "webgl-plot": "^0.7.1"
   },
