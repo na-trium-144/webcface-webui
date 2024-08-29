@@ -2,7 +2,7 @@ import { Card } from "./card";
 import { Member, LogLine } from "webcface";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { useLogStore } from "./logStoreProvider";
+import { LogDataWithLevels, useLogStore } from "./logStoreProvider";
 
 interface Props {
   member: Member;
@@ -18,18 +18,15 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const logStore = useLogStore();
-  const logsRef = useRef<LogLine[]>([]); // 内容はlogStoreと同期される
+  const logsRef = useRef<LogDataWithLevels>(new LogDataWithLevels()); // 内容はlogStoreと同期される
   const hasUpdate = useRef<boolean>(false);
-  const maxLine = 1000;
   useEffect(() => {
     // onScroll();
     const update = () => {
-      const logs = logStore
+      logStore
         .getDataRef(props.member.name)
-        .log.concat(props.member.log().get())
-        .slice(-maxLine);
-      logStore.getDataRef(props.member.name).log = logs;
-      logsRef.current = logs;
+        .log.concat(props.member.log().get());
+      logsRef.current = logStore.getDataRef(props.member.name).log;
       props.member.log().clear();
       hasUpdate.current = true;
     };
@@ -60,7 +57,7 @@ export function LogCardServer() {
 }
 
 interface Props2 {
-  logsRef: { current: LogLine[] };
+  logsRef: { current: LogDataWithLevels };
   hasUpdate: { current: boolean };
   name: string;
 }
@@ -108,7 +105,7 @@ function LogCardImpl(props: Props2) {
   useEffect(() => {
     const updateLogsCurrent = () => {
       setLogLine(logsRef.current.length);
-      const logsCurrent = logsRef.current.filter((l) => l.level >= minLevel);
+      const logsCurrent = logsRef.current.get(minLevel);
       setLogsCurrent(logsCurrent);
       setTimeout(() => {
         if (logsDiv.current !== null) {
@@ -117,18 +114,14 @@ function LogCardImpl(props: Props2) {
       });
       hasUpdate.current = false;
     };
+    updateLogsCurrent();
     const i = setInterval(() => {
       if (hasUpdate.current && followRealTime) {
         updateLogsCurrent();
       }
     }, 50);
     return () => clearInterval(i);
-  }, [
-    minLevel,
-    hasUpdate,
-    logsRef,
-    followRealTime,
-  ]);
+  }, [minLevel, hasUpdate, logsRef, followRealTime]);
 
   return (
     <Card title={`${name} Logs`}>
@@ -146,9 +139,10 @@ function LogCardImpl(props: Props2) {
               setMinLevel(parseInt(e.target.value));
             }}
           />
-          以上のログを表示: 全<span className="px-1">{logLine}</span>
+          以上のログを表示
+          {/*全<span className="px-1">{logLine}</span>
           行中
-          <span className="px-1">{logsCurrent.length}</span>行
+          <span className="px-1">{logsCurrent.length}</span>行*/}
         </div>
         <div className="flex-1 overflow-auto" ref={logsDiv} onScroll={onScroll}>
           <table

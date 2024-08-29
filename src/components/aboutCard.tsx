@@ -91,19 +91,17 @@ export function AboutCard(/*props: Props*/) {
             <RunStatus
               isRunning={running}
               onRestart={() => {
-                logStore.serverData.current = [];
+                logStore.resetServerData();
                 window.electronAPI?.sp.restart();
               }}
             />
           </li>
           {!running &&
-            logStore.serverData.current
-              .filter((ll) => ll.level >= 5)
-              .map((ll, i) => (
-                <li className="pl-8 text-sm font-noto-mono" key={i}>
-                  {ll.message}
-                </li>
-              ))}
+            logStore.serverData.current.get(5).map((ll, i) => (
+              <li className="pl-8 text-sm font-noto-mono" key={i}>
+                {ll.message}
+              </li>
+            ))}
           <li className="flex items-baseline">
             <span className="text-sm">WebUI URL:</span>
             <ul className="list-none">
