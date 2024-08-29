@@ -108,13 +108,15 @@ export function LauncherCard() {
                 ])
               );
             }}
-            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
+            className="mr-2"
+            buttonClassName="flex items-center space-x-1 "
           >
             <Plus />
             <span>Add New Command</span>
           </Button>
           <Button
-            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
+            className="mr-2"
+            buttonClassName="flex items-center space-x-1 "
             bgColor={viewColor.orange}
             onClick={saveCommands}
             disabled={isEqual(config, savedConfig)}
@@ -123,7 +125,8 @@ export function LauncherCard() {
             <span>{launcherEnabled ? "Save & Restart" : "Save"}</span>
           </Button>
           <Button
-            className="inline-flex items-center space-x-1 mr-2 w-max min-w-max"
+            className="mr-2"
+            buttonClassName="flex items-center space-x-1 "
             bgColor={viewColor.red}
             onClick={() => setConfig(savedConfig)}
             disabled={isEqual(config, savedConfig)}
@@ -252,10 +255,10 @@ export function LauncherConfigLine(props: LineProps) {
               </tr>
             </tbody>
           </table>
-          <div className="mt-1 mb-3 flex space-x-2">
+          <div className="mt-1 mb-3 flex space-x-2 items-stretch">
             <Button
               rounded="full"
-              className="flex items-center space-x-1"
+              buttonClassName="flex items-center space-x-1 h-full"
               bgColor={viewColor.red}
               onClick={props.onDelete}
             >
@@ -264,7 +267,7 @@ export function LauncherConfigLine(props: LineProps) {
             </Button>
             <Button
               rounded="full"
-              className="flex items-center space-x-1"
+              buttonClassName="flex items-center space-x-1 h-full"
               onClick={props.moveUp || (() => undefined)}
               disabled={!props.moveUp}
             >
@@ -272,7 +275,7 @@ export function LauncherConfigLine(props: LineProps) {
             </Button>
             <Button
               rounded="full"
-              className="flex items-center space-x-1"
+              buttonClassName="flex items-center space-x-1 h-full"
               onClick={props.moveDown || (() => undefined)}
               disabled={!props.moveDown}
             >

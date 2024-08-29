@@ -5,7 +5,7 @@ import { LayoutMain } from "./components/layout";
 import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
-import { useLogStore } from "./components/logStoreProvider";
+import { LogDataWithLevels, useLogStore } from "./components/logStoreProvider";
 
 export default function App() {
   const logStore = useLogStore();
@@ -58,19 +58,16 @@ export default function App() {
 
   useEffect(() => {
     if (window.electronAPI) {
-      const maxLine = 1000;
       const onLogAppend = (_event: object, data: LogLine) => {
-        logStore.serverData.current = logStore.serverData.current
-          .concat([data])
-          .slice(-maxLine);
+        logStore.serverData.current.push(data);
         logStore.serverHasUpdate.current = true;
       };
       window.electronAPI.sp.onLogAppend(onLogAppend);
       void (async () => {
         if (window.electronAPI) {
-          logStore.serverData.current = (
-            await window.electronAPI.sp.getLogs()
-          ).slice(-maxLine);
+          const logs = await window.electronAPI.sp.getLogs();
+          logStore.serverData.current = new LogDataWithLevels();
+          logStore.serverData.current.concat(logs);
           logStore.serverHasUpdate.current = true;
         }
       })();

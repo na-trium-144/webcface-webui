@@ -10,7 +10,8 @@ interface Props {
   onClick: () => void | Promise<void>;
   children?: ReactNode;
   disabled?: boolean;
-  className?: string;
+  className?: string; // 外側のdiv
+  buttonClassName?: string; // 内側のbutton
   caption?: ReactNode;
 }
 export function Button(props: Props) {
@@ -21,7 +22,8 @@ export function Button(props: Props) {
     }>
       <button
         className={
-          "border px-2 " +
+          (props.buttonClassName !== undefined ? props.buttonClassName : "") + 
+          " border px-2 " +
           textColorClass(props.textColor || viewColor.black) +
           (props.disabled
             ? "border-neutral-400 bg-neutral-300 shadow-none "
