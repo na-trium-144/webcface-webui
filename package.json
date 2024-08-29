@@ -31,7 +31,7 @@
     "react-slider": "^2.0.6",
     "react-switch": "^7.0.0",
     "three": "^0.162.0",
-    "webcface": "^1.6.0",
+    "webcface": "^1.7.0",
     "webgl-plot": "^0.7.1"
   },
   "devDependencies": {
