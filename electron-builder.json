@@ -4,24 +4,36 @@
 {
   "appId": "com.github.na-trium-144.webcface-webui-desktop",
   "productName": "webcface-desktop",
+  "executableName": "webcface-desktop",
+  "artifactName": "${productName}_${version}_${os}_${arch}.${ext}",
   "asar": true,
   "directories": {
     "output": "release"
   },
   "files": ["dist-electron", "dist"],
   "mac": {
-    "artifactName": "${productName}_${version}_${arch}.${ext}",
     "icon": "icons/Icon-512.png",
-    "target": []
+    "target": [{ "target": "zip", "arch": ["universal"] }]
   },
   "win": {
-    "target": "zip",
-    "artifactName": "${productName}_${version}_${arch}.${ext}",
+    "target": [{ "target": "zip", "arch": ["ia32"] }],
     "icon": "public/icon-256t.png"
   },
   "linux": {
-    "target": ["AppImage"],
-    "artifactName": "${productName}_${version}_${arch}.${ext}",
-    "icon": "public/icon-256t.png"
+    "target": [
+      { "target": "tar.gz", "arch": ["x64", "arm64", "armv7l"] },
+      { "target": "deb", "arch": ["x64", "arm64", "armv7l"] }
+    ],
+    "maintainer": "na-trium-144 <na-trium-144@users.noreply.github.com>",
+    "icon": "icons/256x256.png",
+    "desktop": {
+      "Name": "WebCFace Desktop",
+      "Comment": "UI Application for WebCFace",
+      "StartupNotify": true,
+      "Terminal": false
+    }
   },
+  "deb": {
+    "packageName": "webcface-desktop"
+  }
 }
