@@ -13,24 +13,22 @@ interface StatusProps {
   onRestart: () => void;
 }
 function RunStatus(props: StatusProps) {
-  if (props.isRunning === true) {
-    return <span className="pl-1 text-green-500">Running</span>;
-  } else if (props.isRunning === false) {
-    return (
-      <>
+  return (
+    <>
+      {props.isRunning === true ? (
+        <span className="pl-1 text-green-500">Running</span>
+      ) : props.isRunning === false ? (
         <span className="pl-1 text-red-500">Not Running</span>
-        <Button
-          className="ml-2 inline-block"
-          bgColor={viewColor.yellow}
-          onClick={props.onRestart}
-        >
-          Restart
-        </Button>
-      </>
-    );
-  } else {
-    return <span />;
-  }
+      ) : null}
+      <Button
+        className="ml-2 inline-block"
+        bgColor={viewColor.yellow}
+        onClick={props.onRestart}
+      >
+        Restart
+      </Button>
+    </>
+  );
 }
 export function AboutCard(/*props: Props*/) {
   // const update = useForceUpdate();
