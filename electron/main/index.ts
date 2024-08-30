@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
 // import { release } from "node:os";
-import { join, dirname } from "node:path";
+import path from "node:path";
 // import { update } from './update'
 import { Process } from "./serverProcess";
 import { LauncherCommand, ServerConfigLauncher } from "../config";
@@ -12,10 +12,20 @@ import {
   tomlStringify,
 } from "./configIO";
 
-process.env.DIST_ELECTRON = join(__dirname, "../");
-process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
+process.env.PATH = [
+  path.dirname(app.getPath("exe")), // MacOS
+  path.join(path.dirname(app.getPath("exe")), "..", "bin"), // Linux, Win
+  process.env.PATH?.split(path.delimiter),
+].join(path.delimiter);
+process.env.DYLD_LIBRARY_PATH = [
+  path.dirname(app.getPath("exe")), // MacOS
+  process.env.DYLD_LIBRARY_PATH?.split(path.delimiter),
+].join(path.delimiter);
+
+process.env.DIST_ELECTRON = path.join(__dirname, "../");
+process.env.DIST = path.join(process.env.DIST_ELECTRON, "../dist");
 process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
-  ? join(process.env.DIST_ELECTRON, "../public")
+  ? path.join(process.env.DIST_ELECTRON, "../public")
   : process.env.DIST;
 
 const sp = new Process();
@@ -72,14 +82,14 @@ if (!app.requestSingleInstanceLock()) {
 
 let win: BrowserWindow | null = null;
 // Here, you can also use other preload
-const preload = join(__dirname, "../preload/index.js");
+const preload = path.join(__dirname, "../preload/index.js");
 const url = process.env.VITE_DEV_SERVER_URL;
-const indexHtml = join(process.env.DIST, "index.html");
+const indexHtml = path.join(process.env.DIST, "index.html");
 
 function createWindow() {
   win = new BrowserWindow({
     title: "WebCFace Desktop",
-    icon: join(process.env.VITE_PUBLIC, "icon-256t.png"),
+    icon: path.join(process.env.VITE_PUBLIC, "icon-256t.png"),
     webPreferences: {
       preload,
       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
@@ -190,7 +200,7 @@ void app.whenReady().then(() => {
       return "";
     }
   });
-  ipcMain.handle("dirname", (_event, path: string) => dirname(path));
+  ipcMain.handle("dirname", (_event, pathStr: string) => path.dirname(pathStr));
   ipcMain.on("launcherSetCommands", (_event, commands: LauncherCommand[]) =>
     startLauncher(commands)
   );
