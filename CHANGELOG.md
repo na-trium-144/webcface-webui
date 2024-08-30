@@ -1,3 +1,17 @@
+## [1.8.0] - 2024-08-29
+### Added
+* タイトルにhostname追加 (#241)
+* webui自体ののping状態を表示 (#241)
+### Changed
+* ping緑色の閾値を10msから50msに変更 (#241)
+* フォントをNoto Sans/Noto Monoに固定 (#264)
+* ログを全レベル合計1000行ではなくレベル別に1000行保存するように変更 (#265)
+* WebCFace Desktop でwebcface-serverのPATHを設定
+### Fixed
+* launcher Config のボタン内で改行されてたのを修正 (#265)
+* サーバーが実行中でもrestartボタン表示
+* LogCardがレベル切替時に画面更新されなかったバグを修正
+
 ## [1.7.0] - 2024-07-24
 ### Changed
 * アイコン追加 (#236, #242)

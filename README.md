@@ -6,8 +6,7 @@ UI Application for [WebCFace](https://github.com/na-trium-144/webcface).
 ## WebUI
 * WebCFaceのフロントエンドとなるUIです。
 * staticなhtmlにビルドし、webcface-serverをhtmlサーバーとしてブラウザーからアクセスして使います。
-* WebCFaceのインストール時、またcmake時に自動でインストールされます。
-	* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)の tar.gz アーカイブ、または all.deb にビルド済みのhtmlファイルが入っています。
+* webcface-serverをビルドする際mesonが自動ダウンロードしますが、個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)の tar.gz アーカイブにビルド済みのhtmlファイルが入っています。
 
 ### Development
 
@@ -28,7 +27,8 @@ npm run build
 
 * Electronでビルドし、アプリケーションとして起動して使います。
 * WebUIの機能に加え、webcface-serverを自動で起動し、またwebcface-launcherなどの設定と起動ができます。
-* 個別にダウンロードしたい場合は[Releases](https://github.com/na-trium-144/webcface-webui/releases)のzipファイル(windows)、amd64,arm64,armhfのdebパッケージ(Ubuntu,Debian)、またはAppImage(linux)でダウンロードできます。
+* webcface-desktop単体は[Releases](https://github.com/na-trium-144/webcface-webui/releases)からzipファイル、tar.gzファイル、debパッケージでダウンロードできますが、これを起動するにはwebcface-serverなどを適切に配置する必要があります
+	* [WebCFace](https://github.com/na-trium-144/webcface)のREADMEにしたがってダウンロード、インストールしたほうがかんたんです
 
 ### Development
 
@@ -40,7 +40,14 @@ npm run edev
 ### Build
 
 ```bash
-npm run ebuild
+tsc -p tsconfig.electron.json
+env ELECTRON=1 vite build
+electron-builder --publish never
 ```
 
-Windows (x86), Linux (x64, arm64, armv7l), MacOS (x64) 用にビルドされます
+* webcface-serverとwebcface-launcherをwebcface-desktopから見て ../bin/ の位置に、またWebUIをビルドしたdistディレクトリを ../share/webcface/dist/ または ../dist/ として置くとdesktopがserverを自動起動できるようになります。
+	* Windowsの場合はwebcfaceのdllもbinに置いてください
+	* Linuxの場合はlibwebcface.so.\*を ../lib/ に置いてください
+	* MacOSの場合はwebcface-serverとlauncherとlibwebcface.\*.dylibを WebCFace Desktop.app/Contents/MacOS/ に、 distを WebCFace Desktop.app/Contents/dist/ に置いてください
+
+
