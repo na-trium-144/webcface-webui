@@ -38,6 +38,7 @@ try {
 }
 
 function startServer() {
+  sp.kill();
   sp.start(["webcface-server", "-vv", "-p", "7530"]);
 }
 function stopServer() {
