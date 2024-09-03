@@ -23,6 +23,7 @@ interface Props {
   canvas: Canvas2D;
 }
 export function Canvas2DCard(props: Props) {
+  const { layoutChanging } = useLayoutChange();
   const divRef = useRef<HTMLDivElement>(null);
   const [divWidth, setDivWidth] = useState<number>(0);
   const [divHeight, setDivHeight] = useState<number>(0);
@@ -35,34 +36,36 @@ export function Canvas2DCard(props: Props) {
   const [moveEnabled, setMoveEnabled] = useState<boolean>(false);
 
   useEffect(() => {
-    const i = setInterval(() => {
-      if (hasUpdate.current) {
-        update();
-        hasUpdate.current = false;
-      }
-      if (
-        divRef.current?.clientWidth !== divWidth ||
-        divRef.current?.clientHeight !== divHeight ||
-        canvas2dWidth.current !== props.canvas.width ||
-        canvas2dHeight.current !== props.canvas.height
-      ) {
-        if (divRef.current) {
-          setDivWidth(divRef.current.clientWidth);
-          setDivHeight(divRef.current.clientHeight);
+    if (!layoutChanging) {
+      const i = setInterval(() => {
+        if (hasUpdate.current) {
+          update();
+          hasUpdate.current = false;
         }
-        if (props.canvas.width && props.canvas.height) {
-          canvas2dWidth.current = props.canvas.width;
-          canvas2dHeight.current = props.canvas.height;
-          const xRatio =
-            (divRef.current?.clientWidth || 0) / props.canvas.width;
-          const yRatio =
-            (divRef.current?.clientHeight || 0) / props.canvas.height;
-          setRatio(Math.min(xRatio, yRatio));
+        if (
+          divRef.current?.clientWidth !== divWidth ||
+          divRef.current?.clientHeight !== divHeight ||
+          canvas2dWidth.current !== props.canvas.width ||
+          canvas2dHeight.current !== props.canvas.height
+        ) {
+          if (divRef.current) {
+            setDivWidth(divRef.current.clientWidth);
+            setDivHeight(divRef.current.clientHeight);
+          }
+          if (props.canvas.width && props.canvas.height) {
+            canvas2dWidth.current = props.canvas.width;
+            canvas2dHeight.current = props.canvas.height;
+            const xRatio =
+              (divRef.current?.clientWidth || 0) / props.canvas.width;
+            const yRatio =
+              (divRef.current?.clientHeight || 0) / props.canvas.height;
+            setRatio(Math.min(xRatio, yRatio));
+          }
         }
-      }
-    }, 50);
-    return () => clearInterval(i);
-  }, [divWidth, divHeight, update]);
+      }, 50);
+      return () => clearInterval(i);
+    }
+  }, [layoutChanging, divWidth, divHeight, update]);
 
   useEffect(() => {
     const update = () => {

@@ -1,8 +1,9 @@
 import { Card } from "./card";
-import { Member, LogLine } from "webcface";
+import { Member, LogLine, Log } from "webcface";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { LogDataWithLevels, useLogStore } from "./logStoreProvider";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
   member: Member;
@@ -56,6 +57,7 @@ interface Props2 {
 }
 const lineHeight = 24;
 function LogCardImpl(props: Props2) {
+  const { layoutChanging } = useLayoutChange();
   const { logsRef, fetchLog, name } = props;
   // 引数のlogsRefは高頻度で更新されるが、以下のstateは50msに1回更新される
   // const [logLine, setLogLine] = useState<number>(0);
@@ -96,27 +98,29 @@ function LogCardImpl(props: Props2) {
   }, [onScroll]);
 
   useEffect(() => {
-    const updateLogsCurrent = () => {
-      // setLogLine(logsRef.current.length);
-      const logsCurrent = logsRef.current.get(minLevel);
-      setLogsCurrent(logsCurrent);
-      setTimeout(() => {
-        if (logsDiv.current !== null) {
-          logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+    if (!layoutChanging) {
+      const updateLogsCurrent = () => {
+        // setLogLine(logsRef.current.length);
+        const logsCurrent = logsRef.current.get(minLevel);
+        setLogsCurrent(logsCurrent);
+        setTimeout(() => {
+          if (logsDiv.current !== null) {
+            logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+          }
+        });
+        // hasUpdate.current = false;
+      };
+      updateLogsCurrent();
+      const i = setInterval(() => {
+        if (followRealTime) {
+          if (fetchLog()) {
+            updateLogsCurrent();
+          }
         }
-      });
-      // hasUpdate.current = false;
-    };
-    updateLogsCurrent();
-    const i = setInterval(() => {
-      if (followRealTime) {
-        if (fetchLog()) {
-          updateLogsCurrent();
-        }
-      }
-    }, 50);
-    return () => clearInterval(i);
-  }, [minLevel, fetchLog, logsRef, followRealTime]);
+      }, 50);
+      return () => clearInterval(i);
+    }
+  }, [layoutChanging, minLevel, fetchLog, logsRef, followRealTime]);
 
   return (
     <Card title={`${name} Logs`}>

@@ -35,12 +35,14 @@ import { LauncherCard } from "./launcherCard";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
   client: Client | null;
 }
 
 export function LayoutMain(props: Props) {
+  const { setLayoutChanging } = useLayoutChange();
   const update = useForceUpdate();
   useEffect(() => {
     const onMembersChange = (m: Member) => {
@@ -150,6 +152,10 @@ export function LayoutMain(props: Props) {
       onLayoutChange={onLayoutChange}
       allowOverlap
       draggableHandle=".MyCardHandle"
+      onDragStart={() => setLayoutChanging(true)}
+      onResizeStart={() => setLayoutChanging(true)}
+      onDragStop={() => setLayoutChanging(false)}
+      onResizeStop={() => setLayoutChanging(false)}
     >
       {(() => {
         const key = cardKey.about();
