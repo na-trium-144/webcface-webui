@@ -215,16 +215,16 @@ function SideMenuMember(props: MemberProps) {
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
   const [textNum, setTextNum] = useState<number>(0);
   const [funcNum, setFuncNum] = useState<number>(0);
-  const [hasLog, setHasLog] = useState<boolean>(false);
+  const [hasLog, setHasLog] = useState<boolean>(true);
   useEffect(() => {
     const update = () => {
       setTextNum(props.member.texts().length);
       setFuncNum(props.member.funcs().length);
-      setHasLog(
-        props.member.log().get().length > 0 ||
-          logStore.data.current.find((ld) => ld.name === props.member.name) !==
-            undefined
-      );
+      // setHasLog(
+      //   props.member.log().get().length > 0 ||
+      //     logStore.data.current.find((ld) => ld.name === props.member.name) !==
+      //       undefined
+      // );
     };
     const i = setInterval(update, 100);
     return () => clearInterval(i);
