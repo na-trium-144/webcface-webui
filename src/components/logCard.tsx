@@ -1,5 +1,5 @@
 import { Card } from "./card";
-import { Member, LogLine, Log } from "webcface";
+import { Member, LogLine } from "webcface";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { LogDataWithLevels, useLogStore } from "./logStoreProvider";

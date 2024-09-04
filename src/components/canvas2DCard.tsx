@@ -18,6 +18,7 @@ import { IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
 import { Move, Home, Help } from "@icon-park/react";
 import { CaptionBox } from "./caption";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
   canvas: Canvas2D;

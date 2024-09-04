@@ -75,7 +75,7 @@ export default function App() {
         window.electronAPI?.sp.offLogAppend(onLogAppend);
       };
     }
-  }, []);
+  }, [logStore.serverData, logStore.serverHasUpdate]);
 
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
