@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
 // import version from "../libs/version";
 import { HamburgerButton, CloseSmall } from "@icon-park/react";
 import "../../renderer.d.ts";
-import { Client } from "webcface";
 
 interface Props {
   menuOpen: boolean;
