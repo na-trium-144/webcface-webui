@@ -15,6 +15,7 @@ import { Help, Home, Move } from "@icon-park/react";
 import { iconFillColor } from "./sideMenu";
 import { CaptionBox } from "./caption";
 import { useForceUpdate } from "../libs/forceUpdate";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
   value: Value;
@@ -23,6 +24,7 @@ interface Props {
 const maxXRange = 5000; // ms
 
 export function ValueCard(props: Props) {
+  const { layoutChanging } = useLayoutChange();
   const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
   const hasUpdate = useRef<boolean>(true);
@@ -93,14 +95,16 @@ export function ValueCard(props: Props) {
   };
 
   useEffect(() => {
-    const i = setInterval(() => {
-      if (hasUpdate.current) {
-        update();
-        hasUpdate.current = false;
-      }
-    }, 50);
-    return () => clearInterval(i);
-  }, [update]);
+    if (!layoutChanging) {
+      const i = setInterval(() => {
+        if (hasUpdate.current) {
+          update();
+          hasUpdate.current = false;
+        }
+      }, 50);
+      return () => clearInterval(i);
+    }
+  }, [layoutChanging, update]);
 
   // dataの追加
   useEffect(() => {
@@ -139,7 +143,7 @@ export function ValueCard(props: Props) {
     );
     line.arrangeX();
 
-    if (canvasMain.current) {
+    if (canvasMain.current && !layoutChanging) {
       let id = 0;
       let renderPlot = () => {
         if (canvasMain.current == null || canvasDiv.current == null) {
@@ -218,7 +222,7 @@ export function ValueCard(props: Props) {
         cancelAnimationFrame(id);
       };
     }
-  }, []);
+  }, [layoutChanging]);
 
   // カーソルを乗せた位置の値を表示する用
   const [cursorPosXRaw, setCursorPosXRaw] = useState<number | null>(null);

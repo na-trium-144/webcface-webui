@@ -3,6 +3,7 @@ import { Member, LogLine } from "webcface";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { LogDataWithLevels, useLogStore } from "./logStoreProvider";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
   member: Member;
@@ -19,28 +20,21 @@ const levelColors = [
 export function LogCard(props: Props) {
   const logStore = useLogStore();
   const logsRef = useRef<LogDataWithLevels>(new LogDataWithLevels()); // 内容はlogStoreと同期される
-  const hasUpdate = useRef<boolean>(false);
-  useEffect(() => {
-    // onScroll();
-    const update = () => {
-      logStore
-        .getDataRef(props.member.name)
-        .log.concat(props.member.log().get());
+  const fetchLog = useCallback(() => {
+    const newLogs = props.member.log().get();
+    if (newLogs.length > 0) {
+      logStore.getDataRef(props.member.name).log.concat(newLogs);
       logsRef.current = logStore.getDataRef(props.member.name).log;
       props.member.log().clear();
-      hasUpdate.current = true;
-    };
-    update();
-    props.member.log().on(update);
-    return () => {
-      props.member.log().off(update);
-    };
+      return true;
+    }
+    return false;
   }, [props.member, logStore]);
 
   return (
     <LogCardImpl
       logsRef={logsRef}
-      hasUpdate={hasUpdate}
+      fetchLog={fetchLog}
       name={props.member.name}
     />
   );
@@ -50,7 +44,7 @@ export function LogCardServer() {
   return (
     <LogCardImpl
       logsRef={logStore.serverData}
-      hasUpdate={logStore.serverHasUpdate}
+      fetchLog={() => logStore.serverHasUpdate.current}
       name={"webcface server"}
     />
   );
@@ -58,12 +52,13 @@ export function LogCardServer() {
 
 interface Props2 {
   logsRef: { current: LogDataWithLevels };
-  hasUpdate: { current: boolean };
+  fetchLog: () => boolean; // logをチェックしてlogsRefに反映し、更新されていたらtrueを返す
   name: string;
 }
 const lineHeight = 24;
 function LogCardImpl(props: Props2) {
-  const { logsRef, hasUpdate, name } = props;
+  const { layoutChanging } = useLayoutChange();
+  const { logsRef, fetchLog, name } = props;
   // 引数のlogsRefは高頻度で更新されるが、以下のstateは50msに1回更新される
   // const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
@@ -103,25 +98,29 @@ function LogCardImpl(props: Props2) {
   }, [onScroll]);
 
   useEffect(() => {
-    const updateLogsCurrent = () => {
-      // setLogLine(logsRef.current.length);
-      const logsCurrent = logsRef.current.get(minLevel);
-      setLogsCurrent(logsCurrent);
-      setTimeout(() => {
-        if (logsDiv.current !== null) {
-          logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+    if (!layoutChanging) {
+      const updateLogsCurrent = () => {
+        // setLogLine(logsRef.current.length);
+        const logsCurrent = logsRef.current.get(minLevel);
+        setLogsCurrent(logsCurrent);
+        setTimeout(() => {
+          if (logsDiv.current !== null) {
+            logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+          }
+        });
+        // hasUpdate.current = false;
+      };
+      updateLogsCurrent();
+      const i = setInterval(() => {
+        if (followRealTime) {
+          if (fetchLog()) {
+            updateLogsCurrent();
+          }
         }
-      });
-      hasUpdate.current = false;
-    };
-    updateLogsCurrent();
-    const i = setInterval(() => {
-      if (hasUpdate.current && followRealTime) {
-        updateLogsCurrent();
-      }
-    }, 50);
-    return () => clearInterval(i);
-  }, [minLevel, hasUpdate, logsRef, followRealTime]);
+      }, 50);
+      return () => clearInterval(i);
+    }
+  }, [layoutChanging, minLevel, fetchLog, logsRef, followRealTime]);
 
   return (
     <Card title={`${name} Logs`}>

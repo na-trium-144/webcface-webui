@@ -26,65 +26,69 @@ import { IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
 import { Move, Home, Help } from "@icon-park/react";
 import { CaptionBox } from "./caption";
+import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Canvas3DProps {
   canvas3D: Canvas3D;
 }
 export function Canvas3DCard(props: Canvas3DProps) {
+  const { layoutChanging } = useLayoutChange();
   const hasUpdate = useRef<boolean>(true);
   const [canvasData, setCanvasData] = useState<GeometryObject[]>([]);
   useEffect(() => {
-    const dependencies: RobotModel[] = [];
-    const update = () => {
-      hasUpdate.current = true;
-      const canvasData = [];
-      for (const c of props.canvas3D.get()) {
-        switch (c.type) {
-          case canvas3DComponentType.geometry:
-            canvasData.push({
-              geometry: c.geometry,
-              color: c.color,
-              origin: c.origin,
-            });
-            break;
-          case canvas3DComponentType.robotModel:
-            if (
-              dependencies.find(
-                (m) =>
-                  m.member.name === c.robotModel.member.name &&
-                  m.name === c.robotModel.name
-              ) == undefined
-            ) {
-              dependencies.push(c.robotModel);
-              c.robotModel.on(update);
-            }
-            for (const ln of c.robotModel.get()) {
+    if (!layoutChanging) {
+      const dependencies: RobotModel[] = [];
+      const update = () => {
+        hasUpdate.current = true;
+        const canvasData = [];
+        for (const c of props.canvas3D.get()) {
+          switch (c.type) {
+            case canvas3DComponentType.geometry:
               canvasData.push({
-                link: ln,
-                geometry: ln.geometry,
-                color: ln.color,
-                origin: new Transform(
-                  multiply(
-                    c.origin.tfMatrix,
-                    ln.getOriginFromBase(c.angles).tfMatrix
-                  )
-                ),
+                geometry: c.geometry,
+                color: c.color,
+                origin: c.origin,
               });
-            }
-            break;
+              break;
+            case canvas3DComponentType.robotModel:
+              if (
+                dependencies.find(
+                  (m) =>
+                    m.member.name === c.robotModel.member.name &&
+                    m.name === c.robotModel.name
+                ) == undefined
+              ) {
+                dependencies.push(c.robotModel);
+                c.robotModel.on(update);
+              }
+              for (const ln of c.robotModel.get()) {
+                canvasData.push({
+                  link: ln,
+                  geometry: ln.geometry,
+                  color: ln.color,
+                  origin: new Transform(
+                    multiply(
+                      c.origin.tfMatrix,
+                      ln.getOriginFromBase(c.angles).tfMatrix
+                    )
+                  ),
+                });
+              }
+              break;
+          }
         }
-      }
-      setCanvasData(canvasData);
-    };
-    props.canvas3D.on(update);
-    props.canvas3D.request();
-    return () => {
-      props.canvas3D.off(update);
-      for (const m of dependencies) {
-        m.off(update);
-      }
-    };
-  }, [props.canvas3D]);
+        setCanvasData(canvasData);
+      };
+      props.canvas3D.on(update);
+      props.canvas3D.request();
+      return () => {
+        props.canvas3D.off(update);
+        for (const m of dependencies) {
+          m.off(update);
+        }
+      };
+    }
+  }, [layoutChanging, props.canvas3D]);
   return (
     <Canvas3DCardImpl
       title={`${props.canvas3D.member.name}:${props.canvas3D.name}`}
@@ -161,7 +165,10 @@ export function Canvas3DCardImpl(props: Props) {
   };
   const onPointerMove = (e: ReactPointerEvent) => {
     if (pointers.current.length <= 1) {
-      if (moveEnabled && ((e.buttons & 1 && (e.ctrlKey || e.metaKey)) || e.buttons & 4)) {
+      if (
+        moveEnabled &&
+        ((e.buttons & 1 && (e.ctrlKey || e.metaKey)) || e.buttons & 4)
+      ) {
         worldTf.current.pos[0] += e.movementX * moveSpeed;
         worldTf.current.pos[1] += -e.movementY * moveSpeed;
       } else if (moveEnabled && e.buttons & 1) {
