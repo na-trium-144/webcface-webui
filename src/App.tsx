@@ -12,6 +12,12 @@ export default function App() {
   const [client, setClient] = useState<Client | null>(null);
   const [clientHost, setClientHost] = useState<string>("");
   const [clientPort, setClientPort] = useState<number | null>(null);
+  const clientAddress = clientPort
+    ? `(${clientHost}:${clientPort})`
+    : `(${clientHost})`;
+  const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
+  const [serverHostName, setServerHostName] = useState<string>("");
+
   useEffect(() => {
     // 7530ポートに接続するクライアント
     const clientDefault = new Client(
@@ -57,6 +63,30 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let i: ReturnType<typeof setTimeout> | null = null;
+    const updateTitle = () => {
+      const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace WebUI";
+      if (client?.serverHostName && clientPort) {
+        setServerHostName(client.serverHostName);
+        document.title = `${client.serverHostName} (${clientHost}:${clientPort}) - ${title}`;
+      } else if (clientPort) {
+        document.title = `${clientHost}:${clientPort} - ${title}`;
+      } else {
+        document.title = `${clientHost} - ${title}`;
+      }
+      if (!client?.serverHostName) {
+        i = setTimeout(updateTitle, 100);
+      }
+    };
+    updateTitle();
+    return () => {
+      if (i !== null) {
+        clearTimeout(i);
+      }
+    };
+  }, [client, clientHost, clientPort]);
+
+  useEffect(() => {
     if (window.electronAPI) {
       const onLogAppend = (_event: object, data: LogLine) => {
         logStore.serverData.current.push(data);
@@ -86,9 +116,9 @@ export default function App() {
           <Header
             menuOpen={menuOpen}
             setMenuOpen={setMenuOpen}
-            client={client}
-            clientHost={clientHost}
-            clientPort={clientPort}
+            clientAddress={clientAddress}
+            title={title}
+            serverHostName={serverHostName}
           />
         </div>
       </nav>
@@ -102,7 +132,11 @@ export default function App() {
             : "ease-in opacity-0 scale-90 -z-10 ")
         }
       >
-        <SideMenu client={client} />
+        <SideMenu
+          client={client}
+          clientAddress={clientAddress}
+          serverHostName={serverHostName}
+        />
       </nav>
       <main className="p-2">
         <LayoutMain client={client} />

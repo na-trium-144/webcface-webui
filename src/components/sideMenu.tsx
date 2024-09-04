@@ -40,6 +40,8 @@ export const iconFillColor = ["#333", "#6c6"];
 
 interface Props {
   client: Client | null;
+  serverHostName: string;
+  clientAddress: string;
 }
 export function SideMenu(props: Props) {
   const ls = useLocalStorage();
@@ -61,6 +63,15 @@ export function SideMenu(props: Props) {
   }, [props.client, update]);
   return (
     <>
+      {props.serverHostName && (
+        <p className="sm:hidden flex flex-row justify-center">
+          <span>{props.serverHostName}</span>
+        </p>
+      )}
+      <p className="sm:hidden flex flex-row justify-center">
+        <span className="text-xs">{props.clientAddress}</span>
+      </p>
+      <hr className="sm:hidden my-1" />
       {window.electronAPI && <SideMenuServer />}
       <SideMenuButton2
         name="Connection Info"
