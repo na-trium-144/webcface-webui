@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "UI Application for WebCFace",
   "private": true,
-  "version": "1.8.1",
+  "version": "1.8.2",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "vite --host",
@@ -33,7 +33,7 @@
     "react-slider": "^2.0.6",
     "react-switch": "^7.0.0",
     "three": "^0.167.1",
-    "webcface": "^1.8.0",
+    "webcface": "^1.8.1",
     "webgl-plot": "^0.7.1"
   },
   "devDependencies": {
