@@ -8,6 +8,9 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  WEBUI_NO_SUFFIX: 1
+
 jobs:
   build-dist:
     runs-on: ubuntu-latest

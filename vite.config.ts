@@ -1,13 +1,18 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { rmSync } from "node:fs";
-import path from "node:path";
 import electron from "vite-plugin-electron";
 import renderer from "vite-plugin-electron-renderer";
 import pkg from "./package.json";
+import { spawnSync } from "node:child_process";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
+  let webuiVersion = pkg.version;
+  if (!process.env.WEBUI_NO_SUFFIX) {
+    webuiVersion = String(spawnSync("git", ["describe", "--tags"]).stdout).slice(1);
+  }
+
   if (!!process.env.ELECTRON) {
     rmSync("dist-electron", { recursive: true, force: true });
 
@@ -16,6 +21,9 @@ export default defineConfig(({ command }) => {
     const sourcemap = isServe;
 
     return {
+      define: {
+        "process.env.webuiVersion": JSON.stringify(webuiVersion),
+      },
       plugins: [
         react(),
         electron([
@@ -76,6 +84,7 @@ export default defineConfig(({ command }) => {
       define: {
         global: "window",
         "process.env": {},
+        "process.env.webuiVersion": JSON.stringify(webuiVersion),
       },
       build: {
         rollupOptions: {
