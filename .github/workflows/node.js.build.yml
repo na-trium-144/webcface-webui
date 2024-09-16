@@ -28,7 +28,7 @@ jobs:
     - run: npm ci
     - run: npm run build
     # - run: npm test
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: dist
         path: ${{github.workspace}}/dist/*
@@ -44,7 +44,7 @@ jobs:
         cache: 'npm'
     - run: npm ci --prefer-offline --no-audit --maxsockets 1 --noproxy registry.npmjs.org
     - run: npm run ebuild
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: electron
         path: ${{github.workspace}}/release/*.*
@@ -54,11 +54,11 @@ jobs:
     needs: [build-dist, build-electron]
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v4.1.7
+    - uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist/
-    - uses: actions/download-artifact@v4.1.7
+    - uses: actions/download-artifact@v4
       with:
         name: electron
         path: release/
