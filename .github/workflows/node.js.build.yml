@@ -51,11 +51,11 @@ jobs:
     needs: [build-dist, build-electron]
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: dist
         path: dist/
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: electron
         path: release/
