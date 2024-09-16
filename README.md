@@ -22,6 +22,7 @@ and open http://localhost:5173/
 ```bash
 npm run build
 ```
+* 環境変数`WEBUI_NO_SUFFIX`を1にするとpackage.jsonに書かれているバージョンが、そうでなければ`git describe --tags`の結果が Connection Info でバージョン情報として表示されます。
 
 ## Desktop
 

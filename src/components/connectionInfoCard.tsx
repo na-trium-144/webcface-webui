@@ -2,7 +2,6 @@ import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { Client, version as webcfaceVersion } from "webcface";
 import { useEffect } from "react";
-import webuiVersion from "../libs/version";
 import { Wifi, CloseWifi } from "@icon-park/react";
 
 interface WifiProps {
@@ -38,7 +37,7 @@ export function ConnectionInfoCard(props: Props) {
           </p>
           <p className="text-sm flex items-center">
             <span className="">WebUI:</span>
-            <span className="pl-1">{webuiVersion}</span>
+            <span className="pl-1">{process.env.webuiVersion}</span>
             <span className="text-xs pl-2">(</span>
             <span className="text-xs">Client:</span>
             <span className="text-xs pl-1">{webcfaceVersion}</span>
