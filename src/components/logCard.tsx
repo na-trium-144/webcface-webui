@@ -19,12 +19,12 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const logStore = useLogStore();
-  const logsRef = useRef<LogDataWithLevels>(new LogDataWithLevels()); // 内容はlogStoreと同期される
+  const logsRef = useRef<LogDataWithLevels>(null!); // 内容はlogStoreと同期される
+  logsRef.current = logStore.getDataRef(props.member.name).log;
   const fetchLog = useCallback(() => {
     const newLogs = props.member.log().get();
     if (newLogs.length > 0) {
       logStore.getDataRef(props.member.name).log.concat(newLogs);
-      logsRef.current = logStore.getDataRef(props.member.name).log;
       props.member.log().clear();
       return true;
     }
@@ -68,7 +68,8 @@ function LogCardImpl(props: Props2) {
   const [minLevel, setMinLevel] = useState<number>(2);
   const [followRealTime, setFollowRealTime] = useState<boolean>(true);
 
-  const onScroll = useCallback(() => {
+  const onScroll = useRef<() => void>(null!);
+  onScroll.current = () => {
     if (logsDiv.current !== null) {
       const newBegin = Math.floor(logsDiv.current.scrollTop / lineHeight);
       const newEnd =
@@ -82,16 +83,19 @@ function LogCardImpl(props: Props2) {
         setFollowRealTime(false);
       }
     }
-  }, [logsCurrent]);
-  const followLog = (f: boolean) => {
+  };
+  const followLog = useRef<(f: boolean) => void>(null!);
+  followLog.current = (f: boolean) => {
+    if (f != followRealTime) {
+      setFollowRealTime(f);
+    }
     if (logsDiv.current !== null && f) {
       logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
     }
-    setFollowRealTime(f);
   };
   useEffect(() => {
     if (logsDiv.current !== null) {
-      const observer = new ResizeObserver(onScroll);
+      const observer = new ResizeObserver(onScroll.current);
       observer.observe(logsDiv.current);
       return () => observer.disconnect();
     }
@@ -104,8 +108,8 @@ function LogCardImpl(props: Props2) {
         const logsCurrent = logsRef.current.get(minLevel);
         setLogsCurrent(logsCurrent);
         setTimeout(() => {
-          if (logsDiv.current !== null) {
-            logsDiv.current.scrollTo(0, lineHeight * logsCurrent.length);
+          if (followRealTime) {
+            followLog.current(true);
           }
         });
         // hasUpdate.current = false;
@@ -143,10 +147,14 @@ function LogCardImpl(props: Props2) {
           行中
           <span className="px-1">{logsCurrent.length}</span>行*/}
         </div>
-        <div className="flex-1 overflow-auto" ref={logsDiv} onScroll={onScroll}>
+        <div
+          className="flex-1 overflow-auto"
+          ref={logsDiv}
+          onScroll={onScroll.current}
+        >
           <table
             className="block table-auto min-w-full w-max text-sm overflow-y-hidden"
-            style={{ height: lineHeight * (logsCurrent.length + 1) }}
+            style={{ height: lineHeight * logsCurrent.length }}
           >
             {/*<thead>
               <tr className="border-b" style={{height: lineHeight}}>
@@ -198,7 +206,7 @@ function LogCardImpl(props: Props2) {
             type="checkbox"
             id={`follow-${name}-log`}
             checked={followRealTime}
-            onChange={(e) => followLog(e.target.checked)}
+            onChange={(e) => followLog.current(e.target.checked)}
           />
           <label htmlFor={`follow-${name}-log`}>Follow Latest Data</label>
         </div>
