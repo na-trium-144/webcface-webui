@@ -19,12 +19,12 @@ const levelColors = [
 ];
 export function LogCard(props: Props) {
   const logStore = useLogStore();
-  const logsRef = useRef<LogDataWithLevels>(new LogDataWithLevels()); // 内容はlogStoreと同期される
+  const logsRef = useRef<LogDataWithLevels>(null!); // 内容はlogStoreと同期される
+  logsRef.current = logStore.getDataRef(props.member.name).log;
   const fetchLog = useCallback(() => {
     const newLogs = props.member.log().get();
     if (newLogs.length > 0) {
       logStore.getDataRef(props.member.name).log.concat(newLogs);
-      logsRef.current = logStore.getDataRef(props.member.name).log;
       props.member.log().clear();
       return true;
     }
