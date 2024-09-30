@@ -1,12 +1,12 @@
 import { Card } from "./card";
-import { Member, LogLine } from "webcface";
+import { LogLine, Log } from "webcface";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { LogDataWithLevels, useLogStore } from "./logStoreProvider";
 import { useLayoutChange } from "./layoutChangeProvider";
 
 interface Props {
-  member: Member;
+  logField: Log;
 }
 const levelNames = ["Trace", "Debug", "Info", "Warn", "Error", "Critical"];
 const levelColors = [
@@ -20,22 +20,27 @@ const levelColors = [
 export function LogCard(props: Props) {
   const logStore = useLogStore();
   const logsRef = useRef<LogDataWithLevels>(null!); // 内容はlogStoreと同期される
-  logsRef.current = logStore.getDataRef(props.member.name).log;
+  logsRef.current = logStore.getDataRef(
+    props.logField.member.name,
+    props.logField.name
+  ).log;
   const fetchLog = useCallback(() => {
-    const newLogs = props.member.log().get();
+    const newLogs = props.logField.get();
     if (newLogs.length > 0) {
-      logStore.getDataRef(props.member.name).log.concat(newLogs);
-      props.member.log().clear();
+      logStore
+        .getDataRef(props.logField.member.name, props.logField.name)
+        .log.concat(newLogs);
+      props.logField.clear();
       return true;
     }
     return false;
-  }, [props.member, logStore]);
+  }, [props.logField, logStore]);
 
   return (
     <LogCardImpl
       logsRef={logsRef}
       fetchLog={fetchLog}
-      name={props.member.name}
+      name={`${props.logField.member.name}:${props.logField.name}`}
     />
   );
 }
@@ -45,7 +50,7 @@ export function LogCardServer() {
     <LogCardImpl
       logsRef={logStore.serverData}
       fetchLog={() => logStore.serverHasUpdate.current}
-      name={"webcface server"}
+      name={"webcface server logs"}
     />
   );
 }
@@ -127,7 +132,7 @@ function LogCardImpl(props: Props2) {
   }, [layoutChanging, minLevel, fetchLog, logsRef, followRealTime]);
 
   return (
-    <Card title={`${name} Logs`}>
+    <Card title={name}>
       <div className="flex flex-col w-full h-full">
         <div className="flex-none pl-2 pb-1">
           レベル

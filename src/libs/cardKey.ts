@@ -13,7 +13,7 @@ export const canvas3D = (member: string, field: string) =>
 export const canvas2D = (member: string, field: string) =>
   `${member}:canvas2D:${field}`;
 export const func = (member: string) => `${member}:func`;
-export const log = (member: string) => `${member}:log`;
+export const log = (member: string, field: string) => `${member}:log:${field}`;
 export const connectionInfo = () => ":connectionInfo";
 export const about = () => ":about";
 export const serverLog = () => ":serverLog";

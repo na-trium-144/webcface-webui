@@ -49,28 +49,41 @@ export interface LogStoreData {
   serverData: { current: LogDataWithLevels }; // serverdata.current[n] はレベルn以上のすべてのログを1000行保持
   resetServerData: () => void;
   serverHasUpdate: { current: boolean };
-  data: { current: { name: string; log: LogDataWithLevels }[] };
-  getDataRef: (name: string) => { name: string; log: LogDataWithLevels };
+  data: {
+    current: { member: string; field: string; log: LogDataWithLevels }[];
+  };
+  getDataRef: (
+    member: string,
+    field: string
+  ) => { member: string; field: string; log: LogDataWithLevels };
 }
 const LogStoreContext = createContext<LogStoreData>({
   serverData: { current: new LogDataWithLevels() },
   resetServerData: () => undefined,
   serverHasUpdate: { current: false },
   data: { current: [] },
-  getDataRef: (name: string) => ({ name, log: new LogDataWithLevels() }),
+  getDataRef: (member: string, field: string) => ({
+    member,
+    field,
+    log: new LogDataWithLevels(),
+  }),
 });
 export const useLogStore = () => useContext(LogStoreContext);
 
 export function LogStoreProvider(props: { children: ReactElement }) {
   const serverData = useRef<LogDataWithLevels>(new LogDataWithLevels());
   const serverHasUpdate = useRef<boolean>(false);
-  const data = useRef<{ name: string; log: LogDataWithLevels }[]>([]);
-  const getDataRef = useCallback((name: string) => {
-    const id = data.current.findIndex((ld) => ld.name === name);
+  const data = useRef<
+    { member: string; field: string; log: LogDataWithLevels }[]
+  >([]);
+  const getDataRef = useCallback((member: string, field: string) => {
+    const id = data.current.findIndex(
+      (ld) => ld.member === member && ld.field === field
+    );
     if (id >= 0) {
       return data.current[id];
     } else {
-      data.current.push({ name, log: new LogDataWithLevels() });
+      data.current.push({ member, field, log: new LogDataWithLevels() });
       return data.current[data.current.length - 1];
     }
   }, []);

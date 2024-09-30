@@ -8,6 +8,7 @@ import {
   RobotModel,
   Canvas3D,
   Canvas2D,
+  Log,
 } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
@@ -55,6 +56,7 @@ export function SideMenu(props: Props) {
       m.onRobotModelEntry.on(update);
       m.onCanvas3DEntry.on(update);
       m.onCanvas2DEntry.on(update);
+      m.onLogEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -90,6 +92,7 @@ export function SideMenu(props: Props) {
           robotModels={m.robotModels()}
           canvas3Ds={m.canvas3DEntries()}
           canvas2Ds={m.canvas2DEntries()}
+          logs={m.logEntries()}
         />
       ))}
     </>
@@ -99,7 +102,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | 4 | 5 | 6 | 7 | null;
+  kind: 0 | 3 | 4 | 5 | 6 | 7 | 8 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -155,6 +158,8 @@ function SideMenuValues(props: ValuesProps) {
               ? cardKey.canvas3D(props.member.name, v.fullName)
               : v.kind === 4
               ? cardKey.canvas2D(props.member.name, v.fullName)
+              : v.kind === 8
+              ? cardKey.log(props.member.name, v.fullName)
               : ""
           )}
           onClick={() =>
@@ -171,6 +176,8 @@ function SideMenuValues(props: ValuesProps) {
                 ? cardKey.canvas3D(props.member.name, v.fullName)
                 : v.kind === 4
                 ? cardKey.canvas2D(props.member.name, v.fullName)
+                : v.kind === 8
+                ? cardKey.log(props.member.name, v.fullName)
                 : ""
             )
           }
@@ -187,6 +194,8 @@ function SideMenuValues(props: ValuesProps) {
               <CoordinateSystem />
             ) : v.kind === 4 ? (
               <GraphicDesign />
+            ) : v.kind === 8 ? (
+              <Abnormal />
             ) : undefined
           }
           iconActive={
@@ -202,6 +211,8 @@ function SideMenuValues(props: ValuesProps) {
               <CoordinateSystem theme="two-tone" fill={iconFillColor} />
             ) : v.kind === 4 ? (
               <GraphicDesign theme="two-tone" fill={iconFillColor} />
+            ) : v.kind === 8 ? (
+              <Abnormal theme="two-tone" fill={iconFillColor} />
             ) : undefined
           }
         />
@@ -218,6 +229,7 @@ interface MemberProps {
   robotModels: RobotModel[];
   canvas3Ds: Canvas3D[];
   canvas2Ds: Canvas2D[];
+  logs: Log[];
 }
 function SideMenuMember(props: MemberProps) {
   const logStore = useLogStore();
@@ -226,16 +238,10 @@ function SideMenuMember(props: MemberProps) {
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
   const [textNum, setTextNum] = useState<number>(0);
   const [funcNum, setFuncNum] = useState<number>(0);
-  const [hasLog, setHasLog] = useState<boolean>(true);
   useEffect(() => {
     const update = () => {
       setTextNum(props.member.texts().length);
       setFuncNum(props.member.funcs().length);
-      setHasLog(
-        props.member.log().exists() ||
-          logStore.data.current.find((ld) => ld.name === props.member.name) !==
-            undefined
-      );
     };
     const i = setInterval(update, 100);
     return () => clearInterval(i);
@@ -249,8 +255,9 @@ function SideMenuMember(props: MemberProps) {
         | Image[]
         | RobotModel[]
         | Canvas3D[]
-        | Canvas2D[],
-      kind: 0 | 3 | 4 | 5 | 6 | 7
+        | Canvas2D[]
+        | Log[],
+      kind: 0 | 3 | 4 | 5 | 6 | 7 | 8
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -283,6 +290,7 @@ function SideMenuMember(props: MemberProps) {
     sortValueNames(props.robotModels, 6);
     sortValueNames(props.canvas3Ds, 7);
     sortValueNames(props.canvas2Ds, 4);
+    sortValueNames(props.logs, 8);
     setValueNames(valueNames);
   }, [
     props.values,
@@ -291,6 +299,7 @@ function SideMenuMember(props: MemberProps) {
     props.robotModels,
     props.canvas3Ds,
     props.canvas2Ds,
+    props.logs,
   ]);
   return (
     <>
@@ -317,17 +326,6 @@ function SideMenuMember(props: MemberProps) {
               onClick={() => ls.toggleOpened(cardKey.text(props.member.name))}
               icon={<TextIcon />}
               iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
-            />
-          </li>
-        )}
-        {hasLog && (
-          <li>
-            <SideMenuButton2
-              name={"Logs"}
-              active={ls.isOpened(cardKey.log(props.member.name))}
-              onClick={() => ls.toggleOpened(cardKey.log(props.member.name))}
-              icon={<Abnormal />}
-              iconActive={<Abnormal theme="two-tone" fill={iconFillColor} />}
             />
           </li>
         )}
