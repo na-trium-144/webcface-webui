@@ -245,7 +245,7 @@ function SideMenuMember(props: MemberProps) {
     };
     const i = setInterval(update, 100);
     return () => clearInterval(i);
-  }, [props.member, logStore.data]);
+  }, [props.member]);
   useEffect(() => {
     const valueNames: FieldGroup[] = [];
     const sortValueNames = (
@@ -266,7 +266,7 @@ function SideMenuMember(props: MemberProps) {
           const valueNamesFind = valueNamesCurrent.find(
             (n) => n.name === vNameSplit[d]
           );
-          if (valueNamesFind == undefined) {
+          if (valueNamesFind == undefined || d === vNameSplit.length - 1) {
             const newChildren: FieldGroup[] = [];
             valueNamesCurrent.push({
               name: vNameSplit[d],
