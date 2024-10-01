@@ -13,7 +13,6 @@ import {
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage } from "./lsProvider";
-import { useLogStore } from "./logStoreProvider";
 import {
   BroadcastRadio,
   Right,
@@ -232,7 +231,6 @@ interface MemberProps {
   logs: Log[];
 }
 function SideMenuMember(props: MemberProps) {
-  const logStore = useLogStore();
   const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
