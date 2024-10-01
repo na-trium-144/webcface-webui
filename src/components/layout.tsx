@@ -8,6 +8,7 @@ import {
   RobotModel,
   Canvas3D,
   Canvas2D,
+  Log,
 } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
@@ -50,6 +51,10 @@ export function LayoutMain(props: Props) {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
+      m.onCanvas3DEntry.on(update);
+      m.onCanvas2DEntry.on(update);
+      m.onRobotModelEntry.on(update);
+      m.onLogEntry.on(update);
     };
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
@@ -293,17 +298,20 @@ export function LayoutMain(props: Props) {
         }
         return null;
       })}
-      {props.client?.members().map((m) => {
-        const key = cardKey.log(m.name);
-        if (ls.isOpened(key)) {
-          return (
-            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
-              <LogCard member={m} />
-            </div>
-          );
-        }
-        return null;
-      })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.logEntries()), [] as Log[])
+        .map((v) => {
+          const key = cardKey.log(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
+                <LogCard logField={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
       {(() => {
         const key = cardKey.serverLog();
         if (ls.isOpened(key)) {
