@@ -4,7 +4,9 @@ import { useForceUpdate } from "../libs/forceUpdate";
 import { Member, Func, Arg, valType } from "webcface";
 import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
-import { Button } from "./button";
+import { Button, IconButton } from "./button";
+import { iconFillColor } from "./sideMenu";
+import { Search } from "@icon-park/react";
 
 interface Props {
   member: Member;
@@ -30,20 +32,54 @@ export function FuncCard(props: Props) {
       props.member.onFuncEntry.off(update);
     };
   }, [props.member, update]);
+
+  const [searching, setSearching] = useState<boolean>(false);
+  const [searchStr, setSearchStr] = useState<string>("");
+
   return (
     <Card title={`${props.member.name} Functions`}>
-      <div className="h-full overflow-y-auto">
-        <ul className="list-none">
-          {props.member
-            .funcs()
-            .slice()
-            .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-            .map((v) => (
-              <li key={v.name}>
-                <FuncLine func={v} />
-              </li>
-            ))}
-        </ul>
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <ul className="list-none">
+            {props.member
+              .funcs()
+              .filter((v) => !searching || v.name.includes(searchStr))
+              .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+              .map((v) => (
+                <li key={v.name}>
+                  <FuncLine func={v} searchStr={searching ? searchStr : ""} />
+                </li>
+              ))}
+          </ul>
+        </div>
+        <div className="flex-none relative ">
+          {searching && (
+            <div className="flex flex-row text-sm items-baseline pr-12 pt-2 pb-1 ">
+              <span className="mr-1">Search:</span>
+              <Input
+                className="flex-1"
+                widthClass="w-full"
+                type="string"
+                value={searchStr}
+                setValue={(s) => setSearchStr(String(s))}
+              />
+            </div>
+          )}
+          <div className="text-lg absolute right-4 bottom-0">
+            <IconButton
+              onClick={() => {
+                setSearching(!searching);
+              }}
+              caption="検索"
+            >
+              {searching ? (
+                <Search theme="two-tone" fill={iconFillColor} />
+              ) : (
+                <Search />
+              )}
+            </IconButton>
+          </div>
+        </div>
       </div>
     </Card>
   );
@@ -68,7 +104,7 @@ function argType(
   }
 }
 
-function FuncLine(props: { func: Func }) {
+function FuncLine(props: { func: Func; searchStr: string }) {
   const [args, setArgs] = useState<(string | number | boolean)[]>([]);
   const [errors, setErrors] = useState<boolean[]>([]);
   const { addResult } = useFuncResult();
@@ -109,7 +145,17 @@ function FuncLine(props: { func: Func }) {
 
   return (
     <>
-      <span>{props.func.name}</span>
+      {props.searchStr !== "" && props.func.name.includes(props.searchStr) ? (
+        <span>
+          {props.func.name.slice(0, props.func.name.indexOf(props.searchStr))}
+          <span className="font-bold">{props.searchStr}</span>
+          {props.func.name.slice(
+            props.func.name.indexOf(props.searchStr) + props.searchStr.length
+          )}
+        </span>
+      ) : (
+        <span>{props.func.name}</span>
+      )}
       <span className="pl-1 pr-0.5">(</span>
       <span>
         {props.func.args.map((ac, i) => (
