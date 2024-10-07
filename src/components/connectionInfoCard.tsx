@@ -45,8 +45,10 @@ export function ConnectionInfoCard(props: Props) {
             <div className="pl-2">
               <WifiStrength
                 level={
-                  props.client == null || props.client?.pingStatus === null
+                  props.client == null || !props.client.connected
                     ? 0
+                    : props.client?.pingStatus === null
+                    ? 1
                     : props.client?.pingStatus < 50
                     ? 3
                     : props.client?.pingStatus < 100
