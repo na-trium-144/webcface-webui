@@ -81,6 +81,13 @@ export function SideMenu(props: Props) {
         icon={<Info />}
         iconActive={<Info theme="two-tone" fill={iconFillColor} />}
       />
+      <SideMenuButton2
+        name="Pinned Functions"
+        active={ls.isOpened(cardKey.pinnedFunc())}
+        onClick={() => ls.toggleOpened(cardKey.pinnedFunc())}
+        icon={<PlayOne />}
+        iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
+      />
       {props.client?.members().map((m, mi) => (
         <SideMenuMember
           key={mi}

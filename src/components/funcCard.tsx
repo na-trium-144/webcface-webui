@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { Member, Func, Arg, valType } from "webcface";
+import { Member, Func, Arg, valType, Client } from "webcface";
 import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
 import { Button, IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
 import { Search } from "@icon-park/react";
+import { LocalStorage, useLocalStorage } from "./lsProvider";
 
 interface Props {
   member: Member;
@@ -33,16 +34,62 @@ export function FuncCard(props: Props) {
     };
   }, [props.member, update]);
 
+  return <FuncList name={props.member.name} funcs={props.member.funcs()} />;
+}
+
+export function PinnedFuncCard(props: { wcli: Client | null }) {
+  const ls: LocalStorage = useLocalStorage();
+  const [funcs, setFuncs] = useState<Func[]>([]);
+  useEffect(() => {
+    if (props.wcli !== null) {
+      setFuncs(
+        ls.pinnedFuncs?.map((p) => props.wcli!.member(p[0]).func(p[1])) || []
+      );
+    }
+  }, [ls.pinnedFuncs, props.wcli]);
+
+  const hasUpdate = useRef<boolean>(true);
+  const update = useForceUpdate();
+  useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
+    for (const f of funcs) {
+      f.member.onFuncEntry.on(update);
+    }
+    return () => {
+      for (const f of funcs) {
+        f.member.onFuncEntry.off(update);
+      }
+    };
+  }, [funcs]);
+
+  return <FuncList name="Pinned" funcs={funcs} />;
+}
+
+interface Props2 {
+  name: string;
+  funcs: Func[];
+}
+export function FuncList(props: Props2) {
   const [searching, setSearching] = useState<boolean>(false);
   const [searchStr, setSearchStr] = useState<string>("");
 
   return (
-    <Card title={`${props.member.name} Functions`}>
+    <Card title={`${props.name} Functions`}>
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <ul className="list-none">
-            {props.member
-              .funcs()
+            {props.funcs
               .filter(
                 (v) =>
                   !searching ||
@@ -113,6 +160,8 @@ function FuncLine(props: { func: Func; searchStr: string }) {
   const [args, setArgs] = useState<(string | number | boolean)[]>([]);
   const [errors, setErrors] = useState<boolean[]>([]);
   const { addResult } = useFuncResult();
+  const ls: LocalStorage = useLocalStorage();
+
   useEffect(() => {
     if (args.length < props.func.args.length) {
       setArgs(
@@ -223,6 +272,26 @@ function FuncLine(props: { func: Func; searchStr: string }) {
       >
         Run
       </Button>
+      {ls.pinnedFuncs?.some(
+        (p) => p[0] === props.func.member.name && p[1] === props.func.name
+      ) ? (
+        <Button
+          className="my-1 inline-block"
+          rounded="full"
+          disabled={errors.includes(true)}
+          onClick={() => ls.unPinFunc(props.func.member.name, props.func.name)}
+        >
+          UnPin
+        </Button>
+      ) : (
+        <Button
+          className="my-1 inline-block"
+          rounded="full"
+          onClick={() => ls.pinFunc(props.func.member.name, props.func.name)}
+        >
+          Pin
+        </Button>
+      )}
     </>
   );
 }
