@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Card } from "./card";
 import { useForceUpdate } from "../libs/forceUpdate";
-import { Member, Func, Arg, valType } from "webcface";
+import { Member, Func, Arg, valType, Client } from "webcface";
 import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
-import { Button } from "./button";
+import { Button, IconButton } from "./button";
+import { iconFillColor } from "./sideMenu";
+import { Pin, Pushpin, Search } from "@icon-park/react";
+import { LocalStorage, useLocalStorage } from "./lsProvider";
 
 interface Props {
   member: Member;
@@ -30,20 +33,107 @@ export function FuncCard(props: Props) {
       props.member.onFuncEntry.off(update);
     };
   }, [props.member, update]);
+
+  return <FuncList name={props.member.name} funcs={props.member.funcs()} />;
+}
+
+export function PinnedFuncCard(props: { wcli: Client | null }) {
+  const ls: LocalStorage = useLocalStorage();
+  const [funcs, setFuncs] = useState<Func[]>([]);
+  useEffect(() => {
+    if (props.wcli !== null) {
+      setFuncs(
+        ls.pinnedFuncs?.map((p) => props.wcli!.member(p[0]).func(p[1])) || []
+      );
+    }
+  }, [ls.pinnedFuncs, props.wcli]);
+
+  const hasUpdate = useRef<boolean>(true);
+  const update = useForceUpdate();
+  useEffect(() => {
+    const i = setInterval(() => {
+      if (hasUpdate.current) {
+        update();
+        hasUpdate.current = false;
+      }
+    }, 50);
+    return () => clearInterval(i);
+  }, [update]);
+  useEffect(() => {
+    const update = () => {
+      hasUpdate.current = true;
+    };
+    for (const f of funcs) {
+      f.member.onFuncEntry.on(update);
+    }
+    return () => {
+      for (const f of funcs) {
+        f.member.onFuncEntry.off(update);
+      }
+    };
+  }, [funcs]);
+
+  return <FuncList name="Pinned" funcs={funcs} />;
+}
+
+interface Props2 {
+  name: string;
+  funcs: Func[];
+}
+export function FuncList(props: Props2) {
+  const [searching, setSearching] = useState<boolean>(false);
+  const [searchStr, setSearchStr] = useState<string>("");
+
   return (
-    <Card title={`${props.member.name} Functions`}>
-      <div className="h-full overflow-y-auto">
-        <ul className="list-none">
-          {props.member
-            .funcs()
-            .slice()
-            .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-            .map((v) => (
-              <li key={v.name}>
-                <FuncLine func={v} />
-              </li>
-            ))}
-        </ul>
+    <Card title={`${props.name} Functions`}>
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <ul className="list-none">
+            {props.funcs
+              .filter(
+                (v) =>
+                  !searching ||
+                  searchStr.split(" ").filter((s) => !v.name.includes(s))
+                    .length === 0
+              )
+              .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+              .map((v) => (
+                <FuncLine
+                  key={v.name}
+                  func={v}
+                  searchStr={searching ? searchStr : ""}
+                />
+              ))}
+          </ul>
+        </div>
+        <div className="flex-none relative ">
+          {searching && (
+            <div className="flex flex-row text-sm items-baseline pr-12 pt-2 pb-1 ">
+              <span className="mr-1">Search:</span>
+              <Input
+                className="flex-1"
+                widthClass="w-full"
+                type="string"
+                value={searchStr}
+                setValue={(s) => setSearchStr(String(s))}
+              />
+            </div>
+          )}
+          <div className="text-lg absolute right-4 bottom-0">
+            <IconButton
+              onClick={() => {
+                setSearching(!searching);
+              }}
+              caption="検索"
+            >
+              {searching ? (
+                <Search theme="two-tone" fill={iconFillColor} />
+              ) : (
+                <Search />
+              )}
+            </IconButton>
+          </div>
+        </div>
       </div>
     </Card>
   );
@@ -68,10 +158,14 @@ function argType(
   }
 }
 
-function FuncLine(props: { func: Func }) {
+function FuncLine(props: { func: Func; searchStr: string }) {
   const [args, setArgs] = useState<(string | number | boolean)[]>([]);
   const [errors, setErrors] = useState<boolean[]>([]);
+  const [hasArgName, setHasArgName] = useState<boolean>(false);
   const { addResult } = useFuncResult();
+  const ls: LocalStorage = useLocalStorage();
+  const [hasFocus, setHasFocus] = useState<boolean>(false);
+
   useEffect(() => {
     if (args.length < props.func.args.length) {
       setArgs(
@@ -104,12 +198,42 @@ function FuncLine(props: { func: Func }) {
           }
         })
       );
+      setHasArgName(props.func.args.some((a) => a.name !== ""));
     }
   }, [props.func, args, setArgs, errors, setErrors]);
 
+  const searchHit = Array.from(new Array(props.func.name.length)).map(
+    () => false
+  );
+  if (props.searchStr !== "") {
+    for (const s of props.searchStr.split(" ")) {
+      const si = props.func.name.indexOf(s);
+      for (let i = 0; i < s.length; i++) {
+        searchHit[si + i] = true;
+      }
+    }
+  }
+  const funcNameSplit: string[] = [];
+  for (let f = false, i = 0; i < props.func.name.length; f = !f) {
+    let j = searchHit.indexOf(!f, i);
+    if (j < 0) {
+      j = props.func.name.length;
+    }
+    funcNameSplit.push(props.func.name.slice(i, j));
+    i = j;
+  }
+
   return (
-    <>
-      <span>{props.func.name}</span>
+    <li className="group">
+      {props.searchStr !== "" ? (
+        <>
+          {funcNameSplit.map((n, i) => (
+            <span className={i % 2 ? "font-bold" : ""}>{n}</span>
+          ))}
+        </>
+      ) : (
+        <span>{props.func.name}</span>
+      )}
       <span className="pl-1 pr-0.5">(</span>
       <span>
         {props.func.args.map((ac, i) => (
@@ -121,7 +245,7 @@ function FuncLine(props: { func: Func }) {
               setIsError={(isError) =>
                 setErrors(errors.map((ce, ci) => (i === ci ? isError : ce)))
               }
-              name={ac.name || ""}
+              name={ac.name || (hasArgName ? "" : undefined)}
               type={argType(ac)}
               value={args[i]}
               setValue={(arg) =>
@@ -139,21 +263,50 @@ function FuncLine(props: { func: Func }) {
                   init={ac.init}
                 />
               }
+              onFocus={() => setHasFocus(true)}
+              onBlur={() => setHasFocus(false)}
             />
             {ac.type === valType.string_ && <span>"</span>}
           </Fragment>
         ))}
       </span>
       <span className="pl-0.5 pr-2">)</span>
-      <Button
-        className="my-1 inline-block"
-        rounded="full"
-        disabled={errors.includes(true)}
-        onClick={() => addResult(props.func.runAsync(...args))}
-      >
-        Run
-      </Button>
-    </>
+      <span className={hasFocus ? "" : "opacity-0 group-hover:opacity-100"}>
+        <Button
+          className="my-1 inline-block"
+          rounded="full"
+          disabled={errors.includes(true)}
+          onClick={() => addResult(props.func.runAsync(...args))}
+          onFocus={() => setHasFocus(true)}
+          onBlur={() => setHasFocus(false)}
+        >
+          Run
+        </Button>
+        {ls.pinnedFuncs?.some(
+          (p) => p[0] === props.func.member.name && p[1] === props.func.name
+        ) ? (
+          <IconButton
+            onClick={() =>
+              ls.unPinFunc(props.func.member.name, props.func.name)
+            }
+            caption="UnPin"
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
+          >
+            <Pushpin theme="two-tone" fill={iconFillColor} />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={() => ls.pinFunc(props.func.member.name, props.func.name)}
+            caption="Pin"
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
+          >
+            <Pin />
+          </IconButton>
+        )}
+      </span>
+    </li>
   );
 }
 

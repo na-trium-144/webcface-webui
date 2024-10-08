@@ -24,7 +24,7 @@ const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOrig);
 import { ValueCard } from "./valueCard";
 import { ImageCard } from "./imageCard";
 import { TextCard } from "./textCard";
-import { FuncCard } from "./funcCard";
+import { FuncCard, PinnedFuncCard } from "./funcCard";
 import { LogCard, LogCardServer } from "./logCard";
 import { ViewCard } from "./viewCard";
 import { RobotModelCard } from "./robotModelCard";
@@ -188,6 +188,16 @@ export function LayoutMain(props: Props) {
           return (
             <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
               <ConnectionInfoCard client={props.client} />
+            </div>
+          );
+        }
+      })()}
+      {(() => {
+        const key = cardKey.pinnedFunc();
+        if (ls.isOpened(key)) {
+          return (
+            <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
+              <PinnedFuncCard wcli={props.client} />
             </div>
           );
         }

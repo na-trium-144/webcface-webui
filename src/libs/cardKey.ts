@@ -18,3 +18,4 @@ export const connectionInfo = () => ":connectionInfo";
 export const about = () => ":about";
 export const serverLog = () => ":serverLog";
 export const launcher = () => ":launcher";
+export const pinnedFunc = () => ":pinnedFunc";

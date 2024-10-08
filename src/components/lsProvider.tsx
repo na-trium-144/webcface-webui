@@ -11,6 +11,7 @@ const lsKey = "webcface-webui";
 export interface LocalStorageData {
   layout: LayoutItem[];
   openedCards: string[];
+  pinnedFuncs?: [string, string][];
 }
 export type LocalStorage = LocalStorageData & {
   init: boolean;
@@ -19,15 +20,20 @@ export type LocalStorage = LocalStorageData & {
   ) => void;
   isOpened: (key: string) => boolean;
   toggleOpened: (key: string) => void;
+  pinFunc: (m: string, f: string) => void;
+  unPinFunc: (m: string, f: string) => void;
 };
 
 const LocalStorageContext = createContext<LocalStorage>({
   layout: [],
   openedCards: [],
+  pinnedFuncs: [],
   init: false,
   setLayout: () => undefined,
   isOpened: () => false,
   toggleOpened: () => undefined,
+  pinFunc: () => undefined,
+  unPinFunc: () => undefined,
 });
 export const useLocalStorage = () => useContext(LocalStorageContext);
 
@@ -35,6 +41,7 @@ function getLS() {
   const emptyLs: LocalStorageData = {
     layout: [],
     openedCards: [],
+    pinnedFuncs: [],
   };
   if (global != undefined && global.localStorage) {
     const lsItem = global.localStorage.getItem(lsKey);
@@ -64,18 +71,20 @@ function saveToLS(ls: LocalStorageData) {
 export function LocalStorageProvider(props: { children: ReactElement }) {
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [openedCards, setOpenedCards] = useState<string[]>([]);
+  const [pinnedFuncs, setPinnedFuncs] = useState<[string, string][]>([]);
   const [init, setInit] = useState<boolean>(false);
   useEffect(() => {
     const ls = getLS();
     setLayout(ls.layout);
     setOpenedCards(ls.openedCards);
+    setPinnedFuncs(ls.pinnedFuncs || []);
     setInit(true);
   }, []);
   useEffect(() => {
     if (init) {
-      saveToLS({ layout, openedCards });
+      saveToLS({ layout, openedCards, pinnedFuncs });
     }
-  }, [layout, openedCards, init]);
+  }, [layout, openedCards, pinnedFuncs, init]);
 
   return (
     <LocalStorageContext.Provider
@@ -94,6 +103,17 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
             setOpenedCards(openedCards.concat([key]));
           }
         },
+        pinnedFuncs,
+        pinFunc: (m: string, f: string) =>
+          setPinnedFuncs(
+            pinnedFuncs.some((p) => p[0] === m && p[1] === f)
+              ? pinnedFuncs
+              : pinnedFuncs.concat([[m, f]])
+          ),
+        unPinFunc: (m: string, f: string) =>
+          setPinnedFuncs(
+            pinnedFuncs.filter((pf) => pf[0] !== m || pf[1] !== f)
+          ),
       }}
     >
       {props.children}
