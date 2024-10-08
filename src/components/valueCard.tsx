@@ -16,6 +16,7 @@ import { iconFillColor } from "./sideMenu";
 import { CaptionBox } from "./caption";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLayoutChange } from "./layoutChangeProvider";
+import { Slider } from "./slider";
 
 interface Props {
   value: Value;
@@ -474,12 +475,10 @@ export function ValueCard(props: Props) {
             </div>
           </div>
         </div>
-        <div className="flex-none flex items-center space-x-1 text-xs">
+        <div className="flex-none flex items-center space-x-1 text-xs ">
           <span>Time:</span>
-          <ReactSlider
-            className="w-full h-4"
-            renderTrack={SliderTrack}
-            renderThumb={SliderThumb}
+          <Slider
+            className="w-full h-5"
             min={!hasSufficientData() ? -1 : 0}
             max={
               !hasSufficientData() || !maxX.current || !minX.current
@@ -503,6 +502,7 @@ export function ValueCard(props: Props) {
                 isLatest.current = value === dataMaxX()! - currentRange;
               }
             }}
+            step={1}
           />
           <span>{data.current.length && format(dataMaxX()!, "H:mm:ss")}</span>
         </div>
@@ -548,36 +548,6 @@ export function ValueCard(props: Props) {
         </div>
       </div>
     </Card>
-  );
-}
-
-function SliderTrack(
-  props: HTMLProps<HTMLDivElement>
-  /*state: { index: number; value: number }*/
-) {
-  return (
-    <div
-      {...props}
-      className={
-        props.className + " absolute inset-0 my-1.5 bg-neutral-300 rounded-full"
-      }
-    />
-  );
-}
-function SliderThumb(
-  props: HTMLProps<HTMLDivElement>
-  /*state: { index: number; value: number; valueNow: number }*/
-) {
-  return (
-    <div
-      {...props}
-      className={
-        props.className +
-        " absolute h-full aspect-square rounded-full " +
-        "bg-green-600 hover:bg-green-500 active:bg-green-500 " +
-        "cursor-grab active:cursor-grabbing"
-      }
-    />
   );
 }
 

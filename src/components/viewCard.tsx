@@ -108,6 +108,7 @@ function ViewComponentRender(props: VCProps) {
     case viewComponentTypes.button:
       return (
         <Button
+          className="m-1"
           onClick={() => {
             const r = props.vc.onClick?.runAsync();
             if (r != null) {

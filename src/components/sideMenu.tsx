@@ -423,7 +423,7 @@ interface ButtonProps {
 function SideMenuButton(props: ButtonProps) {
   return (
     <button
-      className="hover:text-green-700 w-full pl-1 flex items-center space-x-1 mt-0.5 "
+      className="hover:text-green-700 w-full pl-1 flex items-center space-x-1 py-0.5 "
       onClick={props.onClick}
     >
       <span>
@@ -438,7 +438,7 @@ function SideMenuButton2(props: ButtonProps) {
   return (
     <button
       className={
-        "w-full pl-1 flex items-center space-x-1 mt-0.5 " +
+        "w-full pl-1 flex items-center space-x-1 py-0.5 " +
         (props.active
           ? "bg-green-100 hover:bg-green-200 active:bg-green-300 "
           : "hover:bg-neutral-100 active:bg-neutral-200 ")
