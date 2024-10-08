@@ -27,13 +27,13 @@ export function Button(props: Props) {
       <button
         className={
           (props.buttonClassName !== undefined ? props.buttonClassName : "") +
-          " border px-2 " +
+          " border px-3 py-0.5 " +
           textColorClass(props.textColor || viewColor.black) +
           (props.disabled
             ? "border-neutral-400 bg-neutral-300 shadow-none "
             : bgButtonColorClass(props.bgColor || viewColor.green) +
               "shadow-md active:shadow-none ") +
-          (props.rounded === "full" ? "rounded-full " : "rounded-md ")
+          (props.rounded === "full" ? "rounded-full " : "rounded-lg ")
         }
         onClick={() => void props.onClick()}
         disabled={props.disabled}
@@ -66,7 +66,7 @@ export function IconButton(props: IconProps) {
     >
       <button
         className={
-          "peer p-1 mx-0.5 " +
+          "peer p-2 mx-0.5 " +
           (props.disabled
             ? "bg-neutral-300 shadow-none "
             : "hover:bg-green-50 active:bg-green-100 " +

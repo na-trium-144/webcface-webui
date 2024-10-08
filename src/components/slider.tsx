@@ -14,7 +14,7 @@ export function Slider(props: Props) {
   return (
     <ReactSlider
       {...props}
-      className={(props.className || "") + " inline-block h-4 "}
+      className={(props.className || "") + " inline-block h-5 my-1.5"}
       renderTrack={(p) => (
         <div
           {...p}
