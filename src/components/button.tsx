@@ -13,16 +13,20 @@ interface Props {
   className?: string; // 外側のdiv
   buttonClassName?: string; // 内側のbutton
   caption?: ReactNode;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 export function Button(props: Props) {
   return (
-    <div className={
-      "inline-block relative " +
-      (props.className !== undefined ? props.className : "")
-    }>
+    <div
+      className={
+        "inline-block relative " +
+        (props.className !== undefined ? props.className : "")
+      }
+    >
       <button
         className={
-          (props.buttonClassName !== undefined ? props.buttonClassName : "") + 
+          (props.buttonClassName !== undefined ? props.buttonClassName : "") +
           " border px-2 " +
           textColorClass(props.textColor || viewColor.black) +
           (props.disabled
@@ -33,6 +37,8 @@ export function Button(props: Props) {
         }
         onClick={() => void props.onClick()}
         disabled={props.disabled}
+        onFocus={() => props.onFocus && props.onFocus()}
+        onBlur={() => props.onBlur && props.onBlur()}
       >
         {props.children}
       </button>
@@ -41,19 +47,23 @@ export function Button(props: Props) {
   );
 }
 
-interface IconProps{
+interface IconProps {
   onClick: () => void | Promise<void>;
   disabled?: boolean;
   children?: ReactNode;
   caption?: ReactNode;
   className?: string;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 export function IconButton(props: IconProps) {
   return (
-    <div className={
-      "inline-block relative " +
-      (props.className !== undefined ? props.className : "")
-    }>
+    <div
+      className={
+        "inline-block relative " +
+        (props.className !== undefined ? props.className : "")
+      }
+    >
       <button
         className={
           "peer p-1 mx-0.5 " +
@@ -65,6 +75,8 @@ export function IconButton(props: IconProps) {
         }
         onClick={() => void props.onClick()}
         disabled={props.disabled}
+        onFocus={() => props.onFocus && props.onFocus()}
+        onBlur={() => props.onBlur && props.onBlur()}
       >
         {props.children}
       </button>

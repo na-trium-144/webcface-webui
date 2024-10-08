@@ -6,7 +6,7 @@ import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
 import { Button, IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
-import { Search } from "@icon-park/react";
+import { Pin, Pushpin, Search } from "@icon-park/react";
 import { LocalStorage, useLocalStorage } from "./lsProvider";
 
 interface Props {
@@ -98,9 +98,11 @@ export function FuncList(props: Props2) {
               )
               .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
               .map((v) => (
-                <li key={v.name}>
-                  <FuncLine func={v} searchStr={searching ? searchStr : ""} />
-                </li>
+                <FuncLine
+                  key={v.name}
+                  func={v}
+                  searchStr={searching ? searchStr : ""}
+                />
               ))}
           </ul>
         </div>
@@ -159,8 +161,10 @@ function argType(
 function FuncLine(props: { func: Func; searchStr: string }) {
   const [args, setArgs] = useState<(string | number | boolean)[]>([]);
   const [errors, setErrors] = useState<boolean[]>([]);
+  const [hasArgName, setHasArgName] = useState<boolean>(false);
   const { addResult } = useFuncResult();
   const ls: LocalStorage = useLocalStorage();
+  const [hasFocus, setHasFocus] = useState<boolean>(false);
 
   useEffect(() => {
     if (args.length < props.func.args.length) {
@@ -194,6 +198,7 @@ function FuncLine(props: { func: Func; searchStr: string }) {
           }
         })
       );
+      setHasArgName(props.func.args.some((a) => a.name !== ""));
     }
   }, [props.func, args, setArgs, errors, setErrors]);
 
@@ -219,7 +224,7 @@ function FuncLine(props: { func: Func; searchStr: string }) {
   }
 
   return (
-    <>
+    <li className="group">
       {props.searchStr !== "" ? (
         <>
           {funcNameSplit.map((n, i) => (
@@ -240,7 +245,7 @@ function FuncLine(props: { func: Func; searchStr: string }) {
               setIsError={(isError) =>
                 setErrors(errors.map((ce, ci) => (i === ci ? isError : ce)))
               }
-              name={ac.name || ""}
+              name={ac.name || (hasArgName ? "" : undefined)}
               type={argType(ac)}
               value={args[i]}
               setValue={(arg) =>
@@ -258,41 +263,50 @@ function FuncLine(props: { func: Func; searchStr: string }) {
                   init={ac.init}
                 />
               }
+              onFocus={() => setHasFocus(true)}
+              onBlur={() => setHasFocus(false)}
             />
             {ac.type === valType.string_ && <span>"</span>}
           </Fragment>
         ))}
       </span>
       <span className="pl-0.5 pr-2">)</span>
-      <Button
-        className="my-1 inline-block"
-        rounded="full"
-        disabled={errors.includes(true)}
-        onClick={() => addResult(props.func.runAsync(...args))}
-      >
-        Run
-      </Button>
-      {ls.pinnedFuncs?.some(
-        (p) => p[0] === props.func.member.name && p[1] === props.func.name
-      ) ? (
+      <span className={hasFocus ? "" : "opacity-0 group-hover:opacity-100"}>
         <Button
           className="my-1 inline-block"
           rounded="full"
           disabled={errors.includes(true)}
-          onClick={() => ls.unPinFunc(props.func.member.name, props.func.name)}
+          onClick={() => addResult(props.func.runAsync(...args))}
+          onFocus={() => setHasFocus(true)}
+          onBlur={() => setHasFocus(false)}
         >
-          UnPin
+          Run
         </Button>
-      ) : (
-        <Button
-          className="my-1 inline-block"
-          rounded="full"
-          onClick={() => ls.pinFunc(props.func.member.name, props.func.name)}
-        >
-          Pin
-        </Button>
-      )}
-    </>
+        {ls.pinnedFuncs?.some(
+          (p) => p[0] === props.func.member.name && p[1] === props.func.name
+        ) ? (
+          <IconButton
+            onClick={() =>
+              ls.unPinFunc(props.func.member.name, props.func.name)
+            }
+            caption="UnPin"
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
+          >
+            <Pushpin theme="two-tone" fill={iconFillColor} />
+          </IconButton>
+        ) : (
+          <IconButton
+            onClick={() => ls.pinFunc(props.func.member.name, props.func.name)}
+            caption="Pin"
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
+          >
+            <Pin />
+          </IconButton>
+        )}
+      </span>
+    </li>
   );
 }
 
