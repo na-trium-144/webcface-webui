@@ -43,7 +43,12 @@ export function FuncCard(props: Props) {
           <ul className="list-none">
             {props.member
               .funcs()
-              .filter((v) => !searching || v.name.includes(searchStr))
+              .filter(
+                (v) =>
+                  !searching ||
+                  searchStr.split(" ").filter((s) => !v.name.includes(s))
+                    .length === 0
+              )
               .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
               .map((v) => (
                 <li key={v.name}>
@@ -143,16 +148,35 @@ function FuncLine(props: { func: Func; searchStr: string }) {
     }
   }, [props.func, args, setArgs, errors, setErrors]);
 
+  const searchHit = Array.from(new Array(props.func.name.length)).map(
+    () => false
+  );
+  if (props.searchStr !== "") {
+    for (const s of props.searchStr.split(" ")) {
+      const si = props.func.name.indexOf(s);
+      for (let i = 0; i < s.length; i++) {
+        searchHit[si + i] = true;
+      }
+    }
+  }
+  const funcNameSplit: string[] = [];
+  for (let f = false, i = 0; i < props.func.name.length; f = !f) {
+    let j = searchHit.indexOf(!f, i);
+    if (j < 0) {
+      j = props.func.name.length;
+    }
+    funcNameSplit.push(props.func.name.slice(i, j));
+    i = j;
+  }
+
   return (
     <>
-      {props.searchStr !== "" && props.func.name.includes(props.searchStr) ? (
-        <span>
-          {props.func.name.slice(0, props.func.name.indexOf(props.searchStr))}
-          <span className="font-bold">{props.searchStr}</span>
-          {props.func.name.slice(
-            props.func.name.indexOf(props.searchStr) + props.searchStr.length
-          )}
-        </span>
+      {props.searchStr !== "" ? (
+        <>
+          {funcNameSplit.map((n, i) => (
+            <span className={i % 2 ? "font-bold" : ""}>{n}</span>
+          ))}
+        </>
       ) : (
         <span>{props.func.name}</span>
       )}
