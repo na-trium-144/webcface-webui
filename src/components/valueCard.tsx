@@ -4,11 +4,9 @@ import {
   useState,
   useEffect,
   useRef,
-  HTMLProps,
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
-import ReactSlider from "react-slider";
 import { format } from "date-fns";
 import { IconButton } from "./button";
 import { Help, Home, Move } from "@icon-park/react";
