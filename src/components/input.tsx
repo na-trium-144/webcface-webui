@@ -98,7 +98,9 @@ function NumberInput(props: Props) {
       max={props.max != null ? props.max : undefined}
       step={props.step != null ? props.step : 1}
       onChange={(e) => {
-        props.setIsError && props.setIsError(!e.target.checkValidity());
+        if (props.setIsError) {
+          props.setIsError(!e.target.checkValidity());
+        }
         props.setValue(e.target.value);
       }}
       onFocus={() => props.onFocus && props.onFocus()}
@@ -137,14 +139,15 @@ function BooleanInput(props: Props) {
 
 function FloatInput(props: Props) {
   useEffect(() => {
-    props.setIsError &&
+    if (props.setIsError) {
       props.setIsError(
         props.value === "" ||
           isNaN(Number(props.value)) ||
           (props.min != null && props.min > Number(props.value)) ||
           (props.max != null && props.max < Number(props.value))
       );
-  }, [props.value, props.min, props.max]);
+    }
+  }, [props.value, props.min, props.max, props.setIsError]);
   return (
     <input
       type="text"
@@ -165,12 +168,13 @@ function FloatInput(props: Props) {
 
 function StringInput(props: Props) {
   useEffect(() => {
-    props.setIsError &&
+    if (props.setIsError) {
       props.setIsError(
         (props.min != null && props.min > String(props.value).length) ||
           (props.max != null && props.max < String(props.value).length)
       );
-  }, [props.value, props.min, props.max]);
+    }
+  }, [props.setIsError, props.value, props.min, props.max]);
   return (
     <input
       type="text"
