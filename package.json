@@ -6,6 +6,11 @@
   "private": true,
   "version": "1.10.0",
   "main": "dist-electron/main/index.js",
+  "build": {
+    "files": [
+      "!**/node_modules/bufferutil/**/*"
+    ]
+  },
   "scripts": {
     "dev": "vite --host",
     "edev": "env ELECTRON=1 vite",
