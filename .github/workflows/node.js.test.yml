@@ -50,6 +50,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    - run: pip3 install setuptools || pip3 install --break-system-packages setuptools
     - run: npm ci
     - run: npm run lint
     - run: npm run ebuild

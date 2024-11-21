@@ -42,6 +42,7 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
+    - run: pip3 install setuptools || pip3 install --break-system-packages setuptools
     - run: npm ci --prefer-offline --no-audit --maxsockets 1 --noproxy registry.npmjs.org
     - run: npm run ebuild
     - uses: actions/upload-artifact@v4
