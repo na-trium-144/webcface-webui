@@ -34,9 +34,9 @@ export function writeConfig(config: ServerConfig, path?: string) {
     writeFile(
       path || configPath(),
       tomlStringify<ServerConfig>(config),
-      (e) => {
+      (e: Error | null) => {
         if (e != null) {
-          console.error(`Error writing config file: ${String(e)}`);
+          console.error(`Error writing config file: ${e}`);
         }
       }
     );
