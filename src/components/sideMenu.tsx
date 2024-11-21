@@ -47,8 +47,7 @@ export function SideMenu(props: Props) {
   const ls = useLocalStorage();
   const update = useForceUpdate();
   useEffect(() => {
-    const onMembersChange = (m: Member) => {
-      update();
+    const setMemberEventListener = (m: Member) => {
       m.onValueEntry.on(update);
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
@@ -57,9 +56,25 @@ export function SideMenu(props: Props) {
       m.onCanvas2DEntry.on(update);
       m.onLogEntry.on(update);
     };
+    const onMembersChange = (m: Member) => {
+      update();
+      setMemberEventListener(m);
+    };
+    for (const m of props.client?.members() || []) {
+      setMemberEventListener(m);
+    }
     props.client?.onMemberEntry.on(onMembersChange);
     return () => {
       props.client?.onMemberEntry.off(onMembersChange);
+      for (const m of props.client?.members() || []) {
+        m.onValueEntry.off(update);
+        m.onViewEntry.off(update);
+        m.onImageEntry.off(update);
+        m.onRobotModelEntry.off(update);
+        m.onCanvas3DEntry.off(update);
+        m.onCanvas2DEntry.off(update);
+        m.onLogEntry.off(update);
+      }
     };
   }, [props.client, update]);
   return (
