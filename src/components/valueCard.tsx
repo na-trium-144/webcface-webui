@@ -173,24 +173,30 @@ export function ValueCard(props: Props) {
           let x = 0;
           let y = 0;
           let prevY: number | null = null;
-          for (let i = 0; i < line.numPoints; i++) {
+          for (let i = 0, pi = 0; pi < line.numPoints; i++) {
+            // i: data index, pi: number of point
             // 最大numPoints個の点しか描画できない
-            if (minI + i >= 0 && minI + i < data.current.length) {
-              // x: -1 ~ 1
-              x =
-                -1 +
-                ((data.current[minI + i].x.getTime() - minX.current!) /
-                  (maxX.current! - minX.current!)) *
-                  2;
-              y = data.current[minI + i].y;
+            if(minI + i < 0){
+              continue;
             }
+            if (minI + i >= data.current.length) {
+              i = data.current.length - minI - 1;
+            }
+            // x: -1 ~ 1
+            x =
+              -1 +
+              ((data.current[minI + i].x.getTime() - minX.current!) /
+                (maxX.current! - minX.current!)) *
+                2;
+            y = data.current[minI + i].y;
             if (!prevY) {
               prevY = y;
             }
-            line.setX(i * 2, x);
-            line.setY(i * 2, prevY);
-            line.setX(i * 2 + 1, x);
-            line.setY(i * 2 + 1, y);
+            line.setX(pi * 2, x);
+            line.setY(pi * 2, prevY);
+            line.setX(pi * 2 + 1, x);
+            line.setY(pi * 2 + 1, y);
+            pi++;
             prevY = y;
           }
           if (
