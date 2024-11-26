@@ -15,11 +15,11 @@ import {
 process.env.PATH = [
   path.dirname(app.getPath("exe")), // MacOS
   path.join(path.dirname(app.getPath("exe")), "..", "bin"), // Linux, Win
-  process.env.PATH?.split(path.delimiter),
+  ...(process.env.PATH?.split(path.delimiter) || []),
 ].join(path.delimiter);
 process.env.DYLD_LIBRARY_PATH = [
   path.dirname(app.getPath("exe")), // MacOS
-  process.env.DYLD_LIBRARY_PATH?.split(path.delimiter),
+  ...(process.env.DYLD_LIBRARY_PATH?.split(path.delimiter) || []),
 ].join(path.delimiter);
 
 process.env.DIST_ELECTRON = path.join(__dirname, "../");
