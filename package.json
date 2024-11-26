@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "UI Application for WebCFace",
   "private": true,
-  "version": "1.10.1",
+  "version": "1.10.2",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "dev": "vite --host",
