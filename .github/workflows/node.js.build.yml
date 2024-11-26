@@ -66,8 +66,10 @@ jobs:
       run: tar zcvf webcface-webui_$(echo ${{github.ref}} | sed 's#refs/tags/v##').tar.gz dist
     - name: Prepare deb package files
       run: |
-        mkdir -p .debpkg/usr/share/webcface/
-        cp -r dist .debpkg/usr/share/webcface/
+        # webcface v1 は /opt/webcface/share/webcface ではなく /usr/share/webcface を使っていたが、
+        # 新しいwebuiはどのみちv1のサーバーとは通信できないので考慮しなくていいでしょう
+        mkdir -p .debpkg/opt/webcface/share/webcface/
+        cp -r dist .debpkg/opt/webcface/share/webcface/
     - name: Create dist deb package
       uses: jiro4989/build-deb-action@v3
       with:

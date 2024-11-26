@@ -1,3 +1,8 @@
+## [1.10.2] - 2024-11-26
+### Fixed
+* webcface-desktop 内でPATHの処理が間違っており webcface-server コマンドが見つからないとなってしまうバグを修正
+* webcface-webui のdebパッケージで、webuiのインストール場所を /usr/share/webcface だけでなく /opt/webcface/share/webcface も追加
+
 ## [1.10.1] - 2024-11-21
 ### Fixed
 * valueCardでデータが不足しているとき(0,0)に点があるとして描画されているのを修正 (#311)
