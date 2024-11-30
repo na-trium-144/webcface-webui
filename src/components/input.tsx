@@ -76,6 +76,9 @@ function SelectInput(props: Props) {
       onFocus={() => props.onFocus && props.onFocus()}
       onBlur={() => props.onBlur && props.onBlur()}
     >
+      {props.option?.find((o) => String(o) === String(props.value)) == null && (
+        <option value={String(props.value)}>{String(props.value)}</option>
+      )}
       {props.option?.map((o, oi) => (
         <option key={oi} value={String(o)}>
           {String(o)}
