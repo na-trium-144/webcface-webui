@@ -13,6 +13,8 @@ export function ImageCard(props: Props) {
   const imgRef = useRef<HTMLDivElement>(null);
   const prevImgWidth = useRef<number>(0);
   const prevImgHeight = useRef<number>(0);
+  const reqWidth = useRef<number | undefined>(undefined);
+  const reqHeight = useRef<number | undefined>(undefined);
   const update = useForceUpdate();
   useEffect(() => {
     if (!layoutChanging) {
@@ -38,6 +40,8 @@ export function ImageCard(props: Props) {
           } else {
             newHeight = prevImgHeight.current;
           }
+          reqWidth.current = newWidth;
+          reqHeight.current = newHeight;
           console.log(`re-request ${newWidth} x ${newHeight}`);
           props.image.request({
             width: newWidth,
@@ -57,6 +61,8 @@ export function ImageCard(props: Props) {
     };
     props.image.on(update);
     props.image.request({
+      width: reqWidth.current,
+      height: reqHeight.current,
       compressMode: imageCompressMode.jpeg,
       quality: 50,
       frameRate: 10,
