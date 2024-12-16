@@ -1,52 +1,46 @@
 import { Card } from "./card";
-import { useForceUpdate } from "../libs/forceUpdate";
-import { Member, Text } from "webcface";
-import { useEffect, useRef } from "react";
+import { Text } from "webcface";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
-  member: Member;
+  text: Text;
 }
 export function TextCard(props: Props) {
+  const [text, setText] = useState<string>("");
+  const prevText = useRef<string>("");
+  const [color, setColor] = useState<string>("");
   const hasUpdate = useRef<boolean>(true);
-  const update = useForceUpdate();
   useEffect(() => {
     const i = setInterval(() => {
       if (hasUpdate.current) {
-        update();
+        setText(props.text.get());
         hasUpdate.current = false;
       }
     }, 50);
     return () => clearInterval(i);
-  }, [update]);
+  }, [props.text]);
   useEffect(() => {
     const update = () => {
       hasUpdate.current = true;
     };
-    props.member.texts().map((t: Text) => t.on(update));
-    const onTextEntry = (t: Text) => {
-      t.on(update);
-      update();
-    };
-    props.member.onTextEntry.on(onTextEntry);
-    return () => {
-      props.member.onTextEntry.off(onTextEntry);
-      props.member.texts().map((t: Text) => t.off(update));
-    };
-  }, [props.member, update]);
+    props.text.on(update);
+    return () => props.text.off(update);
+  }, [props.text]);
+  useEffect(() => {
+    if (prevText.current !== text) {
+      setColor("text-green-600");
+      prevText.current = text;
+      const i = setTimeout(() => {
+        setColor("");
+      }, 500);
+      return () => clearTimeout(i);
+    }
+  }, [text]);
   return (
-    <Card titlePre={props.member.name} title="Text Variables">
-      <div className="h-full overflow-y-auto">
-        <ul className="list-none">
-          {props.member
-            .texts()
-            .slice()
-            .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
-            .map((t) => (
-              <li key={t.name}>
-                {t.name} = {t.get()}
-              </li>
-            ))}
-        </ul>
+    <Card titlePre={props.text.member.name} title={props.text.name}>
+      <div className="flex flex-row">
+        <div className="flex-1" />
+        <div className={"flex-none w-full text-center " + color}>{text}</div>
       </div>
     </Card>
   );

@@ -9,6 +9,7 @@ import {
   Canvas3D,
   Canvas2D,
   Log,
+  Text,
 } from "webcface";
 import * as cardKey from "../libs/cardKey";
 import { useForceUpdate } from "../libs/forceUpdate";
@@ -49,6 +50,7 @@ export function SideMenu(props: Props) {
   useEffect(() => {
     const setMemberEventListener = (m: Member) => {
       m.onValueEntry.on(update);
+      m.onTextEntry.on(update);
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
       m.onRobotModelEntry.on(update);
@@ -68,6 +70,7 @@ export function SideMenu(props: Props) {
       props.client?.onMemberEntry.off(onMembersChange);
       for (const m of props.client?.members() || []) {
         m.onValueEntry.off(update);
+        m.onTextEntry.off(update);
         m.onViewEntry.off(update);
         m.onImageEntry.off(update);
         m.onRobotModelEntry.off(update);
@@ -108,6 +111,7 @@ export function SideMenu(props: Props) {
           key={mi}
           member={m}
           values={m.values()}
+          texts={m.texts()}
           views={m.views()}
           images={m.images()}
           robotModels={m.robotModels()}
@@ -123,7 +127,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 3 | 4 | 5 | 6 | 7 | 8 | null;
+  kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -169,6 +173,8 @@ function SideMenuValues(props: ValuesProps) {
           active={props.isOpened(
             v.kind === 0
               ? cardKey.value(props.member.name, v.fullName)
+              : v.kind === 1
+              ? cardKey.text(props.member.name, v.fullName)
               : v.kind === 3
               ? cardKey.view(props.member.name, v.fullName)
               : v.kind === 5
@@ -187,6 +193,8 @@ function SideMenuValues(props: ValuesProps) {
             props.toggleOpened(
               v.kind === 0
                 ? cardKey.value(props.member.name, v.fullName)
+                : v.kind === 1
+                ? cardKey.text(props.member.name, v.fullName)
                 : v.kind === 3
                 ? cardKey.view(props.member.name, v.fullName)
                 : v.kind === 5
@@ -205,6 +213,8 @@ function SideMenuValues(props: ValuesProps) {
           icon={
             v.kind === 0 ? (
               <Analysis />
+            ) : v.kind === 1 ? (
+              <TextIcon />
             ) : v.kind === 3 ? (
               <PageTemplate />
             ) : v.kind === 5 ? (
@@ -245,6 +255,7 @@ function SideMenuValues(props: ValuesProps) {
 interface MemberProps {
   member: Member;
   values: Value[];
+  texts: Text[];
   views: View[];
   images: Image[];
   robotModels: RobotModel[];
@@ -256,11 +267,9 @@ function SideMenuMember(props: MemberProps) {
   const ls = useLocalStorage();
   const [open, setOpen] = useState<boolean>(false);
   const [valueNames, setValueNames] = useState<FieldGroup[]>([]);
-  const [textNum, setTextNum] = useState<number>(0);
   const [funcNum, setFuncNum] = useState<number>(0);
   useEffect(() => {
     const update = () => {
-      setTextNum(props.member.texts().length);
       setFuncNum(props.member.funcs().length);
     };
     const i = setInterval(update, 100);
@@ -271,13 +280,14 @@ function SideMenuMember(props: MemberProps) {
     const sortValueNames = (
       values:
         | Value[]
+        | Text[]
         | View[]
         | Image[]
         | RobotModel[]
         | Canvas3D[]
         | Canvas2D[]
         | Log[],
-      kind: 0 | 3 | 4 | 5 | 6 | 7 | 8
+      kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -305,6 +315,7 @@ function SideMenuMember(props: MemberProps) {
       }
     };
     sortValueNames(props.values, 0);
+    sortValueNames(props.texts, 1);
     sortValueNames(props.views, 3);
     sortValueNames(props.images, 5);
     sortValueNames(props.robotModels, 6);
@@ -314,6 +325,7 @@ function SideMenuMember(props: MemberProps) {
     setValueNames(valueNames);
   }, [
     props.values,
+    props.texts,
     props.views,
     props.images,
     props.robotModels,
@@ -338,17 +350,6 @@ function SideMenuMember(props: MemberProps) {
           isOpened={ls.isOpened}
           toggleOpened={ls.toggleOpened}
         />
-        {textNum > 0 && (
-          <li>
-            <SideMenuButton2
-              name={"Text Variables"}
-              active={ls.isOpened(cardKey.text(props.member.name))}
-              onClick={() => ls.toggleOpened(cardKey.text(props.member.name))}
-              icon={<TextIcon />}
-              iconActive={<TextIcon theme="two-tone" fill={iconFillColor} />}
-            />
-          </li>
-        )}
         {funcNum > 0 && (
           <li>
             <SideMenuButton2
