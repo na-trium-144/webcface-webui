@@ -211,11 +211,13 @@ function LogCardImpl(props: Props2) {
         <div className="flex-none flex items-center px-2 space-x-1 text-sm">
           <input
             type="checkbox"
-            id={`follow-${name}-log`}
+            id={`follow-${props.titlePre}-${props.title}-log`}
             checked={followRealTime}
             onChange={(e) => followLog.current(e.target.checked)}
           />
-          <label htmlFor={`follow-${name}-log`}>Follow Latest Data</label>
+          <label htmlFor={`follow-${props.titlePre}-${props.title}-log`}>
+            Follow Latest Data
+          </label>
         </div>
       </div>
     </Card>
