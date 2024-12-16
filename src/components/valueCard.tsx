@@ -9,12 +9,13 @@ import {
 import { WebglPlot, WebglLine, ColorRGBA } from "webgl-plot";
 import { format } from "date-fns";
 import { IconButton } from "./button";
-import { Help, Home, Move } from "@icon-park/react";
+import { Analysis, Help, Home, Move, Text } from "@icon-park/react";
 import { iconFillColor } from "./sideMenu";
 import { CaptionBox } from "./caption";
 import { useForceUpdate } from "../libs/forceUpdate";
 import { useLayoutChange } from "./layoutChangeProvider";
 import { Slider } from "./slider";
+import { useLocalStorage } from "./lsProvider";
 
 interface Props {
   value: Value;
@@ -24,6 +25,15 @@ const maxXRange = 5000; // ms
 
 export function ValueCard(props: Props) {
   const { layoutChanging } = useLayoutChange();
+  const ls = useLocalStorage();
+  const plotEnabled = ls.valueCardWithPlot.some(
+    (v) => v[0] === props.value.member.name && v[1] === props.value.name
+  );
+  const enablePlot = () =>
+    ls.enableValueCardWithPlot(props.value.member.name, props.value.name);
+  const disablePlot = () =>
+    ls.disableValueCardWithPlot(props.value.member.name, props.value.name);
+
   const canvasMain = useRef<HTMLCanvasElement>(null);
   const canvasDiv = useRef<HTMLDivElement>(null);
   const hasUpdate = useRef<boolean>(true);
@@ -142,7 +152,7 @@ export function ValueCard(props: Props) {
     );
     line.arrangeX();
 
-    if (canvasMain.current && !layoutChanging) {
+    if (canvasMain.current && !layoutChanging && plotEnabled) {
       let id = 0;
       let renderPlot = () => {
         if (canvasMain.current == null || canvasDiv.current == null) {
@@ -176,7 +186,7 @@ export function ValueCard(props: Props) {
           for (let i = 0, pi = 0; pi < line.numPoints; i++) {
             // i: data index, pi: number of point
             // 最大numPoints個の点しか描画できない
-            if(minI + i < 0){
+            if (minI + i < 0) {
               continue;
             }
             if (minI + i >= data.current.length) {
@@ -227,7 +237,7 @@ export function ValueCard(props: Props) {
         cancelAnimationFrame(id);
       };
     }
-  }, [layoutChanging]);
+  }, [layoutChanging, plotEnabled]);
 
   // カーソルを乗せた位置の値を表示する用
   const [cursorPosXRaw, setCursorPosXRaw] = useState<number | null>(null);
@@ -388,170 +398,255 @@ export function ValueCard(props: Props) {
   });
 
   return (
-    <Card title={`${props.value.member.name}:${props.value.name}`}>
+    <Card titlePre={props.value.member.name} title={props.value.name}>
       <div className="flex flex-col h-full">
-        <div className="flex-1 w-full min-h-0 flex flex-row text-xs">
-          <div className="flex-1 h-full min-w-0 pt-2 relative select-none">
-            {/*
+        {plotEnabled ? (
+          <>
+            <div className="flex-1 w-full min-h-0 flex flex-row text-xs">
+              <div className="flex-1 h-full min-w-0 pt-2 relative select-none">
+                {/*
             <span className="absolute top-2 left-0">{displayMaxY}</span>
             <span className="absolute left-0">{displayMinY}</span>
             */}
-            {[
-              ...new Array(
-                Math.max(
-                  Math.floor(maxY.current / yTick) -
-                    Math.ceil(minY.current / yTick) +
-                    1,
-                  0
-                )
-              ).keys(),
-            ]
-              .map((_, i) => (Math.ceil(minY.current / yTick) + i) * yTick)
-              .map((y, i) => (
-                <div
-                  key={i}
-                  className="absolute w-full h-auto left-0 border-b border-gray-300 text-gray-500"
-                  style={{ bottom: getPosY(y) }}
-                >
-                  {y}
-                </div>
-              ))}
-            {maxX.current &&
-              minX.current &&
-              [
-                ...new Array(
-                  Math.max(
-                    Math.floor(maxX.current / xTick) -
-                      Math.ceil(minX.current / xTick),
-                    0
-                  )
-                ).keys(),
-              ]
-                .map((_, i) => (Math.floor(maxX.current! / xTick) - i) * xTick)
-                .map((x, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-auto h-full bottom-0 border-r border-gray-300 text-gray-500"
-                    style={{
-                      right: canvasMain.current!.width - getPosX(x),
+                {[
+                  ...new Array(
+                    Math.max(
+                      Math.floor(maxY.current / yTick) -
+                        Math.ceil(minY.current / yTick) +
+                        1,
+                      0
+                    )
+                  ).keys(),
+                ]
+                  .map((_, i) => (Math.ceil(minY.current / yTick) + i) * yTick)
+                  .map((y, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-full h-auto left-0 border-b border-gray-300 text-gray-500"
+                      style={{ bottom: getPosY(y) }}
+                    >
+                      {y}
+                    </div>
+                  ))}
+                {maxX.current &&
+                  minX.current &&
+                  canvasMain.current &&
+                  [
+                    ...new Array(
+                      Math.max(
+                        Math.floor(maxX.current / xTick) -
+                          Math.ceil(minX.current / xTick),
+                        0
+                      )
+                    ).keys(),
+                  ]
+                    .map(
+                      (_, i) => (Math.floor(maxX.current! / xTick) - i) * xTick
+                    )
+                    .map((x, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-auto h-full bottom-0 border-r border-gray-300 text-gray-500"
+                        style={{
+                          right: canvasMain.current!.width - getPosX(x),
+                        }}
+                      >
+                        <span className="absolute bottom-0 right-0">
+                          {xTick >= 1000
+                            ? format(x, ":ss")
+                            : xTick >= 100
+                            ? format(x, ":ss.S")
+                            : xTick >= 10
+                            ? format(x, ":ss.SS")
+                            : format(x, ":ss.SSS")}
+                        </span>
+                      </div>
+                    ))}
+                <div className="w-full h-full relative" ref={canvasDiv}>
+                  <canvas
+                    className=""
+                    onPointerMove={(e) => {
+                      if (e.currentTarget) {
+                        const targetRect =
+                          e.currentTarget.getBoundingClientRect();
+                        setCursorPosXRaw(e.clientX - targetRect.left);
+                      }
+                      onPointerMove(e);
                     }}
-                  >
-                    <span className="absolute bottom-0 right-0">
-                      {xTick >= 1000
-                        ? format(x, ":ss")
-                        : xTick >= 100
-                        ? format(x, ":ss.S")
-                        : xTick >= 10
-                        ? format(x, ":ss.SS")
-                        : format(x, ":ss.SSS")}
-                    </span>
-                  </div>
-                ))}
-            <div className="w-full h-full relative" ref={canvasDiv}>
-              <canvas
-                className=""
-                onPointerMove={(e) => {
-                  if (e.currentTarget) {
-                    const targetRect = e.currentTarget.getBoundingClientRect();
-                    setCursorPosXRaw(e.clientX - targetRect.left);
-                  }
-                  onPointerMove(e);
-                }}
-                onPointerLeave={(e) => {
-                  setCursorPosXRaw(null);
-                  onPointerUp(e);
-                }}
-                onPointerDown={onPointerDown}
-                onPointerEnter={onPointerMove}
-                onPointerUp={onPointerUp}
-                style={{
-                  cursor: !isLatest.current ? "grab" : "default",
-                  touchAction: !isLatest.current ? "none" : "auto",
-                }}
-                ref={canvasMain}
-              />
-              <GraphValue
-                x={cursorX}
-                y={cursorY}
-                value={cursorI !== null ? data.current[cursorI].y : null}
-                time={cursorI !== null ? data.current[cursorI].x : null}
-              />
+                    onPointerLeave={(e) => {
+                      setCursorPosXRaw(null);
+                      onPointerUp(e);
+                    }}
+                    onPointerDown={onPointerDown}
+                    onPointerEnter={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    style={{
+                      cursor: !isLatest.current ? "grab" : "default",
+                      touchAction: !isLatest.current ? "none" : "auto",
+                    }}
+                    ref={canvasMain}
+                  />
+                  <GraphValue
+                    x={cursorX}
+                    y={cursorY}
+                    value={cursorI !== null ? data.current[cursorI].y : null}
+                    time={cursorI !== null ? data.current[cursorI].x : null}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="flex-none flex items-center space-x-1 text-xs ">
-          <span>Time:</span>
-          <Slider
-            className="w-full h-5"
-            min={!hasSufficientData() ? -1 : 0}
-            max={
-              !hasSufficientData() || !maxX.current || !minX.current
-                ? 0
-                : dataMaxX()! - dataMinX()! - (maxX.current - minX.current)
-            }
-            value={
-              !hasSufficientData() || !minX.current
-                ? 0
-                : minX.current - dataMinX()!
-            }
-            disabled={!hasSufficientData()}
-            onChange={(value) => {
-              // maxPos=0のときスクロール不可、minを-1にすることで右端にする
-              if (hasSufficientData() && maxX.current && minX.current) {
-                const currentRange = maxX.current - minX.current;
-                setRangeX(
-                  dataMinX()! + value,
-                  dataMinX()! + value + currentRange
-                );
-                isLatest.current = value === dataMaxX()! - currentRange;
-              }
-            }}
-            step={1}
-          />
-          <span>{data.current.length && format(dataMaxX()!, "H:mm:ss")}</span>
-        </div>
-        <div className="flex-none h-8 text-xs flex items-center ">
-          <div className="flex-1"></div>
-          <div className="flex-none text-lg relative">
-            <IconButton
-              onClick={() => {
-                isLatest.current = false;
-              }}
-              caption="グラフの移動・ズーム オン"
-            >
-              {!isLatest.current ? (
-                <Move theme="two-tone" fill={iconFillColor} />
-              ) : (
-                <Move />
-              )}
-            </IconButton>
-            <IconButton
-              onClick={() => {
-                isLatest.current = true;
-              }}
-              caption="初期位置に戻す(最新のデータを表示)"
-            >
-              <Home />
-            </IconButton>
-            <IconButton className="mr-4 peer" onClick={() => undefined}>
-              <Help />
-            </IconButton>
-            <CaptionBox
-              className={
-                "absolute bottom-full right-4 " +
-                "hidden peer-hover:inline-block peer-focus:inline-block "
-              }
-            >
-              <p>移動・ズームがオンのとき、</p>
-              <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
-              <p>(マウス)スクロール で Y 方向拡大縮小、</p>
-              <p>Ctrl(Command⌘)+スクロール で X 方向拡大縮小、</p>
-              <p>(タッチ)2本指操作 で拡大縮小できます。</p>
-            </CaptionBox>
-          </div>
-        </div>
+            <div className="flex-none flex items-center space-x-1 text-xs ">
+              <span>Time:</span>
+              <Slider
+                className="w-full h-5"
+                min={!hasSufficientData() ? -1 : 0}
+                max={
+                  !hasSufficientData() || !maxX.current || !minX.current
+                    ? 0
+                    : dataMaxX()! - dataMinX()! - (maxX.current - minX.current)
+                }
+                value={
+                  !hasSufficientData() || !minX.current
+                    ? 0
+                    : minX.current - dataMinX()!
+                }
+                disabled={!hasSufficientData()}
+                onChange={(value) => {
+                  // maxPos=0のときスクロール不可、minを-1にすることで右端にする
+                  if (hasSufficientData() && maxX.current && minX.current) {
+                    const currentRange = maxX.current - minX.current;
+                    setRangeX(
+                      dataMinX()! + value,
+                      dataMinX()! + value + currentRange
+                    );
+                    isLatest.current = value === dataMaxX()! - currentRange;
+                  }
+                }}
+                step={1}
+              />
+              <span>
+                {data.current.length && format(dataMaxX()!, "H:mm:ss")}
+              </span>
+            </div>
+            <div className="flex-none h-8 text-xs flex items-center ">
+              <div className="flex-1" />
+              <div className="flex-none text-lg mr-4 relative ">
+                <IconButton
+                  onClick={() => {
+                    isLatest.current = false;
+                  }}
+                  caption="グラフの移動・ズーム オン"
+                >
+                  {!isLatest.current ? (
+                    <Move theme="two-tone" fill={iconFillColor} />
+                  ) : (
+                    <Move />
+                  )}
+                </IconButton>
+                <IconButton
+                  onClick={() => {
+                    isLatest.current = true;
+                  }}
+                  caption="初期位置に戻す(最新のデータを表示)"
+                >
+                  <Home />
+                </IconButton>
+                <IconButton className="peer" onClick={() => undefined}>
+                  <Help />
+                </IconButton>
+                <CaptionBox
+                  className={
+                    "absolute bottom-full right-0 " +
+                    "hidden peer-hover:inline-block peer-focus:inline-block "
+                  }
+                >
+                  <p>移動・ズームがオンのとき、</p>
+                  <p>(マウス)ドラッグ / (タッチ)スライド で移動、</p>
+                  <p>(マウス)スクロール で Y 方向拡大縮小、</p>
+                  <p>Ctrl(Command⌘)+スクロール で X 方向拡大縮小、</p>
+                  <p>(タッチ)2本指操作 で拡大縮小できます。</p>
+                </CaptionBox>
+                <IconButton
+                  onClick={() => disablePlot()}
+                  caption="テキスト表示に切り替え"
+                >
+                  <Text />
+                </IconButton>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex-1" />
+            <div className="flex-none h-8 flex items-center ">
+              <ValueAsText
+                className="flex-1"
+                value={data.current[data.current.length - 1]?.y}
+              />
+              <div className="flex-none text-lg relative mr-4">
+                <IconButton
+                  onClick={() => enablePlot()}
+                  caption="グラフ表示に切り替え"
+                >
+                  <Analysis />
+                </IconButton>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </Card>
+  );
+}
+
+function ValueAsText(props: { className: string; value?: number }) {
+  const [maxLenInt, setMaxLenInt] = useState<number>(1);
+  const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
+  const [maxLenExp, setMaxLenExp] = useState<number>(0);
+  const valueStr = props.value !== undefined ? String(props.value) : "";
+  const valueStrExp = valueStr.includes("e")
+    ? valueStr.slice(valueStr.indexOf("e"))
+    : "";
+  const valueStrFrac = valueStr.includes(".")
+    ? valueStr.slice(
+        valueStr.indexOf("."),
+        valueStr.length - valueStrExp.length
+      )
+    : "";
+  const valueStrInt = valueStr.slice(
+    0,
+    valueStr.length - valueStrFrac.length - valueStrExp.length
+  );
+  useEffect(() => {
+    if (maxLenInt < valueStrInt.length) {
+      setMaxLenInt(valueStrInt.length);
+    }
+    if (maxLenFrac < valueStrFrac.length) {
+      setMaxLenFrac(valueStrFrac.length);
+    }
+    if (maxLenExp < valueStrExp.length) {
+      setMaxLenExp(valueStrExp.length);
+    }
+  }, [
+    maxLenInt,
+    maxLenFrac,
+    maxLenExp,
+    valueStrInt,
+    valueStrFrac,
+    valueStrExp,
+  ]);
+  return (
+    <div className={props.className + " flex flex-row"}>
+      <div className="basis-0 text-right" style={{ flexGrow: maxLenInt }}>
+        {valueStrInt}
+      </div>
+      <div className="basis-0" style={{ flexGrow: maxLenFrac }}>
+        {valueStrFrac || "."}
+      </div>
+      <div className="basis-0" style={{ flexGrow: maxLenExp }}>
+        {valueStrExp}
+      </div>
+    </div>
   );
 }
 

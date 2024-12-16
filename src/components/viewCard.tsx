@@ -32,7 +32,7 @@ export function ViewCard(props: Props) {
     return () => props.view.off(update);
   }, [props.view, update]);
   return (
-    <Card title={`${props.view.member.name}:${props.view.name}`}>
+    <Card titlePre={props.view.member.name} title={props.view.name}>
       <div className="w-full h-full overflow-y-auto overflow-x-auto">
         {props.view.get().map((vc) => (
           <ViewComponentRender

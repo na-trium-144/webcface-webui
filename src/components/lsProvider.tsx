@@ -11,7 +11,8 @@ const lsKey = "webcface-webui";
 export interface LocalStorageData {
   layout: LayoutItem[];
   openedCards: string[];
-  pinnedFuncs?: [string, string][];
+  pinnedFuncs: [string, string][];
+  valueCardWithPlot: [string, string][];
 }
 export type LocalStorage = LocalStorageData & {
   init: boolean;
@@ -22,18 +23,23 @@ export type LocalStorage = LocalStorageData & {
   toggleOpened: (key: string) => void;
   pinFunc: (m: string, f: string) => void;
   unPinFunc: (m: string, f: string) => void;
+  enableValueCardWithPlot: (m: string, f: string) => void;
+  disableValueCardWithPlot: (m: string, f: string) => void;
 };
 
 const LocalStorageContext = createContext<LocalStorage>({
   layout: [],
   openedCards: [],
   pinnedFuncs: [],
+  valueCardWithPlot: [],
   init: false,
   setLayout: () => undefined,
   isOpened: () => false,
   toggleOpened: () => undefined,
   pinFunc: () => undefined,
   unPinFunc: () => undefined,
+  enableValueCardWithPlot: () => undefined,
+  disableValueCardWithPlot: () => undefined,
 });
 export const useLocalStorage = () => useContext(LocalStorageContext);
 
@@ -42,6 +48,7 @@ function getLS() {
     layout: [],
     openedCards: [],
     pinnedFuncs: [],
+    valueCardWithPlot: [],
   };
   if (global != undefined && global.localStorage) {
     const lsItem = global.localStorage.getItem(lsKey);
@@ -72,19 +79,21 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [openedCards, setOpenedCards] = useState<string[]>([]);
   const [pinnedFuncs, setPinnedFuncs] = useState<[string, string][]>([]);
+  const [valueCardWithPlot, setValueCardWithPlot] = useState<[string, string][]>([]);
   const [init, setInit] = useState<boolean>(false);
   useEffect(() => {
     const ls = getLS();
     setLayout(ls.layout);
     setOpenedCards(ls.openedCards);
     setPinnedFuncs(ls.pinnedFuncs || []);
+    setValueCardWithPlot(ls.valueCardWithPlot || []);
     setInit(true);
   }, []);
   useEffect(() => {
     if (init) {
-      saveToLS({ layout, openedCards, pinnedFuncs });
+      saveToLS({ layout, openedCards, pinnedFuncs, valueCardWithPlot });
     }
-  }, [layout, openedCards, pinnedFuncs, init]);
+  }, [layout, openedCards, pinnedFuncs, init, valueCardWithPlot]);
 
   return (
     <LocalStorageContext.Provider
@@ -93,6 +102,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         layout,
         setLayout,
         openedCards,
+        valueCardWithPlot,
         isOpened: (key: string) => openedCards.includes(key),
         toggleOpened: (key: string) => {
           if (openedCards.includes(key)) {
@@ -113,6 +123,16 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         unPinFunc: (m: string, f: string) =>
           setPinnedFuncs(
             pinnedFuncs.filter((pf) => pf[0] !== m || pf[1] !== f)
+          ),
+        enableValueCardWithPlot: (m: string, f: string) =>
+          setValueCardWithPlot(
+            valueCardWithPlot.some((p) => p[0] === m && p[1] === f)
+              ? valueCardWithPlot
+              : valueCardWithPlot.concat([[m, f]])
+          ),
+        disableValueCardWithPlot: (m: string, f: string) =>
+          setValueCardWithPlot(
+            valueCardWithPlot.filter((pf) => pf[0] !== m || pf[1] !== f)
           ),
       }}
     >

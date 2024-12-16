@@ -168,7 +168,7 @@ export function LayoutMain(props: Props) {
       layouts={layouts}
       breakpoints={breakpoints}
       cols={cols}
-      rowHeight={100}
+      rowHeight={70}
       onLayoutChange={onLayoutChange}
       allowOverlap
       draggableHandle=".MyCardHandle"
@@ -222,9 +222,17 @@ export function LayoutMain(props: Props) {
         .reduce((prev, m) => prev.concat(m.values()), [] as Value[])
         .map((v) => {
           const key = cardKey.value(v.member.name, v.name);
+          const minH = ls.valueCardWithPlot.some(
+            (p) => p[0] === v.member.name && p[1] === v.name
+          )
+            ? 3
+            : 1;
           if (ls.isOpened(key)) {
             return (
-              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}>
+              <div
+                key={key}
+                data-grid={findLsLayout(key, 0, 0, 2, minH, 2, minH)}
+              >
                 <ValueCard value={v} />
               </div>
             );

@@ -34,7 +34,7 @@ export function TextCard(props: Props) {
     };
   }, [props.member, update]);
   return (
-    <Card title={`${props.member.name} Text Variables`}>
+    <Card titlePre={props.member.name} title="Text Variables">
       <div className="h-full overflow-y-auto">
         <ul className="list-none">
           {props.member

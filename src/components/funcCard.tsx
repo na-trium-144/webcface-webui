@@ -34,7 +34,13 @@ export function FuncCard(props: Props) {
     };
   }, [props.member, update]);
 
-  return <FuncList name={props.member.name} funcs={props.member.funcs()} />;
+  return (
+    <FuncList
+      titlePre={props.member.name}
+      title="Functions"
+      funcs={props.member.funcs()}
+    />
+  );
 }
 
 export function PinnedFuncCard(props: { wcli: Client | null }) {
@@ -73,11 +79,12 @@ export function PinnedFuncCard(props: { wcli: Client | null }) {
     };
   }, [funcs]);
 
-  return <FuncList name="Pinned" funcs={funcs} />;
+  return <FuncList title="Pinned Functions" funcs={funcs} />;
 }
 
 interface Props2 {
-  name: string;
+  titlePre?: string;
+  title: string;
   funcs: Func[];
 }
 export function FuncList(props: Props2) {
@@ -85,7 +92,7 @@ export function FuncList(props: Props2) {
   const [searchStr, setSearchStr] = useState<string>("");
 
   return (
-    <Card title={`${props.name} Functions`}>
+    <Card titlePre={props.titlePre} title={props.title}>
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <ul className="list-none">
