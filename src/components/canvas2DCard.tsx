@@ -189,7 +189,7 @@ export function Canvas2DCard(props: Props) {
   });
 
   return (
-    <Card title={`${props.canvas.member.name}:${props.canvas.name}`}>
+    <Card titlePre={props.canvas.member.name} title={props.canvas.name}>
       <div className="h-full w-full flex flex-col">
         <div
           ref={divRef}

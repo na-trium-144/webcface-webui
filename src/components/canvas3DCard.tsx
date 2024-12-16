@@ -91,7 +91,8 @@ export function Canvas3DCard(props: Canvas3DProps) {
   }, [layoutChanging, props.canvas3D]);
   return (
     <Canvas3DCardImpl
-      title={`${props.canvas3D.member.name}:${props.canvas3D.name}`}
+      titlePre={props.canvas3D.member.name}
+      title={props.canvas3D.name}
       hasUpdate={hasUpdate}
       geometries={canvasData}
     />
@@ -113,6 +114,7 @@ export interface GeometryObject {
   origin: Transform;
 }
 interface Props {
+  titlePre?: string;
   title: string;
   hasUpdate: { current: boolean };
   geometries: GeometryObject[];
@@ -237,7 +239,7 @@ export function Canvas3DCardImpl(props: Props) {
     e.stopPropagation();
   };
   return (
-    <Card title={props.title}>
+    <Card titlePre={props.titlePre} title={props.title}>
       <div className="flex flex-col w-full h-full">
         <Canvas
           className="flex-1 max-h-full"

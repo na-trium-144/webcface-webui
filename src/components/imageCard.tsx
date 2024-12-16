@@ -70,7 +70,7 @@ export function ImageCard(props: Props) {
     return () => props.image.off(update);
   }, [props.image]);
   return (
-    <Card title={`${props.image.member.name}:${props.image.name}`}>
+    <Card titlePre={props.image.member.name} title={props.image.name}>
       <div
         ref={imgRef}
         className="w-full h-full overflow-y-auto overflow-x-auto"

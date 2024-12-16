@@ -17,7 +17,8 @@ export function RobotModelCard(props: Props) {
   }, [props.robotModel]);
   return (
     <Canvas3DCardImpl
-      title={`${props.robotModel.member.name}:${props.robotModel.name}`}
+      titlePre={props.robotModel.member.name}
+      title={props.robotModel.name}
       hasUpdate={hasUpdate}
       geometries={props.robotModel.get().map((ln) => ({
         link: ln,

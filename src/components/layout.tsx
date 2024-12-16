@@ -9,6 +9,7 @@ import {
   Canvas3D,
   Canvas2D,
   Log,
+  Text,
 } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
@@ -168,7 +169,7 @@ export function LayoutMain(props: Props) {
       layouts={layouts}
       breakpoints={breakpoints}
       cols={cols}
-      rowHeight={100}
+      rowHeight={70}
       onLayoutChange={onLayoutChange}
       allowOverlap
       draggableHandle=".MyCardHandle"
@@ -222,10 +223,32 @@ export function LayoutMain(props: Props) {
         .reduce((prev, m) => prev.concat(m.values()), [] as Value[])
         .map((v) => {
           const key = cardKey.value(v.member.name, v.name);
+          const withPlot = ls.valueCardWithPlot.some(
+            (p) => p[0] === v.member.name && p[1] === v.name
+          );
+          const minH = withPlot ? 3 : 1;
+          const minW = withPlot ? 2 : 1;
           if (ls.isOpened(key)) {
             return (
-              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 2, 2, 2)}>
+              <div
+                key={key}
+                data-grid={findLsLayout(key, 0, 0, minW, minH, minW, minH)}
+              >
                 <ValueCard value={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.texts()), [] as Text[])
+        .map((v) => {
+          const key = cardKey.text(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 1, 1, 1, 1)}>
+                <TextCard text={v} />
               </div>
             );
           }
@@ -301,17 +324,6 @@ export function LayoutMain(props: Props) {
           }
           return null;
         })}
-      {props.client?.members().map((m) => {
-        const key = cardKey.text(m.name);
-        if (ls.isOpened(key)) {
-          return (
-            <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 1)}>
-              <TextCard member={m} />
-            </div>
-          );
-        }
-        return null;
-      })}
       {props.client?.members().map((m) => {
         const key = cardKey.func(m.name);
         if (ls.isOpened(key)) {

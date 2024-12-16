@@ -40,7 +40,8 @@ export function LogCard(props: Props) {
     <LogCardImpl
       logsRef={logsRef}
       fetchLog={fetchLog}
-      name={`${props.logField.member.name}:${props.logField.name}`}
+      titlePre={props.logField.member.name}
+      title={props.logField.name}
     />
   );
 }
@@ -50,7 +51,7 @@ export function LogCardServer() {
     <LogCardImpl
       logsRef={logStore.serverData}
       fetchLog={() => logStore.serverHasUpdate.current}
-      name={"webcface server logs"}
+      title={"Server Logs"}
     />
   );
 }
@@ -58,12 +59,13 @@ export function LogCardServer() {
 interface Props2 {
   logsRef: { current: LogDataWithLevels };
   fetchLog: () => boolean; // logをチェックしてlogsRefに反映し、更新されていたらtrueを返す
-  name: string;
+  title: string;
+  titlePre?: string;
 }
 const lineHeight = 24;
 function LogCardImpl(props: Props2) {
   const { layoutChanging } = useLayoutChange();
-  const { logsRef, fetchLog, name } = props;
+  const { logsRef, fetchLog } = props;
   // 引数のlogsRefは高頻度で更新されるが、以下のstateは50msに1回更新される
   // const [logLine, setLogLine] = useState<number>(0);
   const [logsCurrent, setLogsCurrent] = useState<LogLine[]>([]);
@@ -132,7 +134,7 @@ function LogCardImpl(props: Props2) {
   }, [layoutChanging, minLevel, fetchLog, logsRef, followRealTime]);
 
   return (
-    <Card title={name}>
+    <Card titlePre={props.titlePre} title={props.title}>
       <div className="flex flex-col w-full h-full">
         <div className="flex-none pl-2 pb-1">
           レベル
@@ -209,11 +211,13 @@ function LogCardImpl(props: Props2) {
         <div className="flex-none flex items-center px-2 space-x-1 text-sm">
           <input
             type="checkbox"
-            id={`follow-${name}-log`}
+            id={`follow-${props.titlePre}-${props.title}-log`}
             checked={followRealTime}
             onChange={(e) => followLog.current(e.target.checked)}
           />
-          <label htmlFor={`follow-${name}-log`}>Follow Latest Data</label>
+          <label htmlFor={`follow-${props.titlePre}-${props.title}-log`}>
+            Follow Latest Data
+          </label>
         </div>
       </div>
     </Card>
