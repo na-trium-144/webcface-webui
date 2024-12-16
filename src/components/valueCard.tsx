@@ -600,10 +600,13 @@ export function ValueCard(props: Props) {
 }
 
 function ValueAsText(props: { className: string; value?: number }) {
+  const { value } = props;
+  const prevValue = useRef<number>(0);
+  const [color, setColor] = useState<string>("");
   const [maxLenInt, setMaxLenInt] = useState<number>(1);
   const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
   const [maxLenExp, setMaxLenExp] = useState<number>(0);
-  const valueStr = props.value !== undefined ? String(props.value) : "";
+  const valueStr = value !== undefined ? String(value) : "";
   const valueStrExp = valueStr.includes("e")
     ? valueStr.slice(valueStr.indexOf("e"))
     : "";
@@ -635,8 +638,22 @@ function ValueAsText(props: { className: string; value?: number }) {
     valueStrFrac,
     valueStrExp,
   ]);
+  useEffect(() => {
+    if (value !== undefined && prevValue.current !== value) {
+      if (prevValue.current <= value) {
+        setColor("text-green-600");
+      } else {
+        setColor("text-red-600");
+      }
+      const i = setTimeout(() => {
+        setColor("");
+      }, 500);
+      prevValue.current = value;
+      return () => clearTimeout(i);
+    }
+  }, [value]);
   return (
-    <div className={props.className + " flex flex-row"}>
+    <div className={props.className + " flex flex-row " + color}>
       <div className="basis-0 text-right" style={{ flexGrow: maxLenInt }}>
         {valueStrInt}
       </div>
