@@ -8,8 +8,10 @@ interface Props {
   setIsError?: (error: boolean) => void;
   className?: string;
   widthClass?: string;
+  width?: number;
+  height?: number;
   name?: string;
-  type: "select" | "number" | "float" | "string" | "boolean";
+  type: "select" | "number" | "float" | "string" | "boolean" | "multiline";
   value: string | number | boolean;
   setValue: (value: string | number | boolean) => void;
   option?: (string | number)[];
@@ -38,6 +40,8 @@ export function Input(props: Props) {
         <FloatInput {...props} />
       ) : props.type === "boolean" ? (
         <BooleanInput {...props} />
+      ) : props.type === "multiline" ? (
+        <MultiLineInput {...props} />
       ) : (
         <StringInput {...props} />
       )}
@@ -71,6 +75,9 @@ function SelectInput(props: Props) {
         "px-0 " +
         (props.widthClass != undefined ? props.widthClass : "")
       }
+      style={{
+        width: props.width && props.width > 0 ? props.width + "em" : undefined,
+      }}
       value={String(props.value)}
       onChange={(e) => props.setValue(e.target.value)}
       onFocus={() => props.onFocus && props.onFocus()}
@@ -96,6 +103,7 @@ function NumberInput(props: Props) {
         inputClass +
         (props.widthClass != undefined ? props.widthClass : "w-20 ")
       }
+      size={props.width && props.width > 0 ? props.width : 6}
       value={(props.value as number) || 0}
       min={props.min != null ? props.min : undefined}
       max={props.max != null ? props.max : undefined}
@@ -130,11 +138,18 @@ function BooleanInput(props: Props) {
         "hover:text-green-700 active:text-green-700 " +
         (props.widthClass != undefined ? props.widthClass : "w-12 ")
       }
+      style={{
+        width: props.width && props.width > 0 ? props.width + "em" : undefined,
+        height:
+          props.height && props.height > 0 ? props.height + "em" : undefined,
+      }}
       onFocus={() => props.onFocus && props.onFocus()}
       onBlur={() => props.onBlur && props.onBlur()}
     >
       {/*props.valueが空でもbaselineが揃うようにダミーのテキストを入れる*/}
-      <span className="text-transparent select-none">a</span>
+      {option.map((o) => (
+        <div className="text-transparent select-none h-0">{String(o)}</div>
+      ))}
       <span className="absolute inset-x-0 ">{String(props.value)}</span>
     </button>
   );
@@ -157,7 +172,7 @@ function FloatInput(props: Props) {
       className={
         inputClass + (props.widthClass != undefined ? props.widthClass : "")
       }
-      size={6}
+      size={props.width && props.width > 0 ? props.width : 6}
       value={String(props.value)}
       onChange={(e) => {
         props.setValue(e.target.value);
@@ -184,7 +199,36 @@ function StringInput(props: Props) {
       className={
         inputClass + (props.widthClass != undefined ? props.widthClass : "")
       }
-      size={6}
+      size={props.width && props.width > 0 ? props.width : 6}
+      value={String(props.value)}
+      onChange={(e) => {
+        props.setValue(e.target.value);
+      }}
+      onFocus={() => props.onFocus && props.onFocus()}
+      onBlur={() => props.onBlur && props.onBlur()}
+      onKeyUp={(e: KeyboardEvent) => props.onKeyUp && props.onKeyUp(e)}
+    />
+  );
+}
+
+function MultiLineInput(props: Props) {
+  useEffect(() => {
+    if (props.setIsError) {
+      props.setIsError(
+        (props.min != null && props.min > String(props.value).length) ||
+          (props.max != null && props.max < String(props.value).length)
+      );
+    }
+  }, [props.setIsError, props.value, props.min, props.max]);
+  return (
+    <textarea
+      className={
+        inputClass +
+        "resize-none align-middle " +
+        (props.widthClass != undefined ? props.widthClass : "")
+      }
+      rows={props.height && props.height > 0 ? props.height : 1}
+      cols={props.width && props.width > 0 ? props.width : 6}
       value={String(props.value)}
       onChange={(e) => {
         props.setValue(e.target.value);
