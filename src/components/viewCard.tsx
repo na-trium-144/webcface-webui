@@ -146,7 +146,7 @@ function ViewComponentRender(props: VCProps) {
             props.vc.type === viewComponentTypes.textInput
               ? props.vc.height >= 2
                 ? "multiline"
-                : "string"
+                : "multiline"
               : props.vc.type === viewComponentTypes.decimalInput
               ? "float"
               : props.vc.type === viewComponentTypes.numberInput

@@ -1,7 +1,7 @@
 import { useEffect, ReactNode, KeyboardEvent } from "react";
 import { Caption } from "./caption";
 
-const inputClass = "border-0 outline-0 px-1 peer ";
+const inputClass = "border-0 outline-0 rounded-sm px-1 peer ";
 
 interface Props {
   isError?: boolean;
@@ -47,8 +47,10 @@ export function Input(props: Props) {
       )}
       <span
         className={
-          "absolute bottom-0 inset-x-0 " +
-          "border-b peer-focus:border-b-2 px-1 peer " +
+          "absolute bottom-0 inset-0 mt-3 px-1 peer pointer-events-none " +
+          (props.type === "multiline"
+            ? "border peer-focus:border-2 rounded-sm "
+            : "border-b peer-focus:border-b-2 ") +
           (props.isError
             ? "border-red-500 peer-hover:border-red-500 peer-focus:border-red-500 "
             : "border-neutral-200 peer-hover:border-neutral-500 peer-focus:border-black ")
