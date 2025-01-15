@@ -24,9 +24,8 @@ export function FuncResultList() {
       const resultsDisplayNew = resultsDisplay.slice();
       for (let i = resultsDisplay.length; i < results.length; i++) {
         resultsDisplayNew.push({
-          // todo: getterないの?
-          member: results[i].member_,
-          name: results[i].field_,
+          member: results[i].member.name,
+          name: results[i].name,
           status: funcStatus.connecting,
           result: "",
           show: true,
