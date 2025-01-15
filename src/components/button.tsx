@@ -12,6 +12,7 @@ interface Props {
   disabled?: boolean;
   className?: string; // 外側のdiv
   buttonClassName?: string; // 内側のbutton
+  buttonStyle?: object;
   caption?: ReactNode;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -35,6 +36,7 @@ export function Button(props: Props) {
               "shadow-md active:shadow-none ") +
           (props.rounded === "full" ? "rounded-full " : "rounded-lg ")
         }
+      style={props.buttonStyle}
         onClick={() => void props.onClick()}
         disabled={props.disabled}
         onFocus={() => props.onFocus && props.onFocus()}

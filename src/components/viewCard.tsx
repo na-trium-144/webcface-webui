@@ -96,10 +96,18 @@ function ViewComponentRender(props: VCProps) {
     }
   }, [props.vc, tempValue, focused]);
 
+  const sizeStyle = {
+    width: props.vc.width > 0 ? props.vc.width + "em" : undefined,
+    height: props.vc.height > 0 ? props.vc.height + "em" : undefined,
+  };
+  const buttonSizeStyle = {
+    width: props.vc.width > 0 ? props.vc.width + "em" : undefined,
+    height: props.vc.height > 0 ? 1 + props.vc.height + "em" : undefined,
+  };
   switch (props.vc.type) {
     case viewComponentTypes.text:
       return (
-        <span className={textColorClass(props.vc.textColor)}>
+        <span className={textColorClass(props.vc.textColor)} style={sizeStyle}>
           {props.vc.text}
         </span>
       );
@@ -109,6 +117,7 @@ function ViewComponentRender(props: VCProps) {
       return (
         <Button
           className="m-1"
+          buttonStyle={buttonSizeStyle}
           onClick={() => {
             const r = props.vc.onClick?.runAsync();
             if (r != null) {
@@ -128,12 +137,16 @@ function ViewComponentRender(props: VCProps) {
     case viewComponentTypes.selectInput:
       return (
         <Input
+          width={props.vc.width}
+          height={props.vc.height}
           isError={isError}
           setIsError={setIsError}
           name={props.vc.text}
           type={
             props.vc.type === viewComponentTypes.textInput
-              ? "string"
+              ? props.vc.height >= 2
+                ? "multiline"
+                : "multiline"
               : props.vc.type === viewComponentTypes.decimalInput
               ? "float"
               : props.vc.type === viewComponentTypes.numberInput
@@ -198,6 +211,7 @@ function ViewComponentRender(props: VCProps) {
       return (
         <Slider
           className="w-32 align-text-bottom mb-0.5"
+          style={sizeStyle}
           value={typeof tempValue === "number" ? tempValue : 0}
           onAfterChange={(val) => {
             setTempValue(val);
