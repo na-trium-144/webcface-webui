@@ -82,16 +82,56 @@ export function FuncResultList() {
   // console.log(resultsDisplay);
   const listShow = resultsDisplay.filter((d) => d.show).length > 0;
 
+  const [listBottom, setListBottom] = useState<number>(8);
+  const [listRight, setListRight] = useState<number>(8);
+  const [visualHeight, setVisualHeight] = useState<number>(200);
+  useEffect(() => {
+    setVisualHeight(window.innerHeight);
+    if (window.visualViewport) {
+      // https://ginpen.com/2023/08/08/update-height-by-keyboard-open-using-visual-viewport/
+      // https://stackoverflow.com/questions/28161166/fixed-position-div-on-zoomed-browser-window-on-mobile
+      const onWindowScroll = () => {
+        setListBottom(
+          8 +
+            window.innerHeight -
+            (window.visualViewport!.offsetTop + window.visualViewport!.height)
+        );
+        setListRight(
+          8 +
+            window.innerWidth -
+            (window.visualViewport!.offsetLeft + window.visualViewport!.width)
+        );
+        setVisualHeight(window.visualViewport!.height);
+      };
+      onWindowScroll();
+      window.visualViewport.addEventListener("resize", onWindowScroll);
+      window.visualViewport.addEventListener("scroll", onWindowScroll);
+      // https://developers.google.com/web/updates/2017/09/visual-viewport-api#gotchas
+      window.addEventListener("scroll", onWindowScroll);
+      return () => {
+        window.visualViewport!.removeEventListener("resize", onWindowScroll);
+        window.visualViewport!.removeEventListener("scroll", onWindowScroll);
+        window.removeEventListener("scroll", onWindowScroll);
+      };
+    }
+  }, []);
+
   return (
     <div
       className={
-        "fixed right-2 bottom-2 w-72 max-h-[25%] p-2 " +
+        "fixed w-72 h-auto p-2 " +
         "rounded-lg shadow-lg overflow-x-hidden overflow-y-auto bg-white " +
         "transition duration-100 origin-bottom-right " +
         (listShow
           ? "ease-out opacity-100 scale-100 z-[999] "
           : "ease-in opacity-0 scale-90 -z-10 ")
       }
+      style={{
+        bottom: listBottom,
+        right: listRight,
+        maxWidth: "80vw",
+        maxHeight: visualHeight * 0.3,
+      }}
     >
       <ul className="max-w-full">
         {resultsDisplay.map(
