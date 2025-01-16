@@ -1,3 +1,7 @@
+## [1.12.1] - 2025-01-16
+### Changed
+* FuncResultListをVisualViewportに合わせた位置に表示する (#343)
+
 ## [1.12.0] - 2025-01-16
 ### Added
 * Viewの要素のwidth, heightオプションに対応 (#339)
