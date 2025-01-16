@@ -1,3 +1,7 @@
+## [1.12.2] - 2025-01-16
+### Fixed
+* Viewで行数1以下のtextInputもmultiline表示になっていたのを修正 (#344)
+
 ## [1.12.1] - 2025-01-16
 ### Changed
 * FuncResultListをVisualViewportに合わせた位置に表示する (#343)
