@@ -110,7 +110,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   return (
-    <div className="absolute w-full min-w-min min-h-screen h-max bg-neutral-100 -z-50">
+    <div className="absolute w-full min-w-min min-h-dvh h-max bg-neutral-100 -z-50">
       <nav className="bg-green-300 w-full min-w-min h-12 px-2 drop-shadow-lg">
         <div className="min-w-[288px] h-full">
           <Header
