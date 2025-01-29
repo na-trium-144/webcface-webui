@@ -6,7 +6,7 @@ import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
 import { Button, IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
-import { Pin, Pushpin, Search } from "@icon-park/react";
+import { AlphabeticalSorting, Pin, Pushpin, Search } from "@icon-park/react";
 import { LocalStorage, useLocalStorage } from "./lsProvider";
 
 interface Props {
@@ -39,6 +39,7 @@ export function FuncCard(props: Props) {
       titlePre={props.member.name}
       title="Functions"
       funcs={props.member.funcs()}
+      sortable={true}
     />
   );
 }
@@ -79,17 +80,20 @@ export function PinnedFuncCard(props: { wcli: Client | null }) {
     };
   }, [funcs]);
 
-  return <FuncList title="Pinned Functions" funcs={funcs} />;
+  return <FuncList title="Pinned Functions" funcs={funcs} sortable={false} />;
 }
 
 interface Props2 {
   titlePre?: string;
   title: string;
   funcs: Func[];
+  sortable: boolean;
 }
 export function FuncList(props: Props2) {
   const [searching, setSearching] = useState<boolean>(false);
   const [searchStr, setSearchStr] = useState<string>("");
+  const [sortByName, setSortByName] = useState<boolean>(true);
+  const indexAvailable = props.funcs.some((f) => f.index != 0);
 
   return (
     <Card titlePre={props.titlePre} title={props.title}>
@@ -103,7 +107,15 @@ export function FuncList(props: Props2) {
                   searchStr.split(" ").filter((s) => !v.name.includes(s))
                     .length === 0
               )
-              .sort((a, b) => (a.name > b.name ? 1 : a.name < b.name ? -1 : 0))
+              .sort((a, b) =>
+                sortByName
+                  ? a.name > b.name
+                    ? 1
+                    : a.name < b.name
+                    ? -1
+                    : 0
+                  : a.index - b.index
+              )
               .map((v) => (
                 <FuncLine
                   key={v.name}
@@ -127,6 +139,23 @@ export function FuncList(props: Props2) {
             </div>
           )}
           <div className="text-lg absolute right-4 bottom-0">
+            {!searching && props.sortable && (
+              <IconButton
+                onClick={() => setSortByName(!sortByName)}
+                caption="名前順 / 登録順 で並べ替え"
+                disabled={!indexAvailable}
+              >
+                {sortByName ? (
+                  indexAvailable ? (
+                    <AlphabeticalSorting fill={iconFillColor[1]} />
+                  ) : (
+                    <AlphabeticalSorting />
+                  )
+                ) : (
+                  <AlphabeticalSorting />
+                )}
+              </IconButton>
+            )}
             <IconButton
               onClick={() => {
                 setSearching(!searching);

@@ -36,7 +36,7 @@ export function Button(props: Props) {
               "shadow-md active:shadow-none ") +
           (props.rounded === "full" ? "rounded-full " : "rounded-lg ")
         }
-      style={props.buttonStyle}
+        style={props.buttonStyle}
         onClick={() => void props.onClick()}
         disabled={props.disabled}
         onFocus={() => props.onFocus && props.onFocus()}
@@ -70,7 +70,7 @@ export function IconButton(props: IconProps) {
         className={
           "peer p-2 mx-0.5 " +
           (props.disabled
-            ? "bg-neutral-300 shadow-none "
+            ? "text-neutral-300 shadow-none "
             : "hover:bg-green-50 active:bg-green-100 " +
               "hover:shadow-md active:shadow-none ") +
           "rounded-full "
