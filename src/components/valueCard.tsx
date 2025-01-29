@@ -26,9 +26,12 @@ const maxXRange = 5000; // ms
 export function ValueCard(props: Props) {
   const { layoutChanging } = useLayoutChange();
   const ls = useLocalStorage();
-  const plotEnabled = ls.valueCardWithPlot.some(
-    (v) => v[0] === props.value.member.name && v[1] === props.value.name
-  );
+  const [isVec, setIsVec] = useState<boolean>(false);
+  const plotEnabled =
+    !isVec &&
+    ls.valueCardWithPlot.some(
+      (v) => v[0] === props.value.member.name && v[1] === props.value.name
+    );
   const enablePlot = () =>
     ls.enableValueCardWithPlot(props.value.member.name, props.value.name);
   const disablePlot = () =>
@@ -40,6 +43,8 @@ export function ValueCard(props: Props) {
   const update = useForceUpdate();
   // 過去の全データ
   const data = useRef<{ x: Date; y: number }[]>([]);
+  // 現在のデータ
+  const vecData = useRef<number[]>([]);
   // 表示する時刻 (グラフの左端の時刻)
   const minX = useRef<number | null>(null);
   const maxX = useRef<number | null>(null);
@@ -118,24 +123,34 @@ export function ValueCard(props: Props) {
   // dataの追加
   useEffect(() => {
     const onValueChange = () => {
-      const val = props.value.tryGet();
-      const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
-      if (val != null && now.getTime() !== 0) {
-        if (data.current.length && now.getTime() < dataMaxX()!) {
-          console.error(`Invalid time ${now.toLocaleString()}`);
-        } else if (data.current.length && now.getTime() == dataMaxX()!) {
-          // todo: 1ms以下の間隔でデータが来たら描画できない (ので今は弾いている)
-          // というか時刻の分解能が1msしかない
-          console.error(`Ignoring more than 1 data point per 1ms.`);
-        } else {
-          data.current.push({ x: now, y: val });
-          if (dataMinY.current === null || dataMinY.current > val) {
-            dataMinY.current = val;
+      const valVec = props.value.tryGetVec();
+      if (valVec != null) {
+        vecData.current = valVec;
+        if (!isVec && valVec.length != 1) {
+          setIsVec(true);
+          hasUpdate.current = true;
+        }
+      }
+      if (!isVec) {
+        const val = props.value.tryGet();
+        const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
+        if (val != null && now.getTime() !== 0) {
+          if (data.current.length && now.getTime() < dataMaxX()!) {
+            console.error(`Invalid time ${now.toLocaleString()}`);
+          } else if (data.current.length && now.getTime() == dataMaxX()!) {
+            // todo: 1ms以下の間隔でデータが来たら描画できない (ので今は弾いている)
+            // というか時刻の分解能が1msしかない
+            console.error(`Ignoring more than 1 data point per 1ms.`);
+          } else {
+            data.current.push({ x: now, y: val });
+            if (dataMinY.current === null || dataMinY.current > val) {
+              dataMinY.current = val;
+            }
+            if (dataMaxY.current === null || dataMaxY.current < val) {
+              dataMaxY.current = val;
+            }
+            hasUpdate.current = true; // 右下の時刻表示のため
           }
-          if (dataMaxY.current === null || dataMaxY.current < val) {
-            dataMaxY.current = val;
-          }
-          hasUpdate.current = true; // 右下の時刻表示のため
         }
       }
     };
@@ -577,16 +592,22 @@ export function ValueCard(props: Props) {
           </>
         ) : (
           <>
-            <div className="flex-1" />
-            <div className="flex-none h-8 flex items-center ">
-              <ValueAsText
-                className="flex-1"
-                value={data.current[data.current.length - 1]?.y}
-              />
-              <div className="flex-none text-lg relative mr-4">
+            <div className="flex-1 flex flex-col overflow-hidden ">
+              <ul className="my-auto w-full self-center">
+                {vecData.current.map((v, i) => (
+                  <li key={i} className="flex flex-row items-center">
+                    {vecData.current.length >= 2 && (
+                      <span className="flex-none text-xs">[{i}]</span>
+                    )}
+                    <ValueAsText className="flex-1" value={v} />
+                  </li>
+                ))}
+              </ul>
+              <div className="flex-none text-lg relative h-8 mr-4 self-end">
                 <IconButton
                   onClick={() => enablePlot()}
                   caption="グラフ表示に切り替え"
+                  disabled={isVec}
                 >
                   <Analysis />
                 </IconButton>
@@ -599,9 +620,11 @@ export function ValueCard(props: Props) {
   );
 }
 
-function ValueAsText(props: { className: string; value?: number }) {
+function ValueAsText(props: { className?: string; value?: number }) {
   const { value } = props;
   const prevValue = useRef<number>(0);
+  const areaDiv = useRef<HTMLDivElement>(null);
+  const [divMaxLen, setDivMaxLen] = useState<number>(1);
   const [color, setColor] = useState<string>("");
   const [maxLenInt, setMaxLenInt] = useState<number>(1);
   const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
@@ -624,8 +647,9 @@ function ValueAsText(props: { className: string; value?: number }) {
     if (maxLenInt < valueStrInt.length) {
       setMaxLenInt(valueStrInt.length);
     }
+    const minLenFrac = Math.max(0, divMaxLen - maxLenInt - maxLenExp);
     if (maxLenFrac < valueStrFrac.length) {
-      setMaxLenFrac(valueStrFrac.length);
+      setMaxLenFrac(Math.min(valueStrFrac.length, minLenFrac));
     }
     if (maxLenExp < valueStrExp.length) {
       setMaxLenExp(valueStrExp.length);
@@ -638,22 +662,33 @@ function ValueAsText(props: { className: string; value?: number }) {
     valueStrFrac,
     valueStrExp,
   ]);
+  const colorReset = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (value !== undefined && prevValue.current !== value) {
+      if (colorReset.current) {
+        clearTimeout(colorReset.current);
+      }
       if (prevValue.current <= value) {
         setColor("text-green-600");
       } else {
         setColor("text-red-600");
       }
-      const i = setTimeout(() => {
+      colorReset.current = setTimeout(() => {
         setColor("");
+        colorReset.current = null;
       }, 500);
       prevValue.current = value;
-      return () => clearTimeout(i);
     }
   }, [value]);
+  useEffect(() => {
+    if (areaDiv.current !== null) {
+      const observer = new ResizeObserver(() => setDivMaxLen(areaDiv.current!.clientWidth / 9.2));
+      observer.observe(areaDiv.current);
+      return () => observer.disconnect();
+    }
+  }, []);
   return (
-    <div className={props.className + " flex flex-row " + color}>
+    <div className={props.className + " flex flex-row " + color} ref={areaDiv}>
       <div className="basis-0 text-right" style={{ flexGrow: maxLenInt }}>
         {valueStrInt}
       </div>
