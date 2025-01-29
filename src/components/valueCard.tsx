@@ -44,7 +44,7 @@ export function ValueCard(props: Props) {
   // 過去の全データ
   const data = useRef<{ x: Date; y: number }[]>([]);
   // 現在のデータ
-  const vecData = useRef<number[]>([]);
+  const vecData = useRef<number[] | null>(null);
   // 表示する時刻 (グラフの左端の時刻)
   const minX = useRef<number | null>(null);
   const maxX = useRef<number | null>(null);
@@ -155,6 +155,9 @@ export function ValueCard(props: Props) {
       }
     };
     props.value.tryGet();
+    if (vecData.current === null) {
+      onValueChange();
+    }
     props.value.member.onSync.on(onValueChange);
     return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
@@ -594,9 +597,9 @@ export function ValueCard(props: Props) {
           <>
             <div className="flex-1 flex flex-col overflow-hidden ">
               <ul className="my-auto w-full self-center">
-                {vecData.current.map((v, i) => (
+                {vecData.current?.map((v, i) => (
                   <li key={i} className="flex flex-row items-center">
-                    {vecData.current.length >= 2 && (
+                    {vecData.current!.length >= 2 && (
                       <span className="flex-none text-xs">[{i}]</span>
                     )}
                     <ValueAsText className="flex-1" value={v} />
@@ -624,44 +627,77 @@ function ValueAsText(props: { className?: string; value?: number }) {
   const { value } = props;
   const prevValue = useRef<number>(0);
   const areaDiv = useRef<HTMLDivElement>(null);
-  const [divMaxLen, setDivMaxLen] = useState<number>(1);
+  const [divMaxLen, setDivMaxLen] = useState<number>(1); // 表示できる最大文字数
   const [color, setColor] = useState<string>("");
   const [maxLenInt, setMaxLenInt] = useState<number>(1);
   const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
   const [maxLenExp, setMaxLenExp] = useState<number>(0);
-  const valueStr = value !== undefined ? String(value) : "";
-  const valueStrExp = valueStr.includes("e")
-    ? valueStr.slice(valueStr.indexOf("e"))
-    : "";
-  const valueStrFrac = valueStr.includes(".")
-    ? valueStr.slice(
-        valueStr.indexOf("."),
-        valueStr.length - valueStrExp.length
-      )
-    : "";
-  const valueStrInt = valueStr.slice(
-    0,
-    valueStr.length - valueStrFrac.length - valueStrExp.length
-  );
+  const [valueStrInt, setValueStrInt] = useState<string>("");
+  const [valueStrFrac, setValueStrFrac] = useState<string>("");
+  const [valueStrExp, setValueStrExp] = useState<string>("");
+
   useEffect(() => {
-    if (maxLenInt < valueStrInt.length) {
-      setMaxLenInt(valueStrInt.length);
-    }
-    const minLenFrac = Math.max(0, divMaxLen - maxLenInt - maxLenExp);
-    if (maxLenFrac < valueStrFrac.length) {
-      setMaxLenFrac(Math.min(valueStrFrac.length, minLenFrac));
-    }
-    if (maxLenExp < valueStrExp.length) {
-      setMaxLenExp(valueStrExp.length);
+    if (value !== undefined) {
+      const logValue =
+        Math.abs(value) > 0 ? Math.floor(Math.log10(Math.abs(value))) : 0;
+      const logLogValue =
+        Math.abs(logValue) > 0 ? Math.floor(Math.log10(Math.abs(logValue))) : 0;
+
+      let valueStrInt = "",
+        valueStrFrac = "",
+        valueStrExp = "";
+      if (logValue >= 0 && logValue < divMaxLen && logValue < 15) {
+        const fracLen = Math.max(
+          0,
+          divMaxLen - Math.max(logValue + 1, maxLenInt)
+        );
+        const valueStr = value.toFixed(fracLen);
+        valueStrInt = valueStr.slice(0, logValue + 1);
+        valueStrFrac = valueStr.slice(logValue + 1).replace(/0+$/, "");
+      } else if (logValue < 0 && -logValue < divMaxLen / 2) {
+        valueStrInt = "0";
+        valueStrFrac = value.toFixed(divMaxLen - 1).replace(/0+$/, "");
+      } else {
+        const fracLen = Math.max(
+          0,
+          divMaxLen - Math.max(logLogValue + 2, maxLenExp) - 1
+        );
+        const valueStr = value.toExponential(fracLen);
+        if (valueStr.includes(".")) {
+          valueStrInt = valueStr.slice(0, valueStr.indexOf("."));
+          valueStrFrac = valueStr
+            .slice(valueStr.indexOf("."), valueStr.indexOf("e"))
+            .replace(/0+$/, "");
+        } else {
+          valueStrInt = valueStr.slice(0, valueStr.indexOf("e"));
+          valueStrFrac = "";
+        }
+        valueStrExp = valueStr.slice(valueStr.indexOf("e"));
+      }
+      if (valueStrInt.length > maxLenInt) {
+        setMaxLenInt(valueStrInt.length);
+      }
+      if (valueStrFrac.length > maxLenFrac) {
+        setMaxLenFrac(valueStrFrac.length);
+      }
+      if (valueStrExp.length > maxLenExp) {
+        setMaxLenExp(valueStrExp.length);
+      }
+      setValueStrInt(valueStrInt);
+      setValueStrFrac(valueStrFrac);
+      setValueStrExp(valueStrExp);
     }
   }, [
-    maxLenInt,
-    maxLenFrac,
+    value,
+    divMaxLen,
     maxLenExp,
-    valueStrInt,
-    valueStrFrac,
-    valueStrExp,
+    maxLenFrac,
+    maxLenInt,
+    valueStrInt.length,
+    valueStrFrac.length,
+    valueStrExp.length,
   ]);
+
   const colorReset = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (value !== undefined && prevValue.current !== value) {
@@ -682,13 +718,25 @@ function ValueAsText(props: { className?: string; value?: number }) {
   }, [value]);
   useEffect(() => {
     if (areaDiv.current !== null) {
-      const observer = new ResizeObserver(() => setDivMaxLen(areaDiv.current!.clientWidth / 9.2));
+      const rem = parseFloat(
+        getComputedStyle(document.documentElement).fontSize
+      );
+      const observer = new ResizeObserver(() => {
+        setDivMaxLen(Math.floor(areaDiv.current!.clientWidth / (0.6 * rem)));
+        // reset
+        setMaxLenInt(1);
+        setMaxLenFrac(1);
+        setMaxLenExp(0);
+      });
       observer.observe(areaDiv.current);
       return () => observer.disconnect();
     }
   }, []);
   return (
-    <div className={props.className + " flex flex-row " + color} ref={areaDiv}>
+    <div
+      className={props.className + " w-full flex flex-row " + color}
+      ref={areaDiv}
+    >
       <div className="basis-0 text-right" style={{ flexGrow: maxLenInt }}>
         {valueStrInt}
       </div>
