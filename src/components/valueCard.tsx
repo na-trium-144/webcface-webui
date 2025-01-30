@@ -65,6 +65,9 @@ export function ValueCard(props: Props) {
   const hasSufficientData = () =>
     data.current.length && dataMaxX()! - dataMinX()! >= maxXRange;
 
+  // グリッド
+  const yTick = useRef<number>(1);
+
   // 値→DOM
   const getPosX = (x: number) =>
     minX.current && maxX.current && canvasMain.current
@@ -96,11 +99,11 @@ export function ValueCard(props: Props) {
     maxX.current = newMaxX;
   };
   const setRangeY = (newMinY: number, newMaxY: number) => {
-    if (newMaxY - newMinY < 1) {
-      const midY = (newMaxY + newMinY) / 2;
-      newMaxY = midY + 0.5;
-      newMinY = midY - 0.5;
-    }
+    // if (newMaxY - newMinY < 1) {
+    //   const midY = (newMaxY + newMinY) / 2;
+    //   newMaxY = midY + 0.5;
+    //   newMinY = midY - 0.5;
+    // }
     if (minY.current !== newMinY || maxY.current !== newMaxY) {
       hasUpdate.current = true;
     }
@@ -244,6 +247,32 @@ export function ValueCard(props: Props) {
           const midY = (maxY.current + minY.current) / 2;
           line.offsetY = -midY / (maxY.current - midY);
           line.scaleY = 1 / (maxY.current - midY);
+
+          const rem = parseFloat(
+            getComputedStyle(document.documentElement).fontSize
+          );
+
+          yTick.current = Math.pow(
+            10,
+            Math.floor(Math.log10(maxY.current - minY.current))
+          );
+          while (
+            (maxY.current - minY.current) / (yTick.current / 10) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 10;
+          }
+          if (
+            (maxY.current - minY.current) / (yTick.current / 5) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 5;
+          } else if (
+            (maxY.current - minY.current) / (yTick.current / 2) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 2;
+          }
         }
         id = requestAnimationFrame(renderPlot);
         webglp.update();
@@ -287,13 +316,6 @@ export function ValueCard(props: Props) {
     }
   }, [cursorPosXRaw]);
 
-  // グリッド
-  let yTick = Math.pow(10, Math.floor(Math.log10(maxY.current - minY.current)));
-  if ((maxY.current - minY.current) / yTick <= 2) {
-    yTick /= 5;
-  } else if ((maxY.current - minY.current) / yTick <= 5) {
-    yTick /= 2;
-  }
   let xTick = 1000;
   if (maxX.current && minX.current) {
     xTick = Math.pow(10, Math.floor(Math.log10(maxX.current - minX.current)));
@@ -429,21 +451,39 @@ export function ValueCard(props: Props) {
                 {[
                   ...new Array(
                     Math.max(
-                      Math.floor(maxY.current / yTick) -
-                        Math.ceil(minY.current / yTick) +
+                      Math.floor(maxY.current / yTick.current) -
+                        Math.ceil(minY.current / yTick.current) +
                         1,
                       0
                     )
                   ).keys(),
                 ]
-                  .map((_, i) => (Math.ceil(minY.current / yTick) + i) * yTick)
+                  .map(
+                    (_, i) =>
+                      (Math.ceil(minY.current / yTick.current) + i) *
+                      yTick.current
+                  )
                   .map((y, i) => (
                     <div
                       key={i}
                       className="absolute w-full h-auto left-0 border-b border-gray-300 text-gray-500"
                       style={{ bottom: getPosY(y) }}
                     >
-                      {y}
+                      {y == 0
+                        ? 0
+                        : Math.log10(Math.abs(y)) >= 5
+                        ? y.toExponential(
+                            Math.floor(Math.log10(Math.abs(y))) -
+                              Math.floor(Math.log10(yTick.current))
+                          )
+                        : Math.log10(Math.abs(y)) >= -5
+                        ? y.toFixed(
+                            Math.max(0, -Math.floor(Math.log10(yTick.current)))
+                          )
+                        : y.toExponential(
+                            Math.floor(Math.log10(Math.abs(y))) -
+                              Math.floor(Math.log10(yTick.current))
+                          )}
                     </div>
                   ))}
                 {maxX.current &&
