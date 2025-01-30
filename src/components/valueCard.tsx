@@ -26,9 +26,12 @@ const maxXRange = 5000; // ms
 export function ValueCard(props: Props) {
   const { layoutChanging } = useLayoutChange();
   const ls = useLocalStorage();
-  const plotEnabled = ls.valueCardWithPlot.some(
-    (v) => v[0] === props.value.member.name && v[1] === props.value.name
-  );
+  const [isVec, setIsVec] = useState<boolean>(false);
+  const plotEnabled =
+    !isVec &&
+    ls.valueCardWithPlot.some(
+      (v) => v[0] === props.value.member.name && v[1] === props.value.name
+    );
   const enablePlot = () =>
     ls.enableValueCardWithPlot(props.value.member.name, props.value.name);
   const disablePlot = () =>
@@ -40,6 +43,8 @@ export function ValueCard(props: Props) {
   const update = useForceUpdate();
   // 過去の全データ
   const data = useRef<{ x: Date; y: number }[]>([]);
+  // 現在のデータ
+  const vecData = useRef<number[] | null>(null);
   // 表示する時刻 (グラフの左端の時刻)
   const minX = useRef<number | null>(null);
   const maxX = useRef<number | null>(null);
@@ -59,6 +64,9 @@ export function ValueCard(props: Props) {
   const dataMaxY = useRef<number | null>(null);
   const hasSufficientData = () =>
     data.current.length && dataMaxX()! - dataMinX()! >= maxXRange;
+
+  // グリッド
+  const yTick = useRef<number>(1);
 
   // 値→DOM
   const getPosX = (x: number) =>
@@ -91,11 +99,11 @@ export function ValueCard(props: Props) {
     maxX.current = newMaxX;
   };
   const setRangeY = (newMinY: number, newMaxY: number) => {
-    if (newMaxY - newMinY < 1) {
-      const midY = (newMaxY + newMinY) / 2;
-      newMaxY = midY + 0.5;
-      newMinY = midY - 0.5;
-    }
+    // if (newMaxY - newMinY < 1) {
+    //   const midY = (newMaxY + newMinY) / 2;
+    //   newMaxY = midY + 0.5;
+    //   newMinY = midY - 0.5;
+    // }
     if (minY.current !== newMinY || maxY.current !== newMaxY) {
       hasUpdate.current = true;
     }
@@ -118,28 +126,41 @@ export function ValueCard(props: Props) {
   // dataの追加
   useEffect(() => {
     const onValueChange = () => {
-      const val = props.value.tryGet();
-      const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
-      if (val != null && now.getTime() !== 0) {
-        if (data.current.length && now.getTime() < dataMaxX()!) {
-          console.error(`Invalid time ${now.toLocaleString()}`);
-        } else if (data.current.length && now.getTime() == dataMaxX()!) {
-          // todo: 1ms以下の間隔でデータが来たら描画できない (ので今は弾いている)
-          // というか時刻の分解能が1msしかない
-          console.error(`Ignoring more than 1 data point per 1ms.`);
-        } else {
-          data.current.push({ x: now, y: val });
-          if (dataMinY.current === null || dataMinY.current > val) {
-            dataMinY.current = val;
+      const valVec = props.value.tryGetVec();
+      if (valVec != null) {
+        vecData.current = valVec;
+        if (!isVec && valVec.length != 1) {
+          setIsVec(true);
+          hasUpdate.current = true;
+        }
+      }
+      if (!isVec) {
+        const val = props.value.tryGet();
+        const now = props.value.time(); // todo: 時刻0が返ってくるのはなぜ?
+        if (val != null && now.getTime() !== 0) {
+          if (data.current.length && now.getTime() < dataMaxX()!) {
+            console.error(`Invalid time ${now.toLocaleString()}`);
+          } else if (data.current.length && now.getTime() == dataMaxX()!) {
+            // todo: 1ms以下の間隔でデータが来たら描画できない (ので今は弾いている)
+            // というか時刻の分解能が1msしかない
+            console.error(`Ignoring more than 1 data point per 1ms.`);
+          } else {
+            data.current.push({ x: now, y: val });
+            if (dataMinY.current === null || dataMinY.current > val) {
+              dataMinY.current = val;
+            }
+            if (dataMaxY.current === null || dataMaxY.current < val) {
+              dataMaxY.current = val;
+            }
+            hasUpdate.current = true; // 右下の時刻表示のため
           }
-          if (dataMaxY.current === null || dataMaxY.current < val) {
-            dataMaxY.current = val;
-          }
-          hasUpdate.current = true; // 右下の時刻表示のため
         }
       }
     };
     props.value.tryGet();
+    if (vecData.current === null) {
+      onValueChange();
+    }
     props.value.member.onSync.on(onValueChange);
     return () => props.value.member.onSync.off(onValueChange);
   }, [props.value]);
@@ -226,6 +247,32 @@ export function ValueCard(props: Props) {
           const midY = (maxY.current + minY.current) / 2;
           line.offsetY = -midY / (maxY.current - midY);
           line.scaleY = 1 / (maxY.current - midY);
+
+          const rem = parseFloat(
+            getComputedStyle(document.documentElement).fontSize
+          );
+
+          yTick.current = Math.pow(
+            10,
+            Math.floor(Math.log10(maxY.current - minY.current))
+          );
+          while (
+            (maxY.current - minY.current) / (yTick.current / 10) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 10;
+          }
+          if (
+            (maxY.current - minY.current) / (yTick.current / 5) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 5;
+          } else if (
+            (maxY.current - minY.current) / (yTick.current / 2) <=
+            canvasDiv.current.clientHeight / (1 * rem)
+          ) {
+            yTick.current /= 2;
+          }
         }
         id = requestAnimationFrame(renderPlot);
         webglp.update();
@@ -241,41 +288,28 @@ export function ValueCard(props: Props) {
 
   // カーソルを乗せた位置の値を表示する用
   const [cursorPosXRaw, setCursorPosXRaw] = useState<number | null>(null);
-  const [cursorX, setCursorX] = useState<number | null>(null);
-  const [cursorY, setCursorY] = useState<number | null>(null);
-  const [cursorI, setCursorI] = useState<number | null>(null);
-  useEffect(() => {
-    if (
-      cursorPosXRaw != null &&
-      canvasMain.current != null &&
-      data.current.length > 0
-    ) {
-      const cursorXRaw = getValX(cursorPosXRaw);
-      const nearestI = data.current.reduce(
-        (prevI: number, { x }, i) =>
-          Math.abs(x.getTime() - cursorXRaw!) <
-          Math.abs(data.current[prevI].x.getTime() - cursorXRaw!)
-            ? i
-            : prevI,
-        0
-      );
-      setCursorX(getPosX(data.current[nearestI].x.getTime()));
-      setCursorY(getPosY(data.current[nearestI].y));
-      setCursorI(nearestI);
-    } else {
-      setCursorX(null);
-      setCursorY(null);
-      setCursorI(null);
-    }
-  }, [cursorPosXRaw]);
-
-  // グリッド
-  let yTick = Math.pow(10, Math.floor(Math.log10(maxY.current - minY.current)));
-  if ((maxY.current - minY.current) / yTick <= 2) {
-    yTick /= 5;
-  } else if ((maxY.current - minY.current) / yTick <= 5) {
-    yTick /= 2;
+  let cursorX: number | null = null;
+  let cursorY: number | null = null;
+  let cursorI: number | null = null;
+  if (
+    cursorPosXRaw != null &&
+    canvasMain.current != null &&
+    data.current.length > 0
+  ) {
+    const cursorXRaw = getValX(cursorPosXRaw);
+    const nearestI = data.current.reduce(
+      (prevI: number, { x }, i) =>
+        Math.abs(x.getTime() - cursorXRaw!) <
+        Math.abs(data.current[prevI].x.getTime() - cursorXRaw!)
+          ? i
+          : prevI,
+      0
+    );
+    cursorX = getPosX(data.current[nearestI].x.getTime());
+    cursorY = getPosY(data.current[nearestI].y);
+    cursorI = nearestI;
   }
+
   let xTick = 1000;
   if (maxX.current && minX.current) {
     xTick = Math.pow(10, Math.floor(Math.log10(maxX.current - minX.current)));
@@ -411,21 +445,39 @@ export function ValueCard(props: Props) {
                 {[
                   ...new Array(
                     Math.max(
-                      Math.floor(maxY.current / yTick) -
-                        Math.ceil(minY.current / yTick) +
+                      Math.floor(maxY.current / yTick.current) -
+                        Math.ceil(minY.current / yTick.current) +
                         1,
                       0
                     )
                   ).keys(),
                 ]
-                  .map((_, i) => (Math.ceil(minY.current / yTick) + i) * yTick)
+                  .map(
+                    (_, i) =>
+                      (Math.ceil(minY.current / yTick.current) + i) *
+                      yTick.current
+                  )
                   .map((y, i) => (
                     <div
                       key={i}
                       className="absolute w-full h-auto left-0 border-b border-gray-300 text-gray-500"
                       style={{ bottom: getPosY(y) }}
                     >
-                      {y}
+                      {y == 0
+                        ? 0
+                        : Math.log10(Math.abs(y)) >= 5
+                        ? y.toExponential(
+                            Math.floor(Math.log10(Math.abs(y))) -
+                              Math.floor(Math.log10(yTick.current))
+                          )
+                        : Math.log10(Math.abs(y)) >= -5
+                        ? y.toFixed(
+                            Math.max(0, -Math.floor(Math.log10(yTick.current)))
+                          )
+                        : y.toExponential(
+                            Math.floor(Math.log10(Math.abs(y))) -
+                              Math.floor(Math.log10(yTick.current))
+                          )}
                     </div>
                   ))}
                 {maxX.current &&
@@ -577,16 +629,22 @@ export function ValueCard(props: Props) {
           </>
         ) : (
           <>
-            <div className="flex-1" />
-            <div className="flex-none h-8 flex items-center ">
-              <ValueAsText
-                className="flex-1"
-                value={data.current[data.current.length - 1]?.y}
-              />
-              <div className="flex-none text-lg relative mr-4">
+            <div className="flex-1 flex flex-col overflow-hidden ">
+              <ul className="my-auto w-full self-center">
+                {vecData.current?.map((v, i) => (
+                  <li key={i} className="flex flex-row items-center">
+                    {vecData.current!.length >= 2 && (
+                      <span className="flex-none text-xs">[{i}]</span>
+                    )}
+                    <ValueAsText className="flex-1" value={v} />
+                  </li>
+                ))}
+              </ul>
+              <div className="flex-none text-lg relative h-8 mr-4 self-end">
                 <IconButton
                   onClick={() => enablePlot()}
                   caption="グラフ表示に切り替え"
+                  disabled={isVec}
                 >
                   <Analysis />
                 </IconButton>
@@ -599,61 +657,120 @@ export function ValueCard(props: Props) {
   );
 }
 
-function ValueAsText(props: { className: string; value?: number }) {
+function ValueAsText(props: { className?: string; value?: number }) {
   const { value } = props;
   const prevValue = useRef<number>(0);
+  const areaDiv = useRef<HTMLDivElement>(null);
+  const [divMaxLen, setDivMaxLen] = useState<number>(1); // 表示できる最大文字数
   const [color, setColor] = useState<string>("");
   const [maxLenInt, setMaxLenInt] = useState<number>(1);
   const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
   const [maxLenExp, setMaxLenExp] = useState<number>(0);
-  const valueStr = value !== undefined ? String(value) : "";
-  const valueStrExp = valueStr.includes("e")
-    ? valueStr.slice(valueStr.indexOf("e"))
-    : "";
-  const valueStrFrac = valueStr.includes(".")
-    ? valueStr.slice(
-        valueStr.indexOf("."),
-        valueStr.length - valueStrExp.length
-      )
-    : "";
-  const valueStrInt = valueStr.slice(
-    0,
-    valueStr.length - valueStrFrac.length - valueStrExp.length
-  );
+  const [valueStrInt, setValueStrInt] = useState<string>("");
+  const [valueStrFrac, setValueStrFrac] = useState<string>("");
+  const [valueStrExp, setValueStrExp] = useState<string>("");
+
   useEffect(() => {
-    if (maxLenInt < valueStrInt.length) {
-      setMaxLenInt(valueStrInt.length);
-    }
-    if (maxLenFrac < valueStrFrac.length) {
-      setMaxLenFrac(valueStrFrac.length);
-    }
-    if (maxLenExp < valueStrExp.length) {
-      setMaxLenExp(valueStrExp.length);
+    if (value !== undefined) {
+      const logValue =
+        Math.abs(value) > 0 ? Math.floor(Math.log10(Math.abs(value))) : 0;
+      const logLogValue =
+        Math.abs(logValue) > 0 ? Math.floor(Math.log10(Math.abs(logValue))) : 0;
+
+      let valueStrInt = "",
+        valueStrFrac = "",
+        valueStrExp = "";
+      if (logValue >= 0 && logValue < divMaxLen && logValue < 15) {
+        const fracLen = Math.max(
+          0,
+          divMaxLen - Math.max(logValue + 1, maxLenInt)
+        );
+        const valueStr = value.toFixed(fracLen);
+        valueStrInt = valueStr.slice(0, logValue + 1);
+        valueStrFrac = valueStr.slice(logValue + 1).replace(/0+$/, "");
+      } else if (logValue < 0 && -logValue < divMaxLen / 2) {
+        valueStrInt = "0";
+        valueStrFrac = value.toFixed(divMaxLen - 1).replace(/0+$/, "");
+      } else {
+        const fracLen = Math.max(
+          0,
+          divMaxLen - Math.max(logLogValue + 2, maxLenExp) - 1
+        );
+        const valueStr = value.toExponential(fracLen);
+        if (valueStr.includes(".")) {
+          valueStrInt = valueStr.slice(0, valueStr.indexOf("."));
+          valueStrFrac = valueStr
+            .slice(valueStr.indexOf("."), valueStr.indexOf("e"))
+            .replace(/0+$/, "");
+        } else {
+          valueStrInt = valueStr.slice(0, valueStr.indexOf("e"));
+          valueStrFrac = "";
+        }
+        valueStrExp = valueStr.slice(valueStr.indexOf("e"));
+      }
+      if (valueStrInt.length > maxLenInt) {
+        setMaxLenInt(valueStrInt.length);
+      }
+      if (valueStrFrac.length > maxLenFrac) {
+        setMaxLenFrac(valueStrFrac.length);
+      }
+      if (valueStrExp.length > maxLenExp) {
+        setMaxLenExp(valueStrExp.length);
+      }
+      setValueStrInt(valueStrInt);
+      setValueStrFrac(valueStrFrac);
+      setValueStrExp(valueStrExp);
     }
   }, [
-    maxLenInt,
-    maxLenFrac,
+    value,
+    divMaxLen,
     maxLenExp,
-    valueStrInt,
-    valueStrFrac,
-    valueStrExp,
+    maxLenFrac,
+    maxLenInt,
+    valueStrInt.length,
+    valueStrFrac.length,
+    valueStrExp.length,
   ]);
+
+  const colorReset = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (value !== undefined && prevValue.current !== value) {
+      if (colorReset.current) {
+        clearTimeout(colorReset.current);
+      }
       if (prevValue.current <= value) {
         setColor("text-green-600");
       } else {
         setColor("text-red-600");
       }
-      const i = setTimeout(() => {
+      colorReset.current = setTimeout(() => {
         setColor("");
+        colorReset.current = null;
       }, 500);
       prevValue.current = value;
-      return () => clearTimeout(i);
     }
   }, [value]);
+  useEffect(() => {
+    if (areaDiv.current !== null) {
+      const rem = parseFloat(
+        getComputedStyle(document.documentElement).fontSize
+      );
+      const observer = new ResizeObserver(() => {
+        setDivMaxLen(Math.floor(areaDiv.current!.clientWidth / (0.6 * rem)));
+        // reset
+        setMaxLenInt(1);
+        setMaxLenFrac(1);
+        setMaxLenExp(0);
+      });
+      observer.observe(areaDiv.current);
+      return () => observer.disconnect();
+    }
+  }, []);
   return (
-    <div className={props.className + " flex flex-row " + color}>
+    <div
+      className={props.className + " w-full flex flex-row " + color}
+      ref={areaDiv}
+    >
       <div className="basis-0 text-right" style={{ flexGrow: maxLenInt }}>
         {valueStrInt}
       </div>

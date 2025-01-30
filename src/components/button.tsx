@@ -70,7 +70,7 @@ export function IconButton(props: IconProps) {
         className={
           "peer p-2 mx-0.5 " +
           (props.disabled
-            ? "text-neutral-300 shadow-none "
+            ? "text-neutral-400 shadow-none "
             : "hover:bg-green-50 active:bg-green-100 " +
               "hover:shadow-md active:shadow-none ") +
           "rounded-full "
