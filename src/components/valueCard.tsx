@@ -288,33 +288,27 @@ export function ValueCard(props: Props) {
 
   // カーソルを乗せた位置の値を表示する用
   const [cursorPosXRaw, setCursorPosXRaw] = useState<number | null>(null);
-  const [cursorX, setCursorX] = useState<number | null>(null);
-  const [cursorY, setCursorY] = useState<number | null>(null);
-  const [cursorI, setCursorI] = useState<number | null>(null);
-  useEffect(() => {
-    if (
-      cursorPosXRaw != null &&
-      canvasMain.current != null &&
-      data.current.length > 0
-    ) {
-      const cursorXRaw = getValX(cursorPosXRaw);
-      const nearestI = data.current.reduce(
-        (prevI: number, { x }, i) =>
-          Math.abs(x.getTime() - cursorXRaw!) <
-          Math.abs(data.current[prevI].x.getTime() - cursorXRaw!)
-            ? i
-            : prevI,
-        0
-      );
-      setCursorX(getPosX(data.current[nearestI].x.getTime()));
-      setCursorY(getPosY(data.current[nearestI].y));
-      setCursorI(nearestI);
-    } else {
-      setCursorX(null);
-      setCursorY(null);
-      setCursorI(null);
-    }
-  }, [cursorPosXRaw]);
+  let cursorX: number | null = null;
+  let cursorY: number | null = null;
+  let cursorI: number | null = null;
+  if (
+    cursorPosXRaw != null &&
+    canvasMain.current != null &&
+    data.current.length > 0
+  ) {
+    const cursorXRaw = getValX(cursorPosXRaw);
+    const nearestI = data.current.reduce(
+      (prevI: number, { x }, i) =>
+        Math.abs(x.getTime() - cursorXRaw!) <
+        Math.abs(data.current[prevI].x.getTime() - cursorXRaw!)
+          ? i
+          : prevI,
+      0
+    );
+    cursorX = getPosX(data.current[nearestI].x.getTime());
+    cursorY = getPosY(data.current[nearestI].y);
+    cursorI = nearestI;
+  }
 
   let xTick = 1000;
   if (maxX.current && minX.current) {
