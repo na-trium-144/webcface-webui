@@ -36,7 +36,7 @@ export function Button(props: Props) {
               "shadow-md active:shadow-none ") +
           (props.rounded === "full" ? "rounded-full " : "rounded-lg ")
         }
-      style={props.buttonStyle}
+        style={props.buttonStyle}
         onClick={() => void props.onClick()}
         disabled={props.disabled}
         onFocus={() => props.onFocus && props.onFocus()}
