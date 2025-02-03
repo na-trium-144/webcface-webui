@@ -34,7 +34,7 @@
     "react-switch": "^7.0.0",
     "three": "^0.172.0",
     "webcface": "^1.11.0",
-    "webgl-plot": "^0.7.1"
+    "webgl-plot": "^0.7.2"
   },
   "devDependencies": {
     "@babel/runtime": "^7.24.4",
