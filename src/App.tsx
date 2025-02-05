@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Client, LogLine } from "webcface";
 import "./index.css";
 import { LayoutMain } from "./components/layout";
@@ -6,6 +6,7 @@ import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
 import { LogDataWithLevels, useLogStore } from "./components/logStoreProvider";
+import { GamepadState } from "./components/gamepadCard";
 
 export default function App() {
   const logStore = useLogStore();
@@ -17,6 +18,8 @@ export default function App() {
     : `(${clientHost})`;
   const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
   const [serverHostName, setServerHostName] = useState<string>("");
+  const [gamepadState, setGamepadState] = useState<GamepadState[]>([]);
+  const gamepadSender = useRef<(Client | null)[]>([]);
 
   useEffect(() => {
     // 7530ポートに接続するクライアント
@@ -107,6 +110,78 @@ export default function App() {
     }
   }, [logStore.serverData, logStore.serverHasUpdate]);
 
+  useEffect(() => {
+    for (let i = 0; i < gamepadState.length; i++) {
+      if (
+        gamepadState[i].connected &&
+        gamepadState[i].enabled &&
+        !gamepadSender.current[i] &&
+        clientPort
+      ) {
+        gamepadSender.current[i] = new Client("", clientHost, clientPort);
+        gamepadSender.current[i]!.start();
+      } else if (
+        (!gamepadState[i].connected || !gamepadState[i].enabled) &&
+        gamepadSender.current[i]
+      ) {
+        gamepadSender.current[i]!.close();
+        gamepadSender.current[i] = null;
+      }
+    }
+
+    let f: number | null = null;
+    const sendGamepads = () => {
+      const gamepads = navigator.getGamepads();
+      if (gamepads) {
+        for (let i = 0; i < gamepads.length; i++) {
+          if (
+            gamepads[i] &&
+            gamepadState[i].enabled &&
+            gamepadSender.current[i]
+          ) {
+            gamepadSender.current[i]!.text("name").set(gamepads[i]!.id);
+            gamepadSender.current[i]!.value("buttons").set(
+              gamepads[i]!.buttons.map((b) =>
+                Number(b.value || b.pressed || b.touched)
+              )
+            );
+            gamepadSender.current[i]!.value("axes").set(gamepads[i]!.axes);
+          }
+        }
+        f = requestAnimationFrame(sendGamepads);
+      }
+    };
+    sendGamepads();
+
+    const updateGamepadNum = () => {
+      const gamepads = navigator.getGamepads();
+      while (gamepadState.length < gamepads.length) {
+        gamepadState.push({ id: "", connected: false, enabled: false });
+      }
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+          gamepadState[i].connected = true;
+          gamepadState[i].id = gamepads[i]!.id;
+        } else {
+          gamepadState[i].connected = false;
+        }
+      }
+      setGamepadState(gamepadState.slice());
+      while (gamepadSender.current.length < gamepads.length) {
+        gamepadSender.current.push(null);
+      }
+    };
+    window.addEventListener("gamepadconnected", updateGamepadNum);
+    window.addEventListener("gamepaddisconnected", updateGamepadNum);
+    return () => {
+      if (f !== null) {
+        cancelAnimationFrame(f);
+      }
+      window.removeEventListener("gamepadconnected", updateGamepadNum);
+      window.removeEventListener("gamepaddisconnected", updateGamepadNum);
+    };
+  }, [gamepadState, clientHost, clientPort]);
+
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   return (
@@ -136,10 +211,11 @@ export default function App() {
           client={client}
           clientAddress={clientAddress}
           serverHostName={serverHostName}
+          gamepadState={gamepadState}
         />
       </nav>
       <main className="p-2">
-        <LayoutMain client={client} />
+        <LayoutMain client={client} gamepadState={gamepadState} />
       </main>
       <FuncResultList />
     </div>
