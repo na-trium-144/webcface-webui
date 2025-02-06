@@ -6,88 +6,25 @@ import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
 import { LogDataWithLevels, useLogStore } from "./components/logStoreProvider";
-import { GamepadState } from "./components/gamepadCard";
+import { useGamepad } from "./libs/gamepad";
+import { useWebCFace } from "./libs/webcface";
 
 export default function App() {
   const logStore = useLogStore();
-  const [client, setClient] = useState<Client | null>(null);
-  const [clientHost, setClientHost] = useState<string>("");
-  const [clientPort, setClientPort] = useState<number | null>(null);
-  const clientAddress = clientPort
-    ? `(${clientHost}:${clientPort})`
-    : `(${clientHost})`;
   const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
-  const [serverHostName, setServerHostName] = useState<string>("");
-  const [gamepadState, setGamepadState] = useState<GamepadState[]>([]);
-  const gamepadSender = useRef<(Client | null)[]>([]);
+  const {
+    client,
+    clientHost,
+    clientPort,
+    clientAddress,
+    serverHostName,
+    windowTitle,
+  } = useWebCFace();
+  const gamepadState = useGamepad(clientHost, clientPort);
 
   useEffect(() => {
-    // 7530ポートに接続するクライアント
-    const clientDefault = new Client(
-      "",
-      window.location.hostname || "localhost",
-      7530
-    );
-    clientDefault.start();
-
-    // locationからポートを取得するクライアント
-    let clientLocation: Client | null = null;
-    if (window.location.port && parseInt(window.location.port) !== 7530) {
-      clientLocation = new Client(
-        "",
-        window.location.hostname || "localhost",
-        parseInt(window.location.port)
-      );
-      clientLocation.start();
-    }
-
-    setClientHost(window.location.hostname || "localhost");
-
-    // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
-    const checkConnection = () => {
-      if (clientLocation?.connected) {
-        setClient(clientLocation);
-        setClientPort(parseInt(window.location.port));
-        clientDefault.close();
-      } else if (clientDefault.connected) {
-        setClient(clientDefault);
-        setClientPort(7530);
-        clientLocation?.close();
-      } else {
-        setTimeout(checkConnection, 100);
-      }
-    };
-    setTimeout(checkConnection, 100);
-
-    return () => {
-      clientDefault.close();
-      clientLocation?.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    let i: ReturnType<typeof setTimeout> | null = null;
-    const updateTitle = () => {
-      const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace WebUI";
-      if (client?.serverHostName && clientPort) {
-        setServerHostName(client.serverHostName);
-        document.title = `${client.serverHostName} (${clientHost}:${clientPort}) - ${title}`;
-      } else if (clientPort) {
-        document.title = `${clientHost}:${clientPort} - ${title}`;
-      } else {
-        document.title = `${clientHost} - ${title}`;
-      }
-      if (!client?.serverHostName) {
-        i = setTimeout(updateTitle, 100);
-      }
-    };
-    updateTitle();
-    return () => {
-      if (i !== null) {
-        clearTimeout(i);
-      }
-    };
-  }, [client, clientHost, clientPort]);
+    document.title = windowTitle;
+  }, [windowTitle]);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -109,78 +46,6 @@ export default function App() {
       };
     }
   }, [logStore.serverData, logStore.serverHasUpdate]);
-
-  useEffect(() => {
-    for (let i = 0; i < gamepadState.length; i++) {
-      if (
-        gamepadState[i].connected &&
-        gamepadState[i].enabled &&
-        !gamepadSender.current[i] &&
-        clientPort
-      ) {
-        gamepadSender.current[i] = new Client("", clientHost, clientPort);
-        gamepadSender.current[i]!.start();
-      } else if (
-        (!gamepadState[i].connected || !gamepadState[i].enabled) &&
-        gamepadSender.current[i]
-      ) {
-        gamepadSender.current[i]!.close();
-        gamepadSender.current[i] = null;
-      }
-    }
-
-    let f: number | null = null;
-    const sendGamepads = () => {
-      const gamepads = navigator.getGamepads();
-      if (gamepads) {
-        for (let i = 0; i < gamepads.length; i++) {
-          if (
-            gamepads[i] &&
-            gamepadState[i].enabled &&
-            gamepadSender.current[i]
-          ) {
-            gamepadSender.current[i]!.text("name").set(gamepads[i]!.id);
-            gamepadSender.current[i]!.value("buttons").set(
-              gamepads[i]!.buttons.map((b) =>
-                Number(b.value || b.pressed || b.touched)
-              )
-            );
-            gamepadSender.current[i]!.value("axes").set(gamepads[i]!.axes);
-          }
-        }
-        f = requestAnimationFrame(sendGamepads);
-      }
-    };
-    sendGamepads();
-
-    const updateGamepadNum = () => {
-      const gamepads = navigator.getGamepads();
-      while (gamepadState.length < gamepads.length) {
-        gamepadState.push({ id: "", connected: false, enabled: false });
-      }
-      for (let i = 0; i < gamepads.length; i++) {
-        if (gamepads[i]) {
-          gamepadState[i].connected = true;
-          gamepadState[i].id = gamepads[i]!.id;
-        } else {
-          gamepadState[i].connected = false;
-        }
-      }
-      setGamepadState(gamepadState.slice());
-      while (gamepadSender.current.length < gamepads.length) {
-        gamepadSender.current.push(null);
-      }
-    };
-    window.addEventListener("gamepadconnected", updateGamepadNum);
-    window.addEventListener("gamepaddisconnected", updateGamepadNum);
-    return () => {
-      if (f !== null) {
-        cancelAnimationFrame(f);
-      }
-      window.removeEventListener("gamepadconnected", updateGamepadNum);
-      window.removeEventListener("gamepaddisconnected", updateGamepadNum);
-    };
-  }, [gamepadState, clientHost, clientPort]);
 
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 

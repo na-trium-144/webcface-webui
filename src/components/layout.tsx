@@ -38,7 +38,8 @@ import { useForceUpdate } from "../libs/forceUpdate";
 import { useLocalStorage, LocalStorage } from "./lsProvider";
 import * as cardKey from "../libs/cardKey";
 import { useLayoutChange } from "./layoutChangeProvider";
-import { GamepadCard, GamepadState } from "./gamepadCard";
+import { GamepadCard } from "./gamepadCard";
+import { GamepadState } from "../libs/gamepad";
 
 interface Props {
   client: Client | null;
@@ -225,7 +226,7 @@ export function LayoutMain(props: Props) {
         if(ls.isOpened(key)){
           return (
             <div key={key} data-grid={findLsLayout(key, 0, 0, 4, 2, 2, 2)}>
-              <GamepadCard gamepadState={v} index={i} />
+              <GamepadCard gamepadState={v} />
             </div>
           );
         }

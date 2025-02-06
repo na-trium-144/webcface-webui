@@ -37,7 +37,7 @@ import {
   GraphicDesign,
   GameThree,
 } from "@icon-park/react";
-import { GamepadState } from "./gamepadCard";
+import { GamepadState } from "../libs/gamepad";
 
 export const iconFillColor = ["#333", "#6c6"];
 

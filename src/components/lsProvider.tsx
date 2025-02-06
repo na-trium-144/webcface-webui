@@ -13,6 +13,8 @@ export interface LocalStorageData {
   openedCards: string[];
   pinnedFuncs: [string, string][];
   valueCardWithPlot: [string, string][];
+  gamepad: { [key: string]: { enabled: boolean; clientName: string } };
+  browserId: string;
 }
 export type LocalStorage = LocalStorageData & {
   init: boolean;
@@ -25,6 +27,7 @@ export type LocalStorage = LocalStorageData & {
   unPinFunc: (m: string, f: string) => void;
   enableValueCardWithPlot: (m: string, f: string) => void;
   disableValueCardWithPlot: (m: string, f: string) => void;
+  updateGamepad: (n: string, e: boolean, cn: string) => void;
 };
 
 const LocalStorageContext = createContext<LocalStorage>({
@@ -32,6 +35,8 @@ const LocalStorageContext = createContext<LocalStorage>({
   openedCards: [],
   pinnedFuncs: [],
   valueCardWithPlot: [],
+  gamepad: {},
+  browserId: "",
   init: false,
   setLayout: () => undefined,
   isOpened: () => false,
@@ -40,6 +45,7 @@ const LocalStorageContext = createContext<LocalStorage>({
   unPinFunc: () => undefined,
   enableValueCardWithPlot: () => undefined,
   disableValueCardWithPlot: () => undefined,
+  updateGamepad: () => undefined,
 });
 export const useLocalStorage = () => useContext(LocalStorageContext);
 
@@ -49,6 +55,8 @@ function getLS() {
     openedCards: [],
     pinnedFuncs: [],
     valueCardWithPlot: [],
+    gamepad: {},
+    browserId: "",
   };
   if (global != undefined && global.localStorage) {
     const lsItem = global.localStorage.getItem(lsKey);
@@ -79,7 +87,13 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [openedCards, setOpenedCards] = useState<string[]>([]);
   const [pinnedFuncs, setPinnedFuncs] = useState<[string, string][]>([]);
-  const [valueCardWithPlot, setValueCardWithPlot] = useState<[string, string][]>([]);
+  const [valueCardWithPlot, setValueCardWithPlot] = useState<
+    [string, string][]
+  >([]);
+  const [gamepad, setGamepad] = useState<{
+    [key: string]: { enabled: boolean; clientName: string };
+  }>({});
+  const [browserId, setBrowserId] = useState<string>("");
   const [init, setInit] = useState<boolean>(false);
   useEffect(() => {
     const ls = getLS();
@@ -87,13 +101,32 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setOpenedCards(ls.openedCards);
     setPinnedFuncs(ls.pinnedFuncs || []);
     setValueCardWithPlot(ls.valueCardWithPlot || []);
+    setGamepad(ls.gamepad || {});
+    setBrowserId(
+      ls.browserId || Math.floor(Math.random() * 0x10000).toString(16)
+    );
     setInit(true);
   }, []);
   useEffect(() => {
     if (init) {
-      saveToLS({ layout, openedCards, pinnedFuncs, valueCardWithPlot });
+      saveToLS({
+        layout,
+        openedCards,
+        pinnedFuncs,
+        valueCardWithPlot,
+        gamepad,
+        browserId,
+      });
     }
-  }, [layout, openedCards, pinnedFuncs, init, valueCardWithPlot]);
+  }, [
+    layout,
+    openedCards,
+    pinnedFuncs,
+    init,
+    valueCardWithPlot,
+    gamepad,
+    browserId,
+  ]);
 
   return (
     <LocalStorageContext.Provider
@@ -103,6 +136,8 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         setLayout,
         openedCards,
         valueCardWithPlot,
+        gamepad,
+        browserId,
         isOpened: (key: string) => openedCards.includes(key),
         toggleOpened: (key: string) => {
           if (openedCards.includes(key)) {
@@ -134,6 +169,10 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
           setValueCardWithPlot(
             valueCardWithPlot.filter((pf) => pf[0] !== m || pf[1] !== f)
           ),
+        updateGamepad: (n: string, e: boolean, cn: string) => {
+          gamepad[n] = { enabled: e, clientName: cn };
+          setGamepad({ ...gamepad });
+        },
       }}
     >
       {props.children}
