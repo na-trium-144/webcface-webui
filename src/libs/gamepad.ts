@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Client } from "webcface";
 import { useLocalStorage } from "../components/lsProvider";
 

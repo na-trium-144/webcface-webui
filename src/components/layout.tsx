@@ -221,7 +221,7 @@ export function LayoutMain(props: Props) {
           );
         }
       })()}
-      {props.gamepadState.map((v, i) => {
+      {props.gamepadState.map((v) => {
         const key = cardKey.gamepad(v.id);
         if(ls.isOpened(key)){
           return (
