@@ -445,7 +445,9 @@ function SideMenuButton(props: ButtonProps) {
       <span>
         {props.active && props.iconActive ? props.iconActive : props.icon}
       </span>
-      <span>{props.name}</span>
+      <span className="overflow-hidden text-nowrap text-ellipsis">
+        {props.name}
+      </span>
       {props.active ? <Down className="pt-0.5" /> : <Right />}
     </button>
   );
@@ -464,7 +466,9 @@ function SideMenuButton2(props: ButtonProps) {
       <span>
         {props.active && props.iconActive ? props.iconActive : props.icon}
       </span>
-      <span>{props.name}</span>
+      <span className="overflow-hidden text-nowrap text-ellipsis">
+        {props.name}
+      </span>
     </button>
   );
 }
