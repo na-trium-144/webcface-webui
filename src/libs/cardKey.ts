@@ -20,3 +20,4 @@ export const about = () => ":about";
 export const serverLog = () => ":serverLog";
 export const launcher = () => ":launcher";
 export const pinnedFunc = () => ":pinnedFunc";
+export const gamepad = (id: string) => ":gamepad:" + id;

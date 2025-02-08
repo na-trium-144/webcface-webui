@@ -1,90 +1,30 @@
 import { useState, useEffect } from "react";
-import { Client, LogLine } from "webcface";
+import { LogLine } from "webcface";
 import "./index.css";
 import { LayoutMain } from "./components/layout";
 import { Header } from "./components/header";
 import { SideMenu } from "./components/sideMenu";
 import { FuncResultList } from "./components/funcResultList";
 import { LogDataWithLevels, useLogStore } from "./components/logStoreProvider";
+import { useGamepad } from "./libs/gamepad";
+import { useWebCFace } from "./libs/webcface";
 
 export default function App() {
   const logStore = useLogStore();
-  const [client, setClient] = useState<Client | null>(null);
-  const [clientHost, setClientHost] = useState<string>("");
-  const [clientPort, setClientPort] = useState<number | null>(null);
-  const clientAddress = clientPort
-    ? `(${clientHost}:${clientPort})`
-    : `(${clientHost})`;
   const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
-  const [serverHostName, setServerHostName] = useState<string>("");
+  const {
+    client,
+    clientHost,
+    clientPort,
+    clientAddress,
+    serverHostName,
+    windowTitle,
+  } = useWebCFace();
+  const gamepadState = useGamepad(clientHost, clientPort);
 
   useEffect(() => {
-    // 7530ポートに接続するクライアント
-    const clientDefault = new Client(
-      "",
-      window.location.hostname || "localhost",
-      7530
-    );
-    clientDefault.start();
-
-    // locationからポートを取得するクライアント
-    let clientLocation: Client | null = null;
-    if (window.location.port && parseInt(window.location.port) !== 7530) {
-      clientLocation = new Client(
-        "",
-        window.location.hostname || "localhost",
-        parseInt(window.location.port)
-      );
-      clientLocation.start();
-    }
-
-    setClientHost(window.location.hostname || "localhost");
-
-    // どちらか片方のクライアントが接続に成功したらもう片方を閉じる
-    const checkConnection = () => {
-      if (clientLocation?.connected) {
-        setClient(clientLocation);
-        setClientPort(parseInt(window.location.port));
-        clientDefault.close();
-      } else if (clientDefault.connected) {
-        setClient(clientDefault);
-        setClientPort(7530);
-        clientLocation?.close();
-      } else {
-        setTimeout(checkConnection, 100);
-      }
-    };
-    setTimeout(checkConnection, 100);
-
-    return () => {
-      clientDefault.close();
-      clientLocation?.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    let i: ReturnType<typeof setTimeout> | null = null;
-    const updateTitle = () => {
-      const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace WebUI";
-      if (client?.serverHostName && clientPort) {
-        setServerHostName(client.serverHostName);
-        document.title = `${client.serverHostName} (${clientHost}:${clientPort}) - ${title}`;
-      } else if (clientPort) {
-        document.title = `${clientHost}:${clientPort} - ${title}`;
-      } else {
-        document.title = `${clientHost} - ${title}`;
-      }
-      if (!client?.serverHostName) {
-        i = setTimeout(updateTitle, 100);
-      }
-    };
-    updateTitle();
-    return () => {
-      if (i !== null) {
-        clearTimeout(i);
-      }
-    };
-  }, [client, clientHost, clientPort]);
+    document.title = windowTitle;
+  }, [windowTitle]);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -136,10 +76,11 @@ export default function App() {
           client={client}
           clientAddress={clientAddress}
           serverHostName={serverHostName}
+          gamepadState={gamepadState}
         />
       </nav>
       <main className="p-2">
-        <LayoutMain client={client} />
+        <LayoutMain client={client} gamepadState={gamepadState} />
       </main>
       <FuncResultList />
     </div>

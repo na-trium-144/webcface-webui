@@ -35,7 +35,9 @@ import {
   RobotTwo,
   CoordinateSystem,
   GraphicDesign,
+  GameThree,
 } from "@icon-park/react";
+import { GamepadState } from "../libs/gamepad";
 
 export const iconFillColor = ["#333", "#6c6"];
 
@@ -43,6 +45,7 @@ interface Props {
   client: Client | null;
   serverHostName: string;
   clientAddress: string;
+  gamepadState: GamepadState[];
 }
 export function SideMenu(props: Props) {
   const ls = useLocalStorage();
@@ -106,6 +109,19 @@ export function SideMenu(props: Props) {
         icon={<PlayOne />}
         iconActive={<PlayOne theme="two-tone" fill={iconFillColor} />}
       />
+      {props.gamepadState.map(
+        (v, i) =>
+          v.connected && (
+            <SideMenuButton2
+              key={i}
+              name={v.id}
+              active={ls.isOpened(cardKey.gamepad(v.id))}
+              onClick={() => ls.toggleOpened(cardKey.gamepad(v.id))}
+              icon={<GameThree />}
+              iconActive={<GameThree theme="two-tone" fill={iconFillColor} />}
+            />
+          )
+      )}
       {props.client?.members().map((m, mi) => (
         <SideMenuMember
           key={mi}
