@@ -131,6 +131,8 @@ export function ValueCard(props: Props) {
         vecData.current = valVec;
         if (!isVec && valVec.length != 1) {
           setIsVec(true);
+        }
+        if (!plotEnabled) {
           hasUpdate.current = true;
         }
       }
@@ -163,7 +165,7 @@ export function ValueCard(props: Props) {
     }
     props.value.member.onSync.on(onValueChange);
     return () => props.value.member.onSync.off(onValueChange);
-  }, [props.value]);
+  }, [props.value, plotEnabled, isVec]);
 
   useEffect(() => {
     let webglp: WebglPlot | null = null;
@@ -431,6 +433,10 @@ export function ValueCard(props: Props) {
     }
   });
 
+  const [maxLenInt, setMaxLenInt] = useState<number>(1);
+  const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
+  const [maxLenExp, setMaxLenExp] = useState<number>(0);
+
   return (
     <Card titlePre={props.value.member.name} title={props.value.name}>
       <div className="flex flex-col h-full">
@@ -636,7 +642,16 @@ export function ValueCard(props: Props) {
                     {vecData.current!.length >= 2 && (
                       <span className="flex-none text-xs">[{i}]</span>
                     )}
-                    <ValueAsText className="flex-1" value={v} />
+                    <ValueAsText
+                      className="flex-1"
+                      value={v}
+                      maxLenInt={maxLenInt}
+                      maxLenFrac={maxLenFrac}
+                      maxLenExp={maxLenExp}
+                      setMaxLenInt={setMaxLenInt}
+                      setMaxLenFrac={setMaxLenFrac}
+                      setMaxLenExp={setMaxLenExp}
+                    />
                   </li>
                 ))}
               </ul>
@@ -657,15 +672,22 @@ export function ValueCard(props: Props) {
   );
 }
 
-function ValueAsText(props: { className?: string; value?: number }) {
-  const { value } = props;
+interface VecProps {
+  className?: string;
+  value?: number;
+  maxLenInt: number;
+  maxLenFrac: number;
+  maxLenExp: number;
+  setMaxLenInt: (n: number) => void;
+  setMaxLenFrac: (n: number) => void;
+  setMaxLenExp: (n: number) => void;
+}
+function ValueAsText(props: VecProps) {
+  const { value, maxLenInt, maxLenFrac, maxLenExp, setMaxLenInt, setMaxLenFrac, setMaxLenExp } = props;
   const prevValue = useRef<number>(0);
   const areaDiv = useRef<HTMLDivElement>(null);
   const [divMaxLen, setDivMaxLen] = useState<number>(1); // 表示できる最大文字数
   const [color, setColor] = useState<string>("");
-  const [maxLenInt, setMaxLenInt] = useState<number>(1);
-  const [maxLenFrac, setMaxLenFrac] = useState<number>(1);
-  const [maxLenExp, setMaxLenExp] = useState<number>(0);
   const [valueStrInt, setValueStrInt] = useState<string>("");
   const [valueStrFrac, setValueStrFrac] = useState<string>("");
   const [valueStrExp, setValueStrExp] = useState<string>("");
@@ -673,7 +695,8 @@ function ValueAsText(props: { className?: string; value?: number }) {
   useEffect(() => {
     if (value !== undefined) {
       const logValue =
-        Math.abs(value) > 0 ? Math.floor(Math.log10(Math.abs(value))) : 0;
+        (value < 0 ? 1 : 0) +
+        (Math.abs(value) > 0 ? Math.floor(Math.log10(Math.abs(value))) : 0);
       const logLogValue =
         Math.abs(logValue) > 0 ? Math.floor(Math.log10(Math.abs(logValue))) : 0;
 
@@ -685,25 +708,31 @@ function ValueAsText(props: { className?: string; value?: number }) {
           0,
           divMaxLen - Math.max(logValue + 1, maxLenInt)
         );
-        const valueStr = value.toFixed(fracLen);
-        valueStrInt = valueStr.slice(0, logValue + 1);
-        valueStrFrac = valueStr.slice(logValue + 1).replace(/0+$/, "");
+        const valueStr = Math.abs(value).toFixed(fracLen);
+        valueStrInt =
+          (value < 0 ? "-" : "") + valueStr.slice(0, valueStr.indexOf("."));
+        valueStrFrac = valueStr.slice(valueStr.indexOf(".")).replace(/0+$/, "");
       } else if (logValue < 0 && -logValue < divMaxLen / 2) {
-        valueStrInt = "0";
-        valueStrFrac = value.toFixed(divMaxLen - 1).replace(/0+$/, "");
+        valueStrInt = (value < 0 ? "-" : "") + "0";
+        valueStrFrac = Math.abs(value)
+          .toFixed(divMaxLen - 1)
+          .replace(/^0+/, "")
+          .replace(/0+$/, "");
       } else {
         const fracLen = Math.max(
           0,
           divMaxLen - Math.max(logLogValue + 2, maxLenExp) - 1
         );
-        const valueStr = value.toExponential(fracLen);
+        const valueStr = Math.abs(value).toExponential(fracLen);
         if (valueStr.includes(".")) {
-          valueStrInt = valueStr.slice(0, valueStr.indexOf("."));
+          valueStrInt =
+            (value < 0 ? "-" : "") + valueStr.slice(0, valueStr.indexOf("."));
           valueStrFrac = valueStr
             .slice(valueStr.indexOf("."), valueStr.indexOf("e"))
             .replace(/0+$/, "");
         } else {
-          valueStrInt = valueStr.slice(0, valueStr.indexOf("e"));
+          valueStrInt =
+            (value < 0 ? "-" : "") + valueStr.slice(0, valueStr.indexOf("e"));
           valueStrFrac = "";
         }
         valueStrExp = valueStr.slice(valueStr.indexOf("e"));
