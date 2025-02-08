@@ -6,6 +6,7 @@
   "private": true,
   "version": "1.13.0",
   "main": "dist-electron/main/index.js",
+  "typings": "renderer.d.ts",
   "scripts": {
     "dev": "vite --host",
     "edev": "env ELECTRON=1 vite",
@@ -20,19 +21,17 @@
     "@iarna/toml": "^2.2.5",
     "@icon-park/react": "^1.4.2",
     "@react-three/fiber": "^8.17.7",
-    "@types/react-slider": "^1.3.6",
-    "@types/three": "^0.172.0",
     "date-fns": "^4.1.0",
     "konva": "^9.3.16",
     "lodash.isequal": "^4.5.0",
     "mathjs": "^14.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-grid-layout-next": "^2.2.0",
     "react-konva": "^19.0.2",
     "react-slider": "^2.0.6",
-    "react-switch": "^7.0.0",
-    "three": "^0.172.0",
+    "react-switch": "^7.1.0",
+    "three": "^0.173.0",
     "webcface": "^1.11.0",
     "webgl-plot": "^0.7.2"
   },
@@ -42,8 +41,10 @@
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.16.0",
     "@types/lodash.isequal": "^4.5.8",
-    "@types/react": "^18.3.6",
-    "@types/react-dom": "^18.2.23",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@types/react-slider": "^1.3.6",
+    "@types/three": "^0.173.0",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.21.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
@@ -63,5 +64,7 @@
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6"
   },
-  "typings": "renderer.d.ts"
+  "overrides": {
+    "react": "^19.0.0"
+  }
 }
