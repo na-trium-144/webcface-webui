@@ -12,7 +12,7 @@ interface Props {
   height?: number;
   name?: string;
   type: "select" | "number" | "float" | "string" | "boolean" | "multiline";
-  value: string | number | boolean;
+  value: string | number | boolean | string[] | number[] | boolean[];
   setValue: (value: string | number | boolean) => void;
   option?: (string | number)[];
   min?: number | null;
