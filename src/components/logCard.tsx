@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { LogDataWithLevels, useLogStore } from "./logStoreProvider";
 import { useLayoutChange } from "./layoutChangeProvider";
+import { IconButton } from "./button";
+import { ArrowCircleDown, Filter } from "@icon-park/react";
 
 interface Props {
   logField: Log;
@@ -22,7 +24,7 @@ export function LogCard(props: Props) {
   const logsRef = useRef<LogDataWithLevels>(null!); // 内容はlogStoreと同期される
   logsRef.current = logStore.getDataRef(
     props.logField.member.name,
-    props.logField.name
+    props.logField.name,
   ).log;
   const fetchLog = useCallback(() => {
     const newLogs = props.logField.get();
@@ -82,12 +84,14 @@ function LogCardImpl(props: Props2) {
       const newEnd =
         Math.ceil(
           (logsDiv.current.scrollTop + logsDiv.current.clientHeight) /
-            lineHeight
+            lineHeight,
         ) + 1;
       setVisibleLogBegin(newBegin);
       setVisibleLogEnd(newEnd);
       if (newEnd < logsCurrent.length) {
         setFollowRealTime(false);
+      } else {
+        setFollowRealTime(true);
       }
     }
   };
@@ -136,26 +140,8 @@ function LogCardImpl(props: Props2) {
   return (
     <Card titlePre={props.titlePre} title={props.title}>
       <div className="flex flex-col w-full h-full">
-        <div className="flex-none pl-2 pb-1">
-          レベル
-          <input
-            className={
-              "border-0 border-b outline-0 mx-1 w-12 text-center " +
-              "border-neutral-200 hover:border-neutral-500 focus:border-black "
-            }
-            type="number"
-            value={minLevel}
-            onChange={(e) => {
-              setMinLevel(parseInt(e.target.value));
-            }}
-          />
-          以上のログを表示
-          {/*全<span className="px-1">{logLine}</span>
-          行中
-          <span className="px-1">{logsCurrent.length}</span>行*/}
-        </div>
         <div
-          className="flex-1 overflow-auto"
+          className="flex-1 overflow-scroll"
           ref={logsDiv}
           onScroll={onScroll.current}
         >
@@ -197,7 +183,9 @@ function LogCardImpl(props: Props2) {
                           : ""}
                       </span>
                     </td>
-                    <td className="px-1 font-noto-mono w-full">{l.message}</td>
+                    <td className="px-1 w-full">
+                      <pre className="font-noto-mono ">{l.message}</pre>
+                    </td>
                   </tr>
                 ))}
               <tr className="text-transparent select-none">
@@ -208,16 +196,35 @@ function LogCardImpl(props: Props2) {
             </tbody>
           </table>
         </div>
-        <div className="flex-none flex items-center px-2 space-x-1 text-sm">
-          <input
-            type="checkbox"
-            id={`follow-${props.titlePre}-${props.title}-log`}
-            checked={followRealTime}
-            onChange={(e) => followLog.current(e.target.checked)}
-          />
-          <label htmlFor={`follow-${props.titlePre}-${props.title}-log`}>
-            Follow Latest Data
-          </label>
+        <div className="flex-none h-8 flex items-center ">
+          <div className="flex-none text-sm">
+            <Filter className="inline-block align-middle mx-1 text-lg" />
+            レベル
+            <input
+              className={
+                "border-0 border-b outline-0 mx-1 w-12 text-center " +
+                "border-neutral-200 hover:border-neutral-500 focus:border-black "
+              }
+              type="number"
+              value={minLevel}
+              onChange={(e) => {
+                setMinLevel(parseInt(e.target.value));
+              }}
+            />
+            以上
+            {/*全<span className="px-1">{logLine}</span>
+          行中
+          <span className="px-1">{logsCurrent.length}</span>行*/}
+          </div>
+          {!followRealTime && (
+            <IconButton
+              className="flex-none ml-2 text-sm"
+              onClick={() => followLog.current(true)}
+            >
+              <ArrowCircleDown className="inline-block align-middle mr-1 text-lg" />
+              最新のログを表示
+            </IconButton>
+          )}
         </div>
       </div>
     </Card>
