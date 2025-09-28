@@ -129,11 +129,12 @@ function BooleanInput(props: Props) {
   return (
     <button
       type="button"
-      onClick={() =>
-        props.setValue(
-          option[(option.indexOf(props.value) + 1) % option.length]
-        )
-      }
+      onClick={() => {
+        const currentIndex = Array.isArray(props.value)
+          ? -1 // 型エラーのため一応
+          : option.indexOf(props.value);
+        props.setValue(option[(currentIndex + 1) % option.length]);
+      }}
       className={
         inputClass +
         "cursor-pointer inline-block pl-1 relative " +
@@ -218,7 +219,7 @@ function MultiLineInput(props: Props) {
     if (props.setIsError) {
       props.setIsError(
         (props.min != null && props.min > String(props.value).length) ||
-          (props.max != null && props.max < String(props.value).length)
+          (props.max != null && props.max < String(props.value).length),
       );
     }
   }, [props.setIsError, props.value, props.min, props.max]);

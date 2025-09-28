@@ -7,7 +7,7 @@ import { Input } from "./input";
 import { Button, IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
 import {
-    AddOne,
+  AddOne,
   AlphabeticalSorting,
   Delete,
   Pin,
@@ -203,7 +203,7 @@ function argType(
 
 function FuncLine(props: { func: Func; searchStr: string }) {
   const [args, setArgs] = useState<
-    (string | number | boolean | string[] | number[] | boolean[])[]
+    (string | number | boolean | (string | number | boolean)[])[]
   >([]);
   const [errors, setErrors] = useState<boolean[][]>([]);
   const [hasArgName, setHasArgName] = useState<boolean>(false);
