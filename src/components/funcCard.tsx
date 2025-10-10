@@ -6,7 +6,14 @@ import { useFuncResult } from "./funcResultProvider";
 import { Input } from "./input";
 import { Button, IconButton } from "./button";
 import { iconFillColor } from "./sideMenu";
-import { AlphabeticalSorting, Pin, Pushpin, Search } from "@icon-park/react";
+import {
+  AddOne,
+  AlphabeticalSorting,
+  Delete,
+  Pin,
+  Pushpin,
+  Search,
+} from "@icon-park/react";
 import { LocalStorage, useLocalStorage } from "./lsProvider";
 
 interface Props {
@@ -50,7 +57,7 @@ export function PinnedFuncCard(props: { wcli: Client | null }) {
   useEffect(() => {
     if (props.wcli !== null) {
       setFuncs(
-        ls.pinnedFuncs?.map((p) => props.wcli!.member(p[0]).func(p[1])) || []
+        ls.pinnedFuncs?.map((p) => props.wcli!.member(p[0]).func(p[1])) || [],
       );
     }
   }, [ls.pinnedFuncs, props.wcli]);
@@ -105,16 +112,16 @@ export function FuncList(props: Props2) {
                 (v) =>
                   !searching ||
                   searchStr.split(" ").filter((s) => !v.name.includes(s))
-                    .length === 0
+                    .length === 0,
               )
               .sort((a, b) =>
                 sortByName
                   ? a.name > b.name
                     ? 1
                     : a.name < b.name
-                    ? -1
-                    : 0
-                  : a.index - b.index
+                      ? -1
+                      : 0
+                  : a.index - b.index,
               )
               .map((v) => (
                 <FuncLine
@@ -176,12 +183,12 @@ export function FuncList(props: Props2) {
 }
 
 function argType(
-  argConfig: Arg
+  argConfig: Arg,
 ): "select" | "number" | "boolean" | "float" | "string" {
   if (argConfig.option && argConfig.option.length > 0) {
     return "select";
   } else {
-    switch (argConfig.type) {
+    switch ((argConfig.type || 0) & ~valType.array_) {
       case valType.int_:
         return "number";
       case valType.boolean_:
@@ -195,8 +202,10 @@ function argType(
 }
 
 function FuncLine(props: { func: Func; searchStr: string }) {
-  const [args, setArgs] = useState<(string | number | boolean)[]>([]);
-  const [errors, setErrors] = useState<boolean[]>([]);
+  const [args, setArgs] = useState<
+    (string | number | boolean | (string | number | boolean)[])[]
+  >([]);
+  const [errors, setErrors] = useState<boolean[][]>([]);
   const [hasArgName, setHasArgName] = useState<boolean>(false);
   const { addResult } = useFuncResult();
   const ls: LocalStorage = useLocalStorage();
@@ -213,33 +222,37 @@ function FuncLine(props: { func: Func; searchStr: string }) {
           } else if (ac.option && ac.option.length > 0) {
             return ac.option[0];
           } else {
-            switch (ac.type) {
-              case valType.int_:
-              case valType.float_:
-                return 0;
-              case valType.boolean_:
-                return false;
-              default:
-                return "";
+            if (ac.type !== undefined && ac.type & valType.array_) {
+              return [];
+            } else {
+              switch (ac.type) {
+                case valType.int_:
+                case valType.float_:
+                  return 0;
+                case valType.boolean_:
+                  return false;
+                default:
+                  return "";
+              }
             }
           }
-        })
+        }),
       );
       setErrors(
         props.func.args.map((_, i) => {
           if (i < args.length) {
             return errors[i];
           } else {
-            return false;
+            return [false];
           }
-        })
+        }),
       );
       setHasArgName(props.func.args.some((a) => a.name !== ""));
     }
   }, [props.func, args, setArgs, errors, setErrors]);
 
   const searchHit = Array.from(new Array(props.func.name.length)).map(
-    () => false
+    () => false,
   );
   if (props.searchStr !== "") {
     for (const s of props.searchStr.split(" ")) {
@@ -275,34 +288,125 @@ function FuncLine(props: { func: Func; searchStr: string }) {
         {props.func.args.map((ac, i) => (
           <Fragment key={i}>
             <span className="pl-1 pr-1 first:hidden">,</span>
-            {ac.type === valType.string_ && <span>"</span>}
-            <Input
-              isError={errors[i]}
-              setIsError={(isError) =>
-                setErrors(errors.map((ce, ci) => (i === ci ? isError : ce)))
-              }
-              name={ac.name || (hasArgName ? "" : undefined)}
-              type={argType(ac)}
-              value={args[i]}
-              setValue={(arg) =>
-                setArgs(args.map((ca, ci) => (i === ci ? arg : ca)))
-              }
-              option={ac.option}
-              min={ac.min}
-              max={ac.max}
-              caption={
-                <ArgDescription
-                  type={ac.type}
+            {!!((ac.type || 0) & valType.array_) && <span>[</span>}
+            {(Array.isArray(args[i]) ? args[i] : [args[i]]).map((av, j) => (
+              <Fragment key={j}>
+                {j !== 0 && <span className="pl-1 pr-1">,</span>}
+                {ac.type === valType.string_ && <span>"</span>}
+                <Input
+                  isError={errors[i]?.[j]}
+                  setIsError={(isError) =>
+                    setErrors((errors) => {
+                      errors = [...errors];
+                      if (errors[i] !== undefined) {
+                        errors[i] = [...errors[i]];
+                      } else {
+                        errors[i] = [false];
+                      }
+                      while (errors[i].length <= j) {
+                        errors[i].push(false);
+                      }
+                      errors[i][j] = isError;
+                      return [...errors];
+                    })
+                  }
+                  name={
+                    (ac.type || 0) & valType.array_
+                      ? j === 0
+                        ? (ac.name || "") + "[0]"
+                        : `[${j}]`
+                      : ac.name || (hasArgName ? "" : undefined)
+                  }
+                  type={argType(ac)}
+                  value={av}
+                  setValue={(arg) =>
+                    setArgs((args) => {
+                      args = [...args];
+                      if ((ac.type || 0) & valType.array_) {
+                        args[i] = Array.isArray(args[i])
+                          ? [...args[i]]
+                          : [args[i]];
+                        args[i][j] = arg;
+                      } else {
+                        args[i] = arg;
+                      }
+                      return args;
+                    })
+                  }
+                  option={ac.option}
                   min={ac.min}
                   max={ac.max}
-                  hasOption={Boolean(ac.option?.length)}
-                  init={ac.init}
+                  caption={
+                    <ArgDescription
+                      type={ac.type}
+                      min={ac.min}
+                      max={ac.max}
+                      hasOption={Boolean(ac.option?.length)}
+                      init={Array.isArray(ac.init) ? ac.init[j] : ac.init}
+                    />
+                  }
+                  onFocus={() => setHasFocus(true)}
+                  onBlur={() => setHasFocus(false)}
                 />
-              }
-              onFocus={() => setHasFocus(true)}
-              onBlur={() => setHasFocus(false)}
-            />
-            {ac.type === valType.string_ && <span>"</span>}
+                {ac.type === valType.string_ && <span>"</span>}
+              </Fragment>
+            ))}
+            {!!((ac.type || 0) & valType.array_) && (
+              <>
+                {(!Array.isArray(args[i]) || args[i].length >= 1) && (
+                  <IconButton
+                    onClick={() =>
+                      setArgs((args) => {
+                        args = [...args];
+                        if (Array.isArray(args[i])) {
+                          args[i] = args[i].slice(0, args[i].length - 1);
+                        } else {
+                          args[i] = [];
+                        }
+                        return args;
+                      })
+                    }
+                    caption="Remove"
+                    onFocus={() => setHasFocus(true)}
+                    onBlur={() => setHasFocus(false)}
+                  >
+                    <Delete />
+                  </IconButton>
+                )}
+                <IconButton
+                  onClick={() =>
+                    setArgs((args) => {
+                      let defaultVal: number | boolean | string;
+                      switch (ac.type) {
+                        case valType.int_:
+                        case valType.float_:
+                          defaultVal = 0;
+                          break;
+                        case valType.bool_:
+                          defaultVal = false;
+                          break;
+                        default:
+                          defaultVal = "";
+                          break;
+                      }
+                      args = [...args];
+                      if (Array.isArray(args[i])) {
+                        args[i] = args[i].concat([defaultVal]);
+                      } else {
+                        args[i] = [args[i], defaultVal];
+                      }
+                      return args;
+                    })
+                  }
+                  caption="Add"
+                  onFocus={() => setHasFocus(true)}
+                  onBlur={() => setHasFocus(false)}
+                >
+                  <AddOne />
+                </IconButton>
+                <span>]</span>
+              </>
+            )}
           </Fragment>
         ))}
       </span>
@@ -311,7 +415,7 @@ function FuncLine(props: { func: Func; searchStr: string }) {
         <Button
           className="my-1 inline-block"
           rounded="full"
-          disabled={errors.includes(true)}
+          disabled={errors.some((e) => e.includes(true))}
           onClick={() => addResult(props.func.runAsync(...args))}
           onFocus={() => setHasFocus(true)}
           onBlur={() => setHasFocus(false)}
@@ -319,7 +423,7 @@ function FuncLine(props: { func: Func; searchStr: string }) {
           Run
         </Button>
         {ls.pinnedFuncs?.some(
-          (p) => p[0] === props.func.member.name && p[1] === props.func.name
+          (p) => p[0] === props.func.member.name && p[1] === props.func.name,
         ) ? (
           <IconButton
             onClick={() =>
@@ -355,7 +459,7 @@ interface ArgProps {
 }
 export function ArgDescription(props: ArgProps) {
   const valTypeText = () => {
-    switch (props.type) {
+    switch ((props.type || 0) & ~valType.array_) {
       case valType.int_:
         return "整数型";
       case valType.float_:

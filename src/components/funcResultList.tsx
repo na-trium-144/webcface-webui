@@ -48,7 +48,7 @@ export function FuncResultList() {
         };
         setTimeout(() => {
           void results[i].result
-            .then((val: string | number | boolean | null) => {
+            .then((val: string | number | boolean | (string | number | boolean)[] | null) => {
               setResultsDisplay((resultsDisplay) =>
                 resultsDisplay.map((d, j) =>
                   i === j
