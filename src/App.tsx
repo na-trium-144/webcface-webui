@@ -8,8 +8,10 @@ import { FuncResultList } from "./components/funcResultList";
 import { LogDataWithLevels, useLogStore } from "./components/logStoreProvider";
 import { useGamepad } from "./libs/gamepad";
 import { useWebCFace } from "./libs/webcface";
+import { useLocalStorage } from "./components/lsProvider";
 
 export default function App() {
+  const ls = useLocalStorage();
   const logStore = useLogStore();
   const title = window.electronAPI ? "WebCFace Desktop" : "WebCFace";
   const {
@@ -80,7 +82,7 @@ export default function App() {
         />
       </nav>
       <main className="p-2">
-        <LayoutMain client={client} gamepadState={gamepadState} />
+        <LayoutMain key={ls.currentLayoutName} client={client} gamepadState={gamepadState} />
       </main>
       <FuncResultList />
     </div>

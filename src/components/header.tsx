@@ -1,6 +1,7 @@
 // import version from "../libs/version";
 import { HamburgerButton, CloseSmall } from "@icon-park/react";
 import "../../renderer.d.ts";
+import { LayoutManager } from "./layoutManager";
 
 interface Props {
   menuOpen: boolean;
@@ -19,6 +20,9 @@ export function Header(props: Props) {
           <p className="hidden sm:inline-block">{props.serverHostName}</p>
         )}
         <p className="hidden sm:inline-block">{props.clientAddress}</p>
+      </div>
+      <div className="hidden sm:block">
+        <LayoutManager isMobile={false} serverHostName={props.serverHostName || props.clientAddress} />
       </div>
       <button
         className={

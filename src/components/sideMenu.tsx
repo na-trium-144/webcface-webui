@@ -38,6 +38,7 @@ import {
   GameThree,
 } from "@icon-park/react";
 import { GamepadState } from "../libs/gamepad";
+import { LayoutManager } from "./layoutManager";
 
 export const iconFillColor = ["#333", "#6c6"];
 
@@ -93,6 +94,8 @@ export function SideMenu(props: Props) {
       <p className="sm:hidden flex flex-row justify-center">
         <span className="text-xs">{props.clientAddress}</span>
       </p>
+      <hr className="sm:hidden my-1" />
+      <LayoutManager className="sm:hidden my-1.5" isMobile={true} serverHostName={props.serverHostName || props.clientAddress} />
       <hr className="sm:hidden my-1" />
       {window.electronAPI && <SideMenuServer />}
       <SideMenuButton2

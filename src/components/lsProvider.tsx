@@ -8,6 +8,8 @@ import {
 import { LayoutItem } from "react-grid-layout-next";
 
 const lsKey = "webcface-webui";
+const layoutsKey = "webcface-webui-layouts";
+const currentLayoutKey = "webcface-webui-current-layout";
 export interface LocalStorageData {
   layout: LayoutItem[];
   openedCards: string[];
@@ -16,6 +18,19 @@ export interface LocalStorageData {
   gamepad: { [key: string]: { enabled: boolean; clientName: string } };
   browserId: string;
 }
+
+export interface LayoutConfig {
+  layout: LayoutItem[];
+  openedCards: string[];
+  pinnedFuncs: [string, string][];
+  valueCardWithPlot: [string, string][];
+  gamepad: { [key: string]: { enabled: boolean; clientName: string } };
+}
+
+export interface LayoutsMap {
+  [name: string]: LayoutConfig;
+}
+
 export type LocalStorage = LocalStorageData & {
   init: boolean;
   setLayout: (
@@ -28,6 +43,15 @@ export type LocalStorage = LocalStorageData & {
   enableValueCardWithPlot: (m: string, f: string) => void;
   disableValueCardWithPlot: (m: string, f: string) => void;
   updateGamepad: (n: string, e: boolean, cn: string) => void;
+  // Multiple layouts management properties
+  currentLayoutName: string;
+  layoutNames: string[];
+  switchLayout: (name: string) => void;
+  addLayout: (name: string, config?: LayoutConfig) => void;
+  deleteLayout: (name: string) => void;
+  renameLayout: (oldName: string, newName: string) => void;
+  exportSingleLayout: (name: string) => string;
+  importSingleLayout: (name: string, jsonStr: string) => boolean;
 };
 
 const LocalStorageContext = createContext<LocalStorage>({
@@ -46,6 +70,14 @@ const LocalStorageContext = createContext<LocalStorage>({
   enableValueCardWithPlot: () => undefined,
   disableValueCardWithPlot: () => undefined,
   updateGamepad: () => undefined,
+  currentLayoutName: "Default",
+  layoutNames: ["Default"],
+  switchLayout: () => undefined,
+  addLayout: () => undefined,
+  deleteLayout: () => undefined,
+  renameLayout: () => undefined,
+  exportSingleLayout: () => "{}",
+  importSingleLayout: () => false,
 });
 export const useLocalStorage = () => useContext(LocalStorageContext);
 
@@ -95,38 +127,287 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   }>({});
   const [browserId, setBrowserId] = useState<string>("");
   const [init, setInit] = useState<boolean>(false);
+
+  // Multiple layouts management states
+  const [currentLayoutName, setCurrentLayoutName] = useState<string>("Default");
+  const [layoutsMap, setLayoutsMap] = useState<LayoutsMap>({});
+
   useEffect(() => {
-    const ls = getLS();
-    setLayout(ls.layout);
-    setOpenedCards(ls.openedCards);
-    setPinnedFuncs(ls.pinnedFuncs || []);
-    setValueCardWithPlot(ls.valueCardWithPlot || []);
-    setGamepad(ls.gamepad || {});
+    let initialLayoutName = "Default";
+    if (global !== undefined && global.localStorage) {
+      const savedName = global.localStorage.getItem(currentLayoutKey);
+      if (savedName) {
+        initialLayoutName = savedName;
+      }
+    }
+
+    let map: LayoutsMap = {};
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {
+          console.error("Failed to parse saved layouts", e);
+        }
+      }
+    }
+
+    const legacyLs = getLS();
+
+    // Migrate from legacy single layout to multi layouts mapping if empty
+    if (Object.keys(map).length === 0) {
+      map["Default"] = {
+        layout: legacyLs.layout,
+        openedCards: legacyLs.openedCards,
+        pinnedFuncs: legacyLs.pinnedFuncs || [],
+        valueCardWithPlot: legacyLs.valueCardWithPlot || [],
+        gamepad: legacyLs.gamepad || {},
+      };
+      if (global !== undefined && global.localStorage) {
+        global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+      }
+    }
+
+    if (!map[initialLayoutName]) {
+      const keys = Object.keys(map);
+      if (keys.length > 0) {
+        initialLayoutName = keys[0];
+      } else {
+        initialLayoutName = "Default";
+        map["Default"] = {
+          layout: [],
+          openedCards: [],
+          pinnedFuncs: [],
+          valueCardWithPlot: [],
+          gamepad: {},
+        };
+      }
+    }
+
+    const currentConfig = map[initialLayoutName];
+    setLayout(currentConfig.layout || []);
+    setOpenedCards(currentConfig.openedCards || []);
+    setPinnedFuncs(currentConfig.pinnedFuncs || []);
+    setValueCardWithPlot(currentConfig.valueCardWithPlot || []);
+    setGamepad(currentConfig.gamepad || {});
     setBrowserId(
-      ls.browserId || Math.floor(Math.random() * 0x10000).toString(16)
+      legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16)
     );
+    setCurrentLayoutName(initialLayoutName);
+    setLayoutsMap(map);
     setInit(true);
   }, []);
+
   useEffect(() => {
     if (init) {
-      saveToLS({
+      const currentConfig: LayoutConfig = {
         layout,
         openedCards,
         pinnedFuncs,
         valueCardWithPlot,
         gamepad,
-        browserId,
-      });
+      };
+
+      if (global !== undefined && global.localStorage) {
+        let map: LayoutsMap = {};
+        const savedLayouts = global.localStorage.getItem(layoutsKey);
+        if (savedLayouts) {
+          try {
+            map = JSON.parse(savedLayouts) as LayoutsMap;
+          } catch (e) {}
+        }
+        map[currentLayoutName] = currentConfig;
+
+        global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+        global.localStorage.setItem(currentLayoutKey, currentLayoutName);
+        setLayoutsMap(map);
+
+        saveToLS({
+          layout,
+          openedCards,
+          pinnedFuncs,
+          valueCardWithPlot,
+          gamepad,
+          browserId,
+        });
+      }
     }
   }, [
     layout,
     openedCards,
     pinnedFuncs,
-    init,
     valueCardWithPlot,
     gamepad,
     browserId,
+    currentLayoutName,
+    init,
   ]);
+
+  const switchLayout = (name: string) => {
+    if (!init) return;
+
+    let map = layoutsMap;
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {}
+      }
+    }
+
+    const config = map[name];
+    if (config) {
+      setCurrentLayoutName(name);
+      setLayout(config.layout || []);
+      setOpenedCards(config.openedCards || []);
+      setPinnedFuncs(config.pinnedFuncs || []);
+      setValueCardWithPlot(config.valueCardWithPlot || []);
+      setGamepad(config.gamepad || {});
+
+      if (global !== undefined && global.localStorage) {
+        global.localStorage.setItem(currentLayoutKey, name);
+      }
+    }
+  };
+
+  const addLayout = (name: string, config?: LayoutConfig) => {
+    if (!init || !name.trim()) return;
+
+    let map = { ...layoutsMap };
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {}
+      }
+    }
+
+    if (map[name]) {
+      return;
+    }
+
+    map[name] = config || {
+      layout: [],
+      openedCards: [],
+      pinnedFuncs: [],
+      valueCardWithPlot: [],
+      gamepad: {},
+    };
+
+    setLayoutsMap(map);
+    if (global !== undefined && global.localStorage) {
+      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+    }
+
+    switchLayout(name);
+  };
+
+  const deleteLayout = (name: string) => {
+    if (!init) return;
+
+    let map = { ...layoutsMap };
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {}
+      }
+    }
+
+    if (!map[name]) return;
+
+    delete map[name];
+
+    if (Object.keys(map).length === 0) {
+      map["Default"] = {
+        layout: [],
+        openedCards: [],
+        pinnedFuncs: [],
+        valueCardWithPlot: [],
+        gamepad: {},
+      };
+    }
+
+    setLayoutsMap(map);
+    if (global !== undefined && global.localStorage) {
+      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+    }
+
+    if (currentLayoutName === name) {
+      const remainingNames = Object.keys(map);
+      switchLayout(remainingNames[0]);
+    }
+  };
+
+  const renameLayout = (oldName: string, newName: string) => {
+    if (!init || !newName.trim() || oldName === newName) return;
+
+    let map = { ...layoutsMap };
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {}
+      }
+    }
+
+    if (!map[oldName] || map[newName]) return;
+
+    map[newName] = map[oldName];
+    delete map[oldName];
+
+    setLayoutsMap(map);
+    if (global !== undefined && global.localStorage) {
+      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+    }
+
+    if (currentLayoutName === oldName) {
+      setCurrentLayoutName(newName);
+      if (global !== undefined && global.localStorage) {
+        global.localStorage.setItem(currentLayoutKey, newName);
+      }
+    }
+  };
+
+  const exportSingleLayout = (name: string): string => {
+    let map = layoutsMap;
+    if (global !== undefined && global.localStorage) {
+      const savedLayouts = global.localStorage.getItem(layoutsKey);
+      if (savedLayouts) {
+        try {
+          map = JSON.parse(savedLayouts) as LayoutsMap;
+        } catch (e) {}
+      }
+    }
+    const config = map[name];
+    return config ? JSON.stringify(config, null, 2) : "{}";
+  };
+
+  const importSingleLayout = (name: string, jsonStr: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonStr) as LayoutConfig;
+      if (typeof parsed !== "object" || parsed === null) return false;
+      if (parsed.layout && !Array.isArray(parsed.layout)) return false;
+      if (parsed.openedCards && !Array.isArray(parsed.openedCards)) return false;
+
+      addLayout(name, {
+        layout: parsed.layout || [],
+        openedCards: parsed.openedCards || [],
+        pinnedFuncs: parsed.pinnedFuncs || [],
+        valueCardWithPlot: parsed.valueCardWithPlot || [],
+        gamepad: parsed.gamepad || {},
+      });
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
 
   return (
     <LocalStorageContext.Provider
@@ -142,7 +423,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         toggleOpened: (key: string) => {
           if (openedCards.includes(key)) {
             setOpenedCards(openedCards.filter((n) => n !== key));
-            // カードを閉じるときzをリセットする(-1にする)
             setLayout(layout.map((l) => (l.i === key ? { ...l, z: -1 } : l)));
           } else {
             setOpenedCards(openedCards.concat([key]));
@@ -173,6 +453,14 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
           gamepad[n] = { enabled: e, clientName: cn };
           setGamepad({ ...gamepad });
         },
+        currentLayoutName,
+        layoutNames: Object.keys(layoutsMap),
+        switchLayout,
+        addLayout,
+        deleteLayout,
+        renameLayout,
+        exportSingleLayout,
+        importSingleLayout,
       }}
     >
       {props.children}
