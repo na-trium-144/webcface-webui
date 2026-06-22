@@ -66,7 +66,7 @@ export function LayoutManager({ className, isMobile, serverHostName }: Props) {
       fileReader.readAsText(file, "UTF-8");
       fileReader.onload = (event) => {
         if (event.target?.result) {
-          let baseName = file.name.replace(/\.json$/i, "");
+          const baseName = file.name.replace(/\.json$/i, "");
           let layoutName = baseName;
           const underscoreIdx = baseName.indexOf("_");
           if (underscoreIdx !== -1) {

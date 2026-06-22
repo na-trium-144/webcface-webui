@@ -199,6 +199,14 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setInit(true);
   }, []);
 
+  const applyLayoutConfig = (config: LayoutConfig) => {
+    setLayout(config.layout || []);
+    setOpenedCards(config.openedCards || []);
+    setPinnedFuncs(config.pinnedFuncs || []);
+    setValueCardWithPlot(config.valueCardWithPlot || []);
+    setGamepad(config.gamepad || {});
+  };
+
   useEffect(() => {
     if (init) {
       const currentConfig: LayoutConfig = {
@@ -209,20 +217,19 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         gamepad,
       };
 
-      if (global !== undefined && global.localStorage) {
-        let map: LayoutsMap = {};
-        const savedLayouts = global.localStorage.getItem(layoutsKey);
-        if (savedLayouts) {
-          try {
-            map = JSON.parse(savedLayouts) as LayoutsMap;
-          } catch (e) {}
+      setLayoutsMap((prevMap) => {
+        const newMap = {
+          ...prevMap,
+          [currentLayoutName]: currentConfig,
+        };
+        if (global !== undefined && global.localStorage) {
+          global.localStorage.setItem(layoutsKey, JSON.stringify(newMap));
         }
-        map[currentLayoutName] = currentConfig;
+        return newMap;
+      });
 
-        global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+      if (global !== undefined && global.localStorage) {
         global.localStorage.setItem(currentLayoutKey, currentLayoutName);
-        setLayoutsMap(map);
-
         saveToLS({
           layout,
           openedCards,
@@ -247,24 +254,10 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   const switchLayout = (name: string) => {
     if (!init) return;
 
-    let map = layoutsMap;
-    if (global !== undefined && global.localStorage) {
-      const savedLayouts = global.localStorage.getItem(layoutsKey);
-      if (savedLayouts) {
-        try {
-          map = JSON.parse(savedLayouts) as LayoutsMap;
-        } catch (e) {}
-      }
-    }
-
-    const config = map[name];
+    const config = layoutsMap[name];
     if (config) {
       setCurrentLayoutName(name);
-      setLayout(config.layout || []);
-      setOpenedCards(config.openedCards || []);
-      setPinnedFuncs(config.pinnedFuncs || []);
-      setValueCardWithPlot(config.valueCardWithPlot || []);
-      setGamepad(config.gamepad || {});
+      applyLayoutConfig(config);
 
       if (global !== undefined && global.localStorage) {
         global.localStorage.setItem(currentLayoutKey, name);
@@ -275,21 +268,11 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   const addLayout = (name: string, config?: LayoutConfig) => {
     if (!init || !name.trim()) return;
 
-    let map = { ...layoutsMap };
-    if (global !== undefined && global.localStorage) {
-      const savedLayouts = global.localStorage.getItem(layoutsKey);
-      if (savedLayouts) {
-        try {
-          map = JSON.parse(savedLayouts) as LayoutsMap;
-        } catch (e) {}
-      }
-    }
-
-    if (map[name]) {
+    if (layoutsMap[name]) {
       return;
     }
 
-    map[name] = config || {
+    const newConfig = config || {
       layout: [],
       openedCards: [],
       pinnedFuncs: [],
@@ -297,33 +280,35 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
       gamepad: {},
     };
 
-    setLayoutsMap(map);
-    if (global !== undefined && global.localStorage) {
-      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
-    }
+    setLayoutsMap((prevMap) => {
+      const newMap = {
+        ...prevMap,
+        [name]: newConfig,
+      };
+      if (global !== undefined && global.localStorage) {
+        global.localStorage.setItem(layoutsKey, JSON.stringify(newMap));
+      }
+      return newMap;
+    });
 
-    switchLayout(name);
+    setCurrentLayoutName(name);
+    applyLayoutConfig(newConfig);
+
+    if (global !== undefined && global.localStorage) {
+      global.localStorage.setItem(currentLayoutKey, name);
+    }
   };
 
   const deleteLayout = (name: string) => {
     if (!init) return;
 
-    let map = { ...layoutsMap };
-    if (global !== undefined && global.localStorage) {
-      const savedLayouts = global.localStorage.getItem(layoutsKey);
-      if (savedLayouts) {
-        try {
-          map = JSON.parse(savedLayouts) as LayoutsMap;
-        } catch (e) {}
-      }
-    }
+    if (!layoutsMap[name]) return;
 
-    if (!map[name]) return;
+    const newMap = { ...layoutsMap };
+    delete newMap[name];
 
-    delete map[name];
-
-    if (Object.keys(map).length === 0) {
-      map["Default"] = {
+    if (Object.keys(newMap).length === 0) {
+      newMap["Default"] = {
         layout: [],
         openedCards: [],
         pinnedFuncs: [],
@@ -332,38 +317,37 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
       };
     }
 
-    setLayoutsMap(map);
+    setLayoutsMap(newMap);
     if (global !== undefined && global.localStorage) {
-      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+      global.localStorage.setItem(layoutsKey, JSON.stringify(newMap));
     }
 
     if (currentLayoutName === name) {
-      const remainingNames = Object.keys(map);
-      switchLayout(remainingNames[0]);
+      const remainingNames = Object.keys(newMap);
+      const nextLayoutName = remainingNames[0];
+      const nextConfig = newMap[nextLayoutName];
+
+      setCurrentLayoutName(nextLayoutName);
+      applyLayoutConfig(nextConfig);
+
+      if (global !== undefined && global.localStorage) {
+        global.localStorage.setItem(currentLayoutKey, nextLayoutName);
+      }
     }
   };
 
   const renameLayout = (oldName: string, newName: string) => {
     if (!init || !newName.trim() || oldName === newName) return;
 
-    let map = { ...layoutsMap };
+    if (!layoutsMap[oldName] || layoutsMap[newName]) return;
+
+    const newMap = { ...layoutsMap };
+    newMap[newName] = newMap[oldName];
+    delete newMap[oldName];
+
+    setLayoutsMap(newMap);
     if (global !== undefined && global.localStorage) {
-      const savedLayouts = global.localStorage.getItem(layoutsKey);
-      if (savedLayouts) {
-        try {
-          map = JSON.parse(savedLayouts) as LayoutsMap;
-        } catch (e) {}
-      }
-    }
-
-    if (!map[oldName] || map[newName]) return;
-
-    map[newName] = map[oldName];
-    delete map[oldName];
-
-    setLayoutsMap(map);
-    if (global !== undefined && global.localStorage) {
-      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+      global.localStorage.setItem(layoutsKey, JSON.stringify(newMap));
     }
 
     if (currentLayoutName === oldName) {
@@ -375,16 +359,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
   };
 
   const exportSingleLayout = (name: string): string => {
-    let map = layoutsMap;
-    if (global !== undefined && global.localStorage) {
-      const savedLayouts = global.localStorage.getItem(layoutsKey);
-      if (savedLayouts) {
-        try {
-          map = JSON.parse(savedLayouts) as LayoutsMap;
-        } catch (e) {}
-      }
-    }
-    const config = map[name];
+    const config = layoutsMap[name];
     return config ? JSON.stringify(config, null, 2) : "{}";
   };
 
