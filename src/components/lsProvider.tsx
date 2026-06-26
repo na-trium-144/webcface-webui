@@ -3,13 +3,13 @@ import {
   createContext,
   useState,
   useEffect,
+  useRef,
   ReactElement,
 } from "react";
 import { LayoutItem } from "react-grid-layout-next";
 
 const lsKey = "webcface-webui";
 const layoutsKey = "webcface-webui-layouts";
-const currentLayoutKey = "webcface-webui-current-layout";
 export interface LocalStorageData {
   layout: LayoutItem[];
   openedCards: string[];
@@ -109,10 +109,27 @@ function getLS() {
   return emptyLs;
 }
 
-function saveToLS(ls: LocalStorageData) {
-  if (global != undefined && global.localStorage) {
-    global.localStorage.setItem(lsKey, JSON.stringify(ls));
+const browserIdKey = "webcface-webui-browser-id";
+
+function isConfigEqual(a: LayoutConfig, b: LayoutConfig) {
+  if (JSON.stringify(a.layout) !== JSON.stringify(b.layout)) return false;
+  if (JSON.stringify(a.openedCards) !== JSON.stringify(b.openedCards)) return false;
+  if (JSON.stringify(a.pinnedFuncs) !== JSON.stringify(b.pinnedFuncs)) return false;
+  if (JSON.stringify(a.valueCardWithPlot) !== JSON.stringify(b.valueCardWithPlot)) return false;
+  
+  const keysA = Object.keys(a.gamepad || {});
+  const keysB = Object.keys(b.gamepad || {});
+  if (keysA.length !== keysB.length) return false;
+  for (const k of keysA) {
+    if (!b.gamepad[k]) return false;
+    if (
+      a.gamepad[k].enabled !== b.gamepad[k].enabled ||
+      a.gamepad[k].clientName !== b.gamepad[k].clientName
+    ) {
+      return false;
+    }
   }
+  return true;
 }
 
 export function LocalStorageProvider(props: { children: ReactElement }) {
@@ -134,12 +151,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
 
   useEffect(() => {
     let initialLayoutName = "Default";
-    if (global !== undefined && global.localStorage) {
-      const savedName = global.localStorage.getItem(currentLayoutKey);
-      if (savedName) {
-        initialLayoutName = savedName;
-      }
-    }
 
     let map: LayoutsMap = {};
     if (global !== undefined && global.localStorage) {
@@ -191,9 +202,21 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setPinnedFuncs(currentConfig.pinnedFuncs || []);
     setValueCardWithPlot(currentConfig.valueCardWithPlot || []);
     setGamepad(currentConfig.gamepad || {});
-    setBrowserId(
-      legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16)
-    );
+
+    let bId = "";
+    if (global !== undefined && global.localStorage) {
+      const savedBrowserId = global.localStorage.getItem(browserIdKey);
+      if (savedBrowserId) {
+        bId = savedBrowserId;
+      } else {
+        bId = legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16);
+        global.localStorage.setItem(browserIdKey, bId);
+      }
+    } else {
+      bId = legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16);
+    }
+    setBrowserId(bId);
+
     setCurrentLayoutName(initialLayoutName);
     setLayoutsMap(map);
     setInit(true);
@@ -206,6 +229,79 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setValueCardWithPlot(config.valueCardWithPlot || []);
     setGamepad(config.gamepad || {});
   };
+
+  const stateRef = useRef({
+    layout,
+    openedCards,
+    pinnedFuncs,
+    valueCardWithPlot,
+    gamepad,
+    currentLayoutName,
+    init,
+  });
+  stateRef.current = {
+    layout,
+    openedCards,
+    pinnedFuncs,
+    valueCardWithPlot,
+    gamepad,
+    currentLayoutName,
+    init,
+  };
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === layoutsKey && e.newValue) {
+        try {
+          const newMap = JSON.parse(e.newValue) as LayoutsMap;
+          if (!stateRef.current.init) return;
+
+          setLayoutsMap(newMap);
+
+          const curName = stateRef.current.currentLayoutName;
+          let nextLayoutName = curName;
+
+          if (!newMap[curName]) {
+            const remainingNames = Object.keys(newMap);
+            if (remainingNames.length > 0) {
+              nextLayoutName = remainingNames[0];
+            } else {
+              nextLayoutName = "Default";
+              newMap["Default"] = {
+                layout: [],
+                openedCards: [],
+                pinnedFuncs: [],
+                valueCardWithPlot: [],
+                gamepad: {},
+              };
+            }
+            setCurrentLayoutName(nextLayoutName);
+          }
+
+          const nextConfig = newMap[nextLayoutName];
+          if (nextConfig) {
+            const currentConfig: LayoutConfig = {
+              layout: stateRef.current.layout,
+              openedCards: stateRef.current.openedCards,
+              pinnedFuncs: stateRef.current.pinnedFuncs,
+              valueCardWithPlot: stateRef.current.valueCardWithPlot,
+              gamepad: stateRef.current.gamepad,
+            };
+            if (!isConfigEqual(currentConfig, nextConfig)) {
+              applyLayoutConfig(nextConfig);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse layouts from storage event", err);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (init) {
@@ -223,22 +319,15 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
           [currentLayoutName]: currentConfig,
         };
         if (global !== undefined && global.localStorage) {
-          global.localStorage.setItem(layoutsKey, JSON.stringify(newMap));
+          const newMapStr = JSON.stringify(newMap);
+          const stored = global.localStorage.getItem(layoutsKey);
+          if (stored !== newMapStr) {
+            global.localStorage.setItem(layoutsKey, newMapStr);
+          }
         }
         return newMap;
       });
 
-      if (global !== undefined && global.localStorage) {
-        global.localStorage.setItem(currentLayoutKey, currentLayoutName);
-        saveToLS({
-          layout,
-          openedCards,
-          pinnedFuncs,
-          valueCardWithPlot,
-          gamepad,
-          browserId,
-        });
-      }
     }
   }, [
     layout,
@@ -258,10 +347,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     if (config) {
       setCurrentLayoutName(name);
       applyLayoutConfig(config);
-
-      if (global !== undefined && global.localStorage) {
-        global.localStorage.setItem(currentLayoutKey, name);
-      }
     }
   };
 
@@ -293,10 +378,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
 
     setCurrentLayoutName(name);
     applyLayoutConfig(newConfig);
-
-    if (global !== undefined && global.localStorage) {
-      global.localStorage.setItem(currentLayoutKey, name);
-    }
   };
 
   const deleteLayout = (name: string) => {
@@ -329,10 +410,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
 
       setCurrentLayoutName(nextLayoutName);
       applyLayoutConfig(nextConfig);
-
-      if (global !== undefined && global.localStorage) {
-        global.localStorage.setItem(currentLayoutKey, nextLayoutName);
-      }
     }
   };
 
@@ -352,9 +429,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
 
     if (currentLayoutName === oldName) {
       setCurrentLayoutName(newName);
-      if (global !== undefined && global.localStorage) {
-        global.localStorage.setItem(currentLayoutKey, newName);
-      }
     }
   };
 
