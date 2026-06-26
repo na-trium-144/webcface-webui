@@ -10,7 +10,7 @@ import { LayoutItem } from "react-grid-layout-next";
 
 const lsKey = "webcface-webui";
 const layoutsKey = "webcface-webui-layouts";
-export interface LocalStorageData {
+export interface LayoutConfig {
   layout: LayoutItem[];
   openedCards: string[];
   pinnedFuncs: [string, string][];
@@ -19,22 +19,14 @@ export interface LocalStorageData {
   browserId: string;
 }
 
-export interface LayoutConfig {
-  layout: LayoutItem[];
-  openedCards: string[];
-  pinnedFuncs: [string, string][];
-  valueCardWithPlot: [string, string][];
-  gamepad: { [key: string]: { enabled: boolean; clientName: string } };
-}
-
 export interface LayoutsMap {
   [name: string]: LayoutConfig;
 }
 
-export type LocalStorage = LocalStorageData & {
+export type LocalStorage = LayoutConfig & {
   init: boolean;
   setLayout: (
-    layout: LayoutItem[] | ((layout: LayoutItem[]) => LayoutItem[])
+    layout: LayoutItem[] | ((layout: LayoutItem[]) => LayoutItem[]),
   ) => void;
   isOpened: (key: string) => boolean;
   toggleOpened: (key: string) => void;
@@ -82,7 +74,7 @@ const LocalStorageContext = createContext<LocalStorage>({
 export const useLocalStorage = () => useContext(LocalStorageContext);
 
 function getLS() {
-  const emptyLs: LocalStorageData = {
+  const emptyLs: LayoutConfig = {
     layout: [],
     openedCards: [],
     pinnedFuncs: [],
@@ -93,7 +85,7 @@ function getLS() {
   if (global != undefined && global.localStorage) {
     const lsItem = global.localStorage.getItem(lsKey);
     if (lsItem) {
-      const ls1 = JSON.parse(lsItem) as LocalStorageData;
+      const ls1 = JSON.parse(lsItem) as LayoutConfig;
       if (
         typeof ls1 === "object" &&
         ls1 &&
@@ -109,14 +101,18 @@ function getLS() {
   return emptyLs;
 }
 
-const browserIdKey = "webcface-webui-browser-id";
-
 function isConfigEqual(a: LayoutConfig, b: LayoutConfig) {
+  if (a.browserId !== b.browserId) return false;
   if (JSON.stringify(a.layout) !== JSON.stringify(b.layout)) return false;
-  if (JSON.stringify(a.openedCards) !== JSON.stringify(b.openedCards)) return false;
-  if (JSON.stringify(a.pinnedFuncs) !== JSON.stringify(b.pinnedFuncs)) return false;
-  if (JSON.stringify(a.valueCardWithPlot) !== JSON.stringify(b.valueCardWithPlot)) return false;
-  
+  if (JSON.stringify(a.openedCards) !== JSON.stringify(b.openedCards))
+    return false;
+  if (JSON.stringify(a.pinnedFuncs) !== JSON.stringify(b.pinnedFuncs))
+    return false;
+  if (
+    JSON.stringify(a.valueCardWithPlot) !== JSON.stringify(b.valueCardWithPlot)
+  )
+    return false;
+
   const keysA = Object.keys(a.gamepad || {});
   const keysB = Object.keys(b.gamepad || {});
   if (keysA.length !== keysB.length) return false;
@@ -174,10 +170,25 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         pinnedFuncs: legacyLs.pinnedFuncs || [],
         valueCardWithPlot: legacyLs.valueCardWithPlot || [],
         gamepad: legacyLs.gamepad || {},
+        browserId:
+          legacyLs.browserId ||
+          Math.floor(Math.random() * 0x10000).toString(16),
       };
       if (global !== undefined && global.localStorage) {
         global.localStorage.setItem(layoutsKey, JSON.stringify(map));
       }
+    }
+
+    // Migrate / ensure browserId is present for all existing layouts in map
+    let updatedMap = false;
+    for (const name of Object.keys(map)) {
+      if (!map[name].browserId) {
+        map[name].browserId = Math.floor(Math.random() * 0x10000).toString(16);
+        updatedMap = true;
+      }
+    }
+    if (updatedMap && global !== undefined && global.localStorage) {
+      global.localStorage.setItem(layoutsKey, JSON.stringify(map));
     }
 
     if (!map[initialLayoutName]) {
@@ -192,7 +203,11 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
           pinnedFuncs: [],
           valueCardWithPlot: [],
           gamepad: {},
+          browserId: Math.floor(Math.random() * 0x10000).toString(16),
         };
+        if (global !== undefined && global.localStorage) {
+          global.localStorage.setItem(layoutsKey, JSON.stringify(map));
+        }
       }
     }
 
@@ -202,20 +217,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setPinnedFuncs(currentConfig.pinnedFuncs || []);
     setValueCardWithPlot(currentConfig.valueCardWithPlot || []);
     setGamepad(currentConfig.gamepad || {});
-
-    let bId = "";
-    if (global !== undefined && global.localStorage) {
-      const savedBrowserId = global.localStorage.getItem(browserIdKey);
-      if (savedBrowserId) {
-        bId = savedBrowserId;
-      } else {
-        bId = legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16);
-        global.localStorage.setItem(browserIdKey, bId);
-      }
-    } else {
-      bId = legacyLs.browserId || Math.floor(Math.random() * 0x10000).toString(16);
-    }
-    setBrowserId(bId);
+    setBrowserId(currentConfig.browserId);
 
     setCurrentLayoutName(initialLayoutName);
     setLayoutsMap(map);
@@ -228,6 +230,9 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     setPinnedFuncs(config.pinnedFuncs || []);
     setValueCardWithPlot(config.valueCardWithPlot || []);
     setGamepad(config.gamepad || {});
+    setBrowserId(
+      config.browserId || Math.floor(Math.random() * 0x10000).toString(16),
+    );
   };
 
   const stateRef = useRef({
@@ -236,6 +241,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     pinnedFuncs,
     valueCardWithPlot,
     gamepad,
+    browserId,
     currentLayoutName,
     init,
   });
@@ -245,6 +251,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
     pinnedFuncs,
     valueCardWithPlot,
     gamepad,
+    browserId,
     currentLayoutName,
     init,
   };
@@ -273,6 +280,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
                 pinnedFuncs: [],
                 valueCardWithPlot: [],
                 gamepad: {},
+                browserId: Math.floor(Math.random() * 0x10000).toString(16),
               };
             }
             setCurrentLayoutName(nextLayoutName);
@@ -286,6 +294,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
               pinnedFuncs: stateRef.current.pinnedFuncs,
               valueCardWithPlot: stateRef.current.valueCardWithPlot,
               gamepad: stateRef.current.gamepad,
+              browserId: stateRef.current.browserId,
             };
             if (!isConfigEqual(currentConfig, nextConfig)) {
               applyLayoutConfig(nextConfig);
@@ -311,6 +320,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         pinnedFuncs,
         valueCardWithPlot,
         gamepad,
+        browserId,
       };
 
       setLayoutsMap((prevMap) => {
@@ -327,7 +337,6 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         }
         return newMap;
       });
-
     }
   }, [
     layout,
@@ -357,13 +366,19 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
       return;
     }
 
-    const newConfig = config || {
-      layout: [],
-      openedCards: [],
-      pinnedFuncs: [],
-      valueCardWithPlot: [],
-      gamepad: {},
-    };
+    const newConfig = config
+      ? {
+          ...config,
+          browserId: Math.floor(Math.random() * 0x10000).toString(16),
+        }
+      : {
+          layout: [],
+          openedCards: [],
+          pinnedFuncs: [],
+          valueCardWithPlot: [],
+          gamepad: {},
+          browserId: Math.floor(Math.random() * 0x10000).toString(16),
+        };
 
     setLayoutsMap((prevMap) => {
       const newMap = {
@@ -395,6 +410,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         pinnedFuncs: [],
         valueCardWithPlot: [],
         gamepad: {},
+        browserId: Math.floor(Math.random() * 0x10000).toString(16),
       };
     }
 
@@ -434,7 +450,14 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
 
   const exportSingleLayout = (name: string): string => {
     const config = layoutsMap[name];
-    return config ? JSON.stringify(config, null, 2) : "{}";
+    if (config) {
+      const copy: Omit<LayoutConfig, "browserId"> & { browserId?: string } = {
+        ...config,
+      };
+      delete copy.browserId;
+      return JSON.stringify(copy, null, 2);
+    }
+    return "{}";
   };
 
   const importSingleLayout = (name: string, jsonStr: string): boolean => {
@@ -442,7 +465,8 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
       const parsed = JSON.parse(jsonStr) as LayoutConfig;
       if (typeof parsed !== "object" || parsed === null) return false;
       if (parsed.layout && !Array.isArray(parsed.layout)) return false;
-      if (parsed.openedCards && !Array.isArray(parsed.openedCards)) return false;
+      if (parsed.openedCards && !Array.isArray(parsed.openedCards))
+        return false;
 
       addLayout(name, {
         layout: parsed.layout || [],
@@ -450,6 +474,7 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
         pinnedFuncs: parsed.pinnedFuncs || [],
         valueCardWithPlot: parsed.valueCardWithPlot || [],
         gamepad: parsed.gamepad || {},
+        browserId: "",
       });
       return true;
     } catch (e) {
@@ -482,21 +507,21 @@ export function LocalStorageProvider(props: { children: ReactElement }) {
           setPinnedFuncs(
             pinnedFuncs.some((p) => p[0] === m && p[1] === f)
               ? pinnedFuncs
-              : pinnedFuncs.concat([[m, f]])
+              : pinnedFuncs.concat([[m, f]]),
           ),
         unPinFunc: (m: string, f: string) =>
           setPinnedFuncs(
-            pinnedFuncs.filter((pf) => pf[0] !== m || pf[1] !== f)
+            pinnedFuncs.filter((pf) => pf[0] !== m || pf[1] !== f),
           ),
         enableValueCardWithPlot: (m: string, f: string) =>
           setValueCardWithPlot(
             valueCardWithPlot.some((p) => p[0] === m && p[1] === f)
               ? valueCardWithPlot
-              : valueCardWithPlot.concat([[m, f]])
+              : valueCardWithPlot.concat([[m, f]]),
           ),
         disableValueCardWithPlot: (m: string, f: string) =>
           setValueCardWithPlot(
-            valueCardWithPlot.filter((pf) => pf[0] !== m || pf[1] !== f)
+            valueCardWithPlot.filter((pf) => pf[0] !== m || pf[1] !== f),
           ),
         updateGamepad: (n: string, e: boolean, cn: string) => {
           gamepad[n] = { enabled: e, clientName: cn };
