@@ -10,6 +10,7 @@ import {
   Canvas2D,
   Log,
   Text,
+  Plot,
 } from "webcface";
 import "../index.css";
 import "react-grid-layout-next/css/styles.css";
@@ -40,6 +41,7 @@ import * as cardKey from "../libs/cardKey";
 import { useLayoutChange } from "./layoutChangeProvider";
 import { GamepadCard } from "./gamepadCard";
 import { GamepadState } from "../libs/gamepad";
+import { PlotCard } from "./plotCard";
 
 interface Props {
   client: Client | null;
@@ -358,6 +360,20 @@ export function LayoutMain(props: Props) {
             return (
               <div key={key} data-grid={findLsLayout(key, 0, 0, 6, 2, 2, 2)}>
                 <LogCard logField={v} />
+              </div>
+            );
+          }
+          return null;
+        })}
+      {props.client
+        ?.members()
+        .reduce((prev, m) => prev.concat(m.plotEntries()), [] as Plot[])
+        .map((v) => {
+          const key = cardKey.plot(v.member.name, v.name);
+          if (ls.isOpened(key)) {
+            return (
+              <div key={key} data-grid={findLsLayout(key, 0, 0, 2, 3, 2, 3)}>
+                <PlotCard plot={v} />
               </div>
             );
           }

@@ -5,6 +5,7 @@ import {
   Value,
   View,
   Image,
+  Plot,
   RobotModel,
   Canvas3D,
   Canvas2D,
@@ -36,6 +37,7 @@ import {
   CoordinateSystem,
   GraphicDesign,
   GameThree,
+  Slide,
 } from "@icon-park/react";
 import { GamepadState } from "../libs/gamepad";
 import { LayoutManager } from "./layoutManager";
@@ -57,6 +59,7 @@ export function SideMenu(props: Props) {
       m.onTextEntry.on(update);
       m.onViewEntry.on(update);
       m.onImageEntry.on(update);
+      m.onPlotEntry.on(update);
       m.onRobotModelEntry.on(update);
       m.onCanvas3DEntry.on(update);
       m.onCanvas2DEntry.on(update);
@@ -77,6 +80,7 @@ export function SideMenu(props: Props) {
         m.onTextEntry.off(update);
         m.onViewEntry.off(update);
         m.onImageEntry.off(update);
+        m.onPlotEntry.off(update);
         m.onRobotModelEntry.off(update);
         m.onCanvas3DEntry.off(update);
         m.onCanvas2DEntry.off(update);
@@ -146,7 +150,7 @@ export function SideMenu(props: Props) {
 interface FieldGroup {
   name: string;
   fullName: string;
-  kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8 | null;
+  kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8 | 12 | null;
   children: FieldGroup[];
 }
 interface GroupProps {
@@ -206,6 +210,8 @@ function SideMenuValues(props: ValuesProps) {
               ? cardKey.canvas2D(props.member.name, v.fullName)
               : v.kind === 8
               ? cardKey.log(props.member.name, v.fullName)
+              : v.kind === 12
+              ? cardKey.plot(props.member.name, v.fullName)
               : ""
           )}
           onClick={() =>
@@ -226,6 +232,8 @@ function SideMenuValues(props: ValuesProps) {
                 ? cardKey.canvas2D(props.member.name, v.fullName)
                 : v.kind === 8
                 ? cardKey.log(props.member.name, v.fullName)
+                : v.kind === 12
+                ? cardKey.plot(props.member.name, v.fullName)
                 : ""
             )
           }
@@ -246,6 +254,8 @@ function SideMenuValues(props: ValuesProps) {
               <GraphicDesign />
             ) : v.kind === 8 ? (
               <Abnormal />
+            ) : v.kind === 12 ? (
+              <Slide />
             ) : undefined
           }
           iconActive={
@@ -263,6 +273,8 @@ function SideMenuValues(props: ValuesProps) {
               <GraphicDesign theme="two-tone" fill={iconFillColor} />
             ) : v.kind === 8 ? (
               <Abnormal theme="two-tone" fill={iconFillColor} />
+            ) : v.kind === 12 ? (
+              <Slide theme="two-tone" fill={iconFillColor} />
             ) : undefined
           }
         />
@@ -281,6 +293,7 @@ interface MemberProps {
   canvas3Ds: Canvas3D[];
   canvas2Ds: Canvas2D[];
   logs: Log[];
+  plots: Plot[];
 }
 function SideMenuMember(props: MemberProps) {
   const ls = useLocalStorage();
@@ -305,8 +318,9 @@ function SideMenuMember(props: MemberProps) {
         | RobotModel[]
         | Canvas3D[]
         | Canvas2D[]
-        | Log[],
-      kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8
+        | Log[]
+        | Plot[],
+      kind: 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8 | 12
     ) => {
       for (const v of values) {
         const vNameSplit = v.name.split(".");
@@ -341,6 +355,7 @@ function SideMenuMember(props: MemberProps) {
     sortValueNames(props.canvas3Ds, 7);
     sortValueNames(props.canvas2Ds, 4);
     sortValueNames(props.logs, 8);
+    sortValueNames(props.plots, 12);
     setValueNames(valueNames);
   }, [
     props.values,
@@ -351,6 +366,7 @@ function SideMenuMember(props: MemberProps) {
     props.canvas3Ds,
     props.canvas2Ds,
     props.logs,
+    props.plots,
   ]);
   return (
     <>

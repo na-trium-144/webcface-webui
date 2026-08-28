@@ -15,6 +15,8 @@ export const canvas2D = (member: string, field: string) =>
   `${member}:canvas2D:${field}`;
 export const func = (member: string) => `${member}:func`;
 export const log = (member: string, field: string) => `${member}:log:${field}`;
+export const plot = (member: string, field: string) =>
+  `${member}:plot:${field}`;
 export const connectionInfo = () => ":connectionInfo";
 export const about = () => ":about";
 export const serverLog = () => ":serverLog";
